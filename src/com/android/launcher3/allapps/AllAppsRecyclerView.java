@@ -76,6 +76,11 @@ public class AllAppsRecyclerView extends FastScrollRecyclerView {
 
     protected AlphabeticalAppsList mApps;
 
+    // DiamaneOS Tally: whether the list could scroll at its last layout, and who re-pads it when
+    // that changes (the letter rail shows only while the list can scroll).
+    private boolean mCanScroll;
+    @Nullable private Runnable mOnCanScrollChanged;
+
     public AllAppsRecyclerView(Context context) {
         this(context, null);
     }
@@ -127,6 +132,30 @@ public class AllAppsRecyclerView extends FastScrollRecyclerView {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         updatePoolSize();
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
+        // DiamaneOS Tally: a padding set during layout is lost, so the re-pad runs after it. Only
+        // the end padding changes, which cannot change whether the list scrolls.
+        boolean canScroll = getAvailableScrollHeight() > 0;
+        if (canScroll != mCanScroll) {
+            mCanScroll = canScroll;
+            if (mOnCanScrollChanged != null) {
+                post(mOnCanScrollChanged);
+            }
+        }
+    }
+
+    /** DiamaneOS Tally: whether the list could scroll at its last layout. */
+    public boolean canScroll() {
+        return mCanScroll;
+    }
+
+    /** DiamaneOS Tally: runs (after the layout) when {@link #canScroll()} changes. */
+    public void setOnCanScrollChanged(@Nullable Runnable onCanScrollChanged) {
+        mOnCanScrollChanged = onCanScrollChanged;
     }
 
     public void onSearchResultsChanged() {
