@@ -571,6 +571,7 @@ public class LauncherBackAnimationController {
         TallySpring.Move move = slab.new Move(from, 0, 0, 0.0005, 0.005, false);
         ValueAnimator window = ValueAnimator.ofFloat(0, 1);
         window.setDuration(move.getMillis());
+        window.setInterpolator(Interpolators.LINEAR);
         window.addUpdateListener(a -> {
             if (mBackTarget != null) {
                 applyTallyBack((float) move.valueAtFraction(a.getAnimatedFraction()), false);
