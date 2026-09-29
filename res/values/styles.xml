@@ -375,6 +375,10 @@
         <item name="android:focusable">true</item>
         <item name="android:gravity">center_horizontal</item>
         <item name="android:textColor">@color/workspace_text_color_light</item>
+        <!-- DiamaneOS Tally: app names in Tally's small label face (TextAppearance.Tally.LabelSmall:
+             the family, weight 500). Their size comes from the grid. -->
+        <item name="android:fontFamily">@string/tally_font_family</item>
+        <item name="android:textFontWeight">500</item>
         <item name="android:defaultFocusHighlightEnabled">false</item>
         <!-- No shadows in the base theme -->
         <item name="android:shadowRadius">0</item>
@@ -392,8 +396,9 @@
         <item name="android:stateListAnimator">@animator/all_apps_fastscroll_icon_anim</item>
         <item name="android:paddingLeft">@dimen/dynamic_grid_cell_padding_x</item>
         <item name="android:paddingRight">@dimen/dynamic_grid_cell_padding_x</item>
-        <item name="android:textColor">@color/materialColorOnSurface</item>
-        <item name="android:fontFamily">variable-title-small</item>
+        <!-- DiamaneOS Tally: Tally's ink and face, as on Home (BaseIconUnBounded). -->
+        <item name="android:textColor">@color/tally_ink</item>
+        <item name="android:fontFamily">@string/tally_font_family</item>
     </style>
 
 
