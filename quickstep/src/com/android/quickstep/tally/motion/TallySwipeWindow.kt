@@ -23,6 +23,7 @@ import android.graphics.PointF
 import android.graphics.RectF
 import android.view.RemoteAnimationTarget
 import android.view.animation.Interpolator
+import com.android.app.animation.Interpolators
 import com.android.quickstep.util.SurfaceTransaction.SurfaceProperties
 import com.android.quickstep.util.TaskViewSimulator
 import com.android.quickstep.util.TransformParams
@@ -113,6 +114,7 @@ class TallySwipeWindow(
         blendAnimator =
             ValueAnimator.ofFloat(0f, 1f).apply {
                 duration = move.millis
+                interpolator = Interpolators.LINEAR
                 addUpdateListener {
                     blend = move.valueAtFraction(it.animatedFraction).toFloat()
                     reapply.run()

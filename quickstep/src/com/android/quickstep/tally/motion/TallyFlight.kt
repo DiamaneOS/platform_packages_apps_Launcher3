@@ -20,6 +20,7 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.graphics.RectF
+import com.android.app.animation.Interpolators
 
 /**
  * A window's flight between two rects on one spring (the prototype's `Win.flyTo`): one progress `q`
@@ -62,6 +63,7 @@ class TallyFlight(private val spring: TallySpring) {
         animator =
             ValueAnimator.ofFloat(0f, 1f).apply {
                 duration = move.millis
+                interpolator = Interpolators.LINEAR
                 addUpdateListener {
                     frame.onFrame(move.valueAtFraction(it.animatedFraction).toFloat())
                 }
