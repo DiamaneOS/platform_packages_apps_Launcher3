@@ -31,6 +31,7 @@ import com.android.launcher3.Utilities.pxFromSp
 import com.android.launcher3.deviceprofile.WorkspaceProfile.Factory.calculateCellSize
 import com.android.launcher3.deviceprofile.WorkspaceProfile.Factory.calculateHotseatBarSizePx
 import com.android.launcher3.deviceprofile.WorkspaceProfile.Factory.insetPadding
+import com.android.launcher3.tally.home.TallyHomeLayout
 import com.android.launcher3.testing.shared.ResourceUtils.INVALID_RESOURCE_HANDLE
 import com.android.launcher3.testing.shared.ResourceUtils.pxFromDp
 import kotlin.math.max
@@ -225,6 +226,21 @@ object WorkspaceProfileNonResponsiveFactory {
             res.getDimensionPixelSize(R.dimen.workspace_page_indicator_height)
         val workspacePageIndicatorOverlapWorkspace =
             res.getDimensionPixelSize(R.dimen.workspace_page_indicator_overlap_workspace)
+        // DiamaneOS Tally: the grid on Home's spacing rhythm on an upright phone.
+        val tallyPaddings =
+            TallyHomeLayout.workspacePaddingsPx(
+                res = res,
+                properties = deviceProperties,
+                isVerticalLayout = isVerticalLayout,
+                isFixedLandscape = inv.isFixedLandscape,
+                numRows = inv.numRows,
+                edgeMarginPx = edgeMarginPx,
+                hotseatBarSizePx = hotseatProfile.barSizePx,
+                pageIndicatorPx =
+                    workspacePageIndicatorHeight - workspacePageIndicatorOverlapWorkspace,
+            )
+        val workspaceTopPadding = tallyPaddings?.get(0) ?: 0
+        val workspaceBottomPadding = tallyPaddings?.get(1) ?: 0
         val noInsetWorkspacePadding =
             createWorkspacePadding(
                 isVerticalLayout = isVerticalLayout,
@@ -237,8 +253,8 @@ object WorkspaceProfileNonResponsiveFactory {
                 edgeMarginPx = edgeMarginPx,
                 workspacePageIndicatorHeight = workspacePageIndicatorHeight,
                 workspacePageIndicatorOverlapWorkspace = workspacePageIndicatorOverlapWorkspace,
-                workspaceTopPadding = 0,
-                workspaceBottomPadding = 0,
+                workspaceTopPadding = workspaceTopPadding,
+                workspaceBottomPadding = workspaceBottomPadding,
                 iconSize = iconSizePx,
                 hotseatBarBottomSpacePx = hotseatProfile.barBottomSpacePx,
                 hotseatQsbSpace = hotseatProfile.qsbSpace,
@@ -300,8 +316,8 @@ object WorkspaceProfileNonResponsiveFactory {
                 ),
             workspaceCellPaddingXPx =
                 res.getDimensionPixelSize(R.dimen.dynamic_grid_cell_padding_x),
-            workspaceTopPadding = 0,
-            workspaceBottomPadding = 0,
+            workspaceTopPadding = workspaceTopPadding,
+            workspaceBottomPadding = workspaceBottomPadding,
             maxEmptySpace = 0,
             workspacePadding = workspacePadding,
             cellLayoutPaddingPx = cellLayoutPaddingPx,
