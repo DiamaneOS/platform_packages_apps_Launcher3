@@ -40,7 +40,8 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/task_menu_option_text_start_margin"
         android:textSize="14sp"
-        android:textColor="@color/materialColorOnSurface"
+        android:fontFamily="@string/tally_font_family"
+        android:textColor="@color/tally_ink"
         android:focusable="false"
         android:gravity="start|center_vertical"
         android:ellipsize="end" />
