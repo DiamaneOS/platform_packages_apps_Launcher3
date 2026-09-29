@@ -23,6 +23,7 @@ import android.view.RemoteAnimationTarget
 import com.android.app.animation.Interpolators
 import com.android.launcher3.Utilities
 import com.android.launcher3.views.ActivityContext
+import com.android.quickstep.tally.motion.TallyClose
 import com.android.quickstep.util.RectFSpringAnim.OnUpdateListener
 import com.android.quickstep.util.SurfaceTransaction
 import com.android.quickstep.util.SurfaceTransactionApplier
@@ -69,6 +70,12 @@ constructor(
 
     private var windowCornerRadius: Float? = null
 
+    /**
+     * DiamaneOS Tally: the window closing into its key as the prototype's does (its corners, its
+     * content scaled uniformly, and fading as the key comes back over it), or null for stock's.
+     */
+    var tally: TallyClose? = null
+
     init {
         // transfer the coordinate based on animation target.
         appTargets
@@ -108,6 +115,17 @@ constructor(
                     currentRectF,
                     currentAnimTargetRectF,
                 )
+
+                val tally = tally
+                if (tally != null) {
+                    tally.update(currentAnimTargetRectF, progress, windowOriginalBounds)
+                    builder
+                        .setMatrix(tally.content.matrix)
+                        .setWindowCrop(tally.content.crop)
+                        .setAlpha(tally.windowAlpha)
+                        .setCornerRadius(tally.content.layerRadius)
+                    continue
+                }
 
                 // Scale the target window to match the currentRectF.
                 val scale: Float
