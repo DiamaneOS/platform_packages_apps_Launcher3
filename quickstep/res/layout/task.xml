@@ -25,7 +25,7 @@
     android:clipChildren="false"
     android:defaultFocusHighlightEnabled="false"
     android:focusable="true"
-    launcher:focusBorderColor="@color/materialColorOutline"
+    launcher:focusBorderColor="@color/tally_accent"
     launcher:hoverBorderColor="@color/materialColorPrimary">
 
     <ViewStub
