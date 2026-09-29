@@ -168,6 +168,8 @@ class TallyTalliesRow(context: Context) : ViewGroup(context) {
         init {
             orientation = HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            // The lamp's ring of light reaches into the start padding (see below).
+            clipToPadding = false
             minimumHeight = resources.getDimensionPixelSize(R.dimen.tally_target_min)
             setBackgroundColor(context.getColor(R.color.tally_surface))
             val gap = GAP_DP * resources.displayMetrics.density
