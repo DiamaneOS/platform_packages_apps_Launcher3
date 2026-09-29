@@ -82,6 +82,11 @@ object TallyWindowMotion {
     /** The rubber band's coefficient (`tally_rubber_band_coefficient`). */
     const val RUBBER = 0.35f
 
+    /**
+     * Back: the finger's travel that makes a full progress (the prototype's `|dx| / 160`, as WM
+     * Shell's `TallyPageMotion.BACK_DISTANCE_DP`).
+     */
+    const val BACK_DISTANCE_DP = 160f
     /** Back: the window's (or page's) scale at full progress. */
     const val BACK_SCALE = 0.9f
     /** Back: how far the window moves with the finger, away from the edge the swipe starts at. */
@@ -182,15 +187,28 @@ object TallyWindowMotion {
     @JvmStatic fun homeDim(homeProgress: Float): Float = HOME_DIM * (1f - homeProgress)
 
     /**
+     * Back: the prototype's progress, 0 to 1, for the platform's [progress]. An edge swipe's
+     * platform progress is the finger's travel over [distancePx] (the BackTouchTracker's distance:
+     * the display's width on a phone), and the prototype's is the same travel over
+     * [BACK_DISTANCE_DP]; a Back button's (no edge) is taken as it is. WM Shell's page Back maps it
+     * the same way (`TallyPageMotion.backProgress`).
+     */
+    @JvmStatic
+    fun backProgress(progress: Float, fromEdge: Boolean, distancePx: Float, density: Float): Float =
+        if (fromEdge) (progress * distancePx / (BACK_DISTANCE_DP * density)).coerceIn(0f, 1f)
+        else progress.coerceIn(0f, 1f)
+
+    /**
      * Back at an app's first page (`wm.backMove`): the window scales from 1 to [BACK_SCALE] with
-     * [progress], moves [BACK_SHIFT_DP] with the finger ([fromLeftEdge]: to the right), follows the
+     * [progress], moves [BACK_SHIFT_DP] the way the finger travels ([direction]: +1 for a swipe
+     * from the left edge, −1 for one from the right edge, 0 for a Back button), follows the
      * finger's vertical travel [followPx] by [BACK_FOLLOW] (at most [BACK_FOLLOW_MAX_DP]), scaled
      * by the progress, and its corners go from [restRadius] to [BACK_RADIUS_DP].
      */
     @JvmStatic
     fun backRect(
         progress: Float,
-        fromLeftEdge: Boolean,
+        direction: Int,
         followPx: Float,
         screenW: Float,
         screenH: Float,
@@ -202,10 +220,9 @@ object TallyWindowMotion {
         val scale = 1f + (BACK_SCALE - 1f) * k
         val w = screenW * scale
         val h = screenH * scale
-        val side = if (fromLeftEdge) 1f else -1f
         val maxFollow = BACK_FOLLOW_MAX_DP * density
         val dy = (followPx * BACK_FOLLOW).coerceIn(-maxFollow, maxFollow) * k
-        val left = (screenW - w) / 2f + side * BACK_SHIFT_DP * density * k
+        val left = (screenW - w) / 2f + direction * BACK_SHIFT_DP * density * k
         val top = (screenH - h) / 2f + dy
         out.rect.set(left, top, left + w, top + h)
         out.radius = restRadius + (BACK_RADIUS_DP * density - restRadius) * k
