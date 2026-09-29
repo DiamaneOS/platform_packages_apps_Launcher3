@@ -92,7 +92,7 @@ class TallyKeycapLed(context: Context) {
         private const val LARGE_FROM_DP = 52f
 
         /**
-         * [label] with the words of a lit LED ("Active" for live, "Failed" for failed), or [label]
+         * [label] with the words of a lit LED ("Active" for live, "Error" for failed), or [label]
          * alone when the LED is dark.
          */
         @JvmStatic

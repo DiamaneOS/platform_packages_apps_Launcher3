@@ -17,12 +17,14 @@
 <!-- DiamaneOS Tally: Android's own translations of the same English words with the same meaning,
      copied unchanged: tally_key_with_state from Launcher3's
      task_contents_description_with_remaining_time ("%1$s, %2$s"), tally_more from SystemUI's
-     privacy_chip_apps_using_sensor_suffix ("+%1$d more") and tally_more_show from Settings'
-     condition_expand_show ("Show"). The other Tally strings are English only for now. -->
+     privacy_chip_apps_using_sensor_suffix ("+%1$d more"), tally_more_show from Settings'
+     condition_expand_show ("Show") and tally_state_failed from the framework's
+     error_message_title ("Error"). The other Tally strings are English only for now. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="tally_key_with_state">"<xliff:g id="TASK_DESCRIPTION">%1$s</xliff:g> <xliff:g id="REMAINING_TIME">%2$s</xliff:g>"</string>
     <plurals name="tally_more">
         <item quantity="other">"ja veel <xliff:g id="COUNT">%1$d</xliff:g>"</item>
     </plurals>
     <string name="tally_more_show">"Kuva"</string>
+    <string name="tally_state_failed">"Viga"</string>
 </resources>
