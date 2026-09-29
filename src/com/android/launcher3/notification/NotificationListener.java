@@ -37,14 +37,19 @@ import androidx.annotation.WorkerThread;
 
 import com.android.launcher3.dagger.LauncherComponentProvider;
 import com.android.launcher3.dot.DotInfo;
+import com.android.launcher3.pm.UserCache;
+import com.android.launcher3.tally.live.TallyAppLabels;
+import com.android.launcher3.tally.live.TallyLiveTracker;
 import com.android.launcher3.util.PackageUserKey;
 import com.android.launcher3.util.SafeCloseable;
 import com.android.launcher3.util.SettingsCache;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -80,6 +85,11 @@ public class NotificationListener extends NotificationListenerService {
     private SettingsCache mSettingsCache;
     private @Nullable SafeCloseable mSettingCacheSafeCloseable;
 
+    // DiamaneOS Tally: live and failed apps, from the same notifications (worker thread only).
+    private @Nullable TallyLiveTracker mTallyLive;
+    private @Nullable TallyAppLabels mTallyLabels;
+    private final Ranking mTallyRanking = new Ranking();
+
     public NotificationListener() {
         mWorkerHandler = new Handler(UI_HELPER_EXECUTOR.getLooper(), this::handleWorkerMessage);
     }
@@ -93,6 +103,7 @@ public class NotificationListener extends NotificationListenerService {
                 } else {
                     handleNotificationRemoved(sbn);
                 }
+                dispatchTallyUpdate(tallyLive().onPosted(tallyInput(sbn)));
                 return true;
             }
             case MSG_NOTIFICATION_REMOVED: {
@@ -107,20 +118,31 @@ public class NotificationListener extends NotificationListenerService {
                 }
 
                 handleNotificationRemoved(sbn);
+                dispatchTallyUpdate(tallyLive().onRemoved(sbn.getKey()));
                 return true;
             }
-            case MSG_NOTIFICATION_FULL_REFRESH:
+            case MSG_NOTIFICATION_FULL_REFRESH: {
+                StatusBarNotification[] active = mIsConnected
+                        ? getActiveNotificationsSafely(null) : new StatusBarNotification[0];
                 handleNotificationFullRefresh(mIsConnected
-                        ? Arrays.stream(getActiveNotificationsSafely(null))
+                        ? Arrays.stream(active)
                             .filter(this::notificationIsValidForUI)
                             .toList()
                         : emptyList());
+                if (mTallyLabels != null) {
+                    mTallyLabels.clear();
+                }
+                dispatchTallyUpdate(tallyLive().onAll(tallyInputs(active)));
                 return true;
+            }
             case MSG_RANKING_UPDATE: {
                 String[] keys = ((RankingMap) message.obj).getOrderedKeys();
-                for (StatusBarNotification sbn : getActiveNotificationsSafely(keys)) {
+                StatusBarNotification[] ranked = getActiveNotificationsSafely(keys);
+                for (StatusBarNotification sbn : ranked) {
                     updateGroupKeyIfNecessary(sbn);
                 }
+                // Channels, importance and dot settings may have changed.
+                dispatchTallyUpdate(tallyLive().onAll(tallyInputs(ranked)));
                 return true;
             }
         }
@@ -174,6 +196,40 @@ public class NotificationListener extends NotificationListenerService {
         if (!updatedDots.isEmpty()) {
             dispatchUpdate(updatedDots::containsKey);
         }
+    }
+
+    /** DiamaneOS Tally: redraws the keys of the apps whose LED changed. */
+    private void dispatchTallyUpdate(Set<PackageUserKey> changedLeds) {
+        if (!changedLeds.isEmpty()) {
+            dispatchUpdate(changedLeds::contains);
+        }
+    }
+
+    private TallyLiveTracker tallyLive() {
+        if (mTallyLive == null) {
+            TallyAppLabels labels = new TallyAppLabels(this);
+            UserCache userCache = UserCache.getInstance(this);
+            mTallyLabels = labels;
+            mTallyLive = new TallyLiveTracker(
+                    LauncherComponentProvider.get(this).getNotificationRepository().getLive(),
+                    labels::labelOf,
+                    key -> key.mUser != null && userCache.getUserInfo(key.mUser).isPrivate());
+        }
+        return mTallyLive;
+    }
+
+    private TallyLiveTracker.Input tallyInput(StatusBarNotification sbn) {
+        RankingMap rankings = getCurrentRanking();
+        boolean ranked = rankings != null && rankings.getRanking(sbn.getKey(), mTallyRanking);
+        return TallyLiveTracker.Input.from(sbn, ranked ? mTallyRanking : null);
+    }
+
+    private List<TallyLiveTracker.Input> tallyInputs(StatusBarNotification[] notifications) {
+        List<TallyLiveTracker.Input> inputs = new ArrayList<>(notifications.length);
+        for (StatusBarNotification sbn : notifications) {
+            inputs.add(tallyInput(sbn));
+        }
+        return inputs;
     }
 
     private void dispatchUpdate(Predicate<PackageUserKey> updatedDots) {

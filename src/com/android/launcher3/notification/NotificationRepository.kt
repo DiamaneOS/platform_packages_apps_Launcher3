@@ -18,6 +18,7 @@ package com.android.launcher3.notification
 
 import com.android.launcher3.dagger.LauncherAppSingleton
 import com.android.launcher3.dot.DotInfo
+import com.android.launcher3.tally.live.TallyLiveRepository
 import com.android.launcher3.util.MutableListenableStream
 import com.android.launcher3.util.PackageUserKey
 import java.util.function.Predicate
@@ -33,6 +34,12 @@ class NotificationRepository @Inject constructor() {
     private val _updateStream = MutableListenableStream<Predicate<PackageUserKey>>()
     /** Update events on [packageUserToDotInfos] */
     val updateStream = _updateStream.asListenable()
+
+    /**
+     * DiamaneOS Tally: what is live or failed, from the same notifications (the keycap LEDs and
+     * Home's tallies row). An app whose LED changes is also sent on [updateStream].
+     */
+    val live = TallyLiveRepository()
 
     /** Dispatches a new notifation data update */
     fun dispatchUpdate(newValue: Map<PackageUserKey, DotInfo>, update: Predicate<PackageUserKey>) {
