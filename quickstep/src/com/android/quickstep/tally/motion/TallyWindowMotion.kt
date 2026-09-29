@@ -79,7 +79,10 @@ object TallyWindowMotion {
     const val HOME_OVERSCALE = 0.08f
     /** Return to Home: the window's give when the finger goes below where it started. */
     const val DOWN_RUBBER_DP = 24f
-    /** The rubber band's coefficient (`tally_rubber_band_coefficient`). */
+    /**
+     * The rubber band's coefficient, the token library's `tally_rubber_band_coefficient`, which
+     * Launcher reads (see [homeRect]); this copy is for tests and the harness.
+     */
     const val RUBBER = 0.35f
 
     /**
@@ -120,7 +123,10 @@ object TallyWindowMotion {
     /** ... and fades out at this rate over the flight (gone at 1 / 1.2 of the way). */
     const val FADE_RATE = 1.2f
 
-    /** A key's neighbours part by this much... */
+    /**
+     * A key's neighbours part by this much (the token library's `tally_grid_parting`, which
+     * Launcher reads; this copy is for tests and the harness)...
+     */
     const val PART_DP = 8f
     /** ... when their centres are within this many units of the key's centre... */
     const val PART_REACH = 1.6f
@@ -148,7 +154,8 @@ object TallyWindowMotion {
      * to [HOME_SCALE] over [HOME_TRAVEL_DP], its bottom edge follows the finger 1:1, it follows the
      * finger sideways at [HOME_SIDEWAYS], and its corners go from [restRadius] to [HOME_RADIUS_DP].
      * Past [HOME_TRAVEL_DP] the scale gives way by at most [HOME_OVERSCALE], and below the start
-     * the window gives way by at most [DOWN_RUBBER_DP].
+     * the window gives way by at most [DOWN_RUBBER_DP], both with the rubber band's
+     * [rubberCoefficient] (`tally_rubber_band_coefficient`).
      *
      * The prototype passes the travel past 360 dp to its rubber band in dp against a range in scale
      * (`H.rubber(up - 360, 0.08, 0.35)`), which drops the scale by 0.065 in the first dp. The
@@ -164,6 +171,7 @@ object TallyWindowMotion {
         density: Float,
         restRadius: Float,
         out: TallyWindowRect,
+        rubberCoefficient: Float = RUBBER,
     ): TallyWindowRect {
         val up = max(0f, upPx)
         val travel = HOME_TRAVEL_DP * density
@@ -171,11 +179,11 @@ object TallyWindowMotion {
         var scale = 1f + (HOME_SCALE - 1f) * k
         if (up > travel) {
             val further = (up - travel) / travel * (1f - HOME_SCALE)
-            scale -= rubber(further, HOME_OVERSCALE)
+            scale -= rubber(further, HOME_OVERSCALE, rubberCoefficient)
         }
         val w = screenW * scale
         val h = screenH * scale
-        val down = if (upPx < 0f) rubber(-upPx, DOWN_RUBBER_DP * density) else 0f
+        val down = if (upPx < 0f) rubber(-upPx, DOWN_RUBBER_DP * density, rubberCoefficient) else 0f
         val bottom = screenH - up + down
         val left = screenW / 2f + HOME_SIDEWAYS * sidewaysPx - w / 2f
         out.rect.set(left, bottom - h, left + w, bottom)
