@@ -70,6 +70,10 @@ class TallySpringTest {
     fun theTapImpulse_isPointSixRootKTimesTheDistance() {
         val stone = TallySpring(TallySpring.STONE)
         assertThat(stone.impulse(8.0)).isWithin(1e-9).of(0.6 * sqrt(700.0) * 8.0)
+        // The token library's factor, when it is given (tally_motion_tap_impulse).
+        assertThat(TallySpring(TallySpring.STONE, 0.5).impulse(8.0))
+            .isWithin(1e-9)
+            .of(0.5 * sqrt(700.0) * 8.0)
     }
 
     @Test

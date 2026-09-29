@@ -36,7 +36,9 @@ import kotlin.math.sqrt
  * Remove animations ends it at once), and so it plugs into the remote-animation Animators that
  * Launcher already hands to the window manager.
  */
-class TallySpring(val stiffness: Float) {
+class TallySpring
+@JvmOverloads
+constructor(val stiffness: Float, val tapImpulse: Double = TAP_IMPULSE) {
     /** The natural frequency, `√stiffness`, in radians per second. */
     val omega: Double = sqrt(stiffness.toDouble())
 
@@ -50,10 +52,10 @@ class TallySpring(val stiffness: Float) {
 
     /**
      * The tap impulse, the prototype's `impulse: true`: a move started by a tap begins towards its
-     * target at `0.6 · √k · distance`, so the first 120 Hz frame visibly moves and a damping ratio
-     * of 1 still cannot overshoot.
+     * target at [tapImpulse] (0.6) · √k · distance, so the first 120 Hz frame visibly moves and a
+     * damping ratio of 1 still cannot overshoot.
      */
-    fun impulse(distance: Double): Double = TAP_IMPULSE * omega * distance
+    fun impulse(distance: Double): Double = tapImpulse * omega * distance
 
     /**
      * When a released move first reaches its target: a critically damped spring released towards
@@ -158,16 +160,21 @@ class TallySpring(val stiffness: Float) {
         const val FILL = 1600f
 
         /**
-         * The springs as the token library has them (`tally_spring_<name>_stiffness`; each damping
-         * ratio there is 1). The constants above are the same values, for tests and the harness.
+         * The springs as the token library has them (`tally_spring_<name>_stiffness`, each damping
+         * ratio there is 1, and `tally_motion_tap_impulse`), as WM Shell's TallyMotionTokens reads
+         * them, so the two cannot drift. The constants above are the same values, for tests and the
+         * harness.
          */
-        @JvmStatic
-        fun slab(res: Resources) = TallySpring(res.getFloat(R.dimen.tally_spring_slab_stiffness))
+        @JvmStatic fun slab(res: Resources) = of(res, R.dimen.tally_spring_slab_stiffness)
 
-        @JvmStatic
-        fun stone(res: Resources) = TallySpring(res.getFloat(R.dimen.tally_spring_stone_stiffness))
+        @JvmStatic fun stone(res: Resources) = of(res, R.dimen.tally_spring_stone_stiffness)
 
-        @JvmStatic
-        fun fill(res: Resources) = TallySpring(res.getFloat(R.dimen.tally_spring_fill_stiffness))
+        @JvmStatic fun fill(res: Resources) = of(res, R.dimen.tally_spring_fill_stiffness)
+
+        private fun of(res: Resources, stiffness: Int) =
+            TallySpring(
+                res.getFloat(stiffness),
+                res.getFloat(R.dimen.tally_motion_tap_impulse).toDouble(),
+            )
     }
 }
