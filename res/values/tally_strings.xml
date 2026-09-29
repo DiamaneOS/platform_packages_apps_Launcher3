@@ -21,11 +21,12 @@
     <string name="tally_keycap_shape_title">Keycap</string>
 
     <!-- The state word of an app key whose LED shows a failure (the app posted an error), read by
-         screen readers after the app's name. The running state uses app_running_state_description.
+         screen readers after the app's name: Android's own word, the framework's
+         error_message_title. The running state uses app_running_state_description.
          [CHAR LIMIT=30] -->
-    <string name="tally_state_failed">Failed</string>
+    <string name="tally_state_failed">Error</string>
     <!-- An app key's accessibility label with its LED's state word: the app's name, then the state.
-         For example "Files, Failed" or "Clock, Active". -->
+         For example "Files, Error" or "Clock, Active". -->
     <string name="tally_key_with_state"><xliff:g id="app_name" example="Clock">%1$s</xliff:g>, <xliff:g id="state" example="Active">%2$s</xliff:g></string>
 
     <!-- Home's tallies band: the key that stands for the live or failed things not shown, which
