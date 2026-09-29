@@ -57,4 +57,7 @@
         android:layout_gravity="bottom|center_horizontal"
         android:visibility="gone" />
 
+    <!-- Tally: "Still running · Stop", under the action keys. -->
+    <include layout="@layout/tally_recents_still_running" />
+
 </com.android.quickstep.views.OverviewActionsView>

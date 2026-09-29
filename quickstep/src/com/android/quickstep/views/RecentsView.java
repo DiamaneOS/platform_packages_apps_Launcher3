@@ -201,6 +201,7 @@ import com.android.quickstep.split.SplitAnimationController.Companion.SplitAnimI
 import com.android.quickstep.split.SplitAnimationTimings;
 import com.android.quickstep.split.SplitSelectStateController;
 import com.android.quickstep.tally.TallyStillRunning;
+import com.android.quickstep.tally.TallyStillRunningView;
 import com.android.quickstep.util.ActiveGestureLog;
 import com.android.quickstep.util.ActiveGestureProtoLogProxy;
 import com.android.quickstep.util.AnimUtils;
@@ -1047,6 +1048,10 @@ public abstract class RecentsView<
         mActionsView.updateHiddenFlags(HIDDEN_NO_TASKS, !hasTaskViews());
         // Update flags for 1p/3p launchers
         mActionsView.updateFor3pLauncher(mIs3PLauncher);
+        TallyStillRunningView stillRunning = actionsView.findViewById(R.id.tally_still_running);
+        if (stillRunning != null) {
+            stillRunning.setController(mTallyStillRunning);
+        }
 
         // RecentsViewContainer provided dependencies.
         mSplitSelectStateController = splitController;
