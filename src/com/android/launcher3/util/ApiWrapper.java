@@ -19,6 +19,7 @@ package com.android.launcher3.util;
 import static com.android.launcher3.LauncherConstants.ActivityCodes.REQUEST_HOME_ROLE;
 
 import android.app.ActivityOptions;
+import android.app.NotificationChannel;
 import android.app.Person;
 import android.app.role.RoleManager;
 import android.content.Context;
@@ -184,6 +185,16 @@ public class ApiWrapper {
      * Quickstep, which asks SystemUI through its proxy; nothing here.
      */
     public void openNotificationShade() { }
+
+    /**
+     * Whether the system locks a notification channel's importance for a critical device function
+     * (the default dialer or emergency app), which, for a channel that is not always blockable,
+     * keeps its notifications in the shade under Do Not Disturb (DiamaneOS Tally: Home's LEDs and
+     * tallies follow what the shade shows). Overridden in Quickstep, which can read it; false here.
+     */
+    public boolean isImportanceLockedByCriticalDeviceFunction(NotificationChannel channel) {
+        return false;
+    }
 
     /** Captures a snapshot of the host content as a bitmap */
     public Bitmap captureSnapshot(SurfaceControlViewHost host, int width, int height) {

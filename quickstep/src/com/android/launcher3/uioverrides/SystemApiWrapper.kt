@@ -16,6 +16,7 @@
 package com.android.launcher3.uioverrides
 
 import android.app.ActivityOptions
+import android.app.NotificationChannel
 import android.app.PendingIntent
 import android.app.role.RoleManager
 import android.content.Context
@@ -177,6 +178,10 @@ open class SystemApiWrapper @Inject constructor(@ApplicationContext context: Con
     // DiamaneOS Tally: Home's "+n more" tally opens the shade, as a pull down on Home does.
     override fun openNotificationShade() =
         SystemUiProxy.INSTANCE[mContext].expandNotificationPanel()
+
+    // DiamaneOS Tally: Home's LEDs and tallies follow what the shade shows under Do Not Disturb.
+    override fun isImportanceLockedByCriticalDeviceFunction(channel: NotificationChannel) =
+        channel.isImportanceLockedByCriticalDeviceFunction
 
     override fun captureSnapshot(host: SurfaceControlViewHost, width: Int, height: Int): Bitmap =
         ScreenCaptureInternal.captureLayers(
