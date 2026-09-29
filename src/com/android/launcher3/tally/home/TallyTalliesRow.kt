@@ -17,7 +17,9 @@
 package com.android.launcher3.tally.home
 
 import android.content.Context
+import android.graphics.Canvas
 import android.graphics.Outline
+import android.graphics.Paint
 import android.icu.text.ListFormatter
 import android.icu.text.NumberFormat
 import android.os.SystemClock
@@ -54,6 +56,13 @@ class TallyTalliesRow(context: Context) : ViewGroup(context) {
 
     private val divider = resources.getDimensionPixelSize(R.dimen.tally_stroke_hairline)
     private val radius = resources.getDimension(R.dimen.tally_radius_m)
+    /** The band's border, as wide as the dividers, drawn over the keys along the whole outline. */
+    private val borderPaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = divider.toFloat()
+            color = context.getColor(R.color.tally_outline_variant)
+        }
     private val cells = arrayOf(Cell(context), Cell(context))
     private var shown = 0
     private var stacked = false
@@ -143,6 +152,22 @@ class TallyTalliesRow(context: Context) : ViewGroup(context) {
                 x += c.measuredWidth + divider
             }
         }
+    }
+
+    override fun dispatchDraw(canvas: Canvas) {
+        super.dispatchDraw(canvas)
+        // The background shows as the dividers and the straight edges, but the keys are square
+        // and reach into the rounded corners: the border is drawn over them, along the outline.
+        val inset = divider / 2f
+        canvas.drawRoundRect(
+            inset,
+            inset,
+            width - inset,
+            height - inset,
+            radius - inset,
+            radius - inset,
+            borderPaint,
+        )
     }
 
     private fun exactly(size: Int) = MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY)
