@@ -41,4 +41,9 @@
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> more: <xliff:g id="names" example="Files">%2$s</xliff:g>. Show in the notification shade</item>
         <item quantity="other"><xliff:g id="count" example="2">%1$d</xliff:g> more: <xliff:g id="names" example="Files and Recorder">%2$s</xliff:g>. Show in the notification shade</item>
     </plurals>
+
+    <!-- All apps' letter rail: a screen reader's label for one slot, which jumps to the apps whose
+         names start with its letters. The letters are joined as "G or K" (or "T, V, or W") in the
+         language's own way. -->
+    <string name="tally_rail_slot">Apps starting with <xliff:g id="letters" example="G or K">%1$s</xliff:g></string>
 </resources>
