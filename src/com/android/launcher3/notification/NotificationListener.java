@@ -219,7 +219,15 @@ public class NotificationListener extends NotificationListenerService {
                         if (key.mUser == null) {
                             return TallyLiveTracker.Profile.PERSONAL;
                         }
-                        UserIconInfo info = userCache.getUserInfo(key.mUser);
+                        // A user the cache does not know yet (a profile being added, or a failed
+                        // read) shows nothing, as the private space, rather than falling back to
+                        // the main user's name and readout.
+                        UserCache.CachedUserInfo cached =
+                                userCache.getUserManagerState().getCachedInfoOrNull(key.mUser);
+                        if (cached == null) {
+                            return TallyLiveTracker.Profile.PRIVATE;
+                        }
+                        UserIconInfo info = cached.getIconInfo();
                         return TallyLiveTracker.Profile.of(info.isWork(), info.isPrivate());
                     });
         }
