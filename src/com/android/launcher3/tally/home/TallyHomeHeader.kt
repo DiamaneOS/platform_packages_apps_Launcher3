@@ -16,12 +16,14 @@
 
 package com.android.launcher3.tally.home
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.pm.LauncherApps
 import android.graphics.Rect
 import android.os.SystemClock
 import android.text.format.DateFormat
 import android.util.AttributeSet
+import android.util.Log
 import android.util.TypedValue
 import android.widget.FrameLayout
 import android.widget.TextClock
@@ -154,22 +156,42 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
     }
 
     private fun open(item: TallyLiveItem?) {
-        val user = item?.app?.mUser
-        val launcherApps = context.getSystemService(LauncherApps::class.java)
-        val activity =
-            if (user == null || launcherApps == null) null
-            else launcherApps.getActivityList(item.app.mPackageName, user).firstOrNull()
-        if (activity == null || launcherApps == null || user == null) {
-            // "+n more", or a system service with no app on Home: the shade has its words.
+        // "+n more", a system service with no app on Home, or an app that went or was disabled
+        // since the band last changed: the shade has its words.
+        if (item == null || !startApp(item)) {
             ApiWrapper.INSTANCE[context].openNotificationShade()
-            return
         }
-        val bounds = Rect()
-        tallies.getGlobalVisibleRect(bounds)
-        launcherApps.startMainActivity(activity.componentName, user, bounds, null)
+    }
+
+    /** Starts [item]'s app; returns whether it did. */
+    private fun startApp(item: TallyLiveItem): Boolean {
+        val user = item.app.mUser ?: return false
+        val launcherApps = context.getSystemService(LauncherApps::class.java) ?: return false
+        try {
+            val activity =
+                launcherApps.getActivityList(item.app.mPackageName, user).firstOrNull()
+                    ?: return false
+            val bounds = Rect()
+            tallies.getGlobalVisibleRect(bounds)
+            launcherApps.startMainActivity(activity.componentName, user, bounds, null)
+            return true
+        } catch (e: ActivityNotFoundException) {
+            onStartFailed(e)
+        } catch (e: SecurityException) {
+            onStartFailed(e)
+        } catch (e: IllegalStateException) {
+            onStartFailed(e)
+        }
+        return false
+    }
+
+    /** Logs a failed start by its kind only: the message would name the app. */
+    private fun onStartFailed(e: RuntimeException) {
+        Log.w(TAG, "Could not open a tally's app (${e.javaClass.simpleName}); opening the shade")
     }
 
     companion object {
+        private const val TAG = "TallyHomeHeader"
         /** The date: 20 sp at 100 %, on a 28 dp line, 24 dp from the start. */
         private const val DATE_SP = 20f
         private const val DATE_LINE_DP = 28f
