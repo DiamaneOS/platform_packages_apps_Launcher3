@@ -916,11 +916,17 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
 
         if (mTallyMotion.appliesToLaunch(appSurfaces)) {
             // DiamaneOS Tally: the window grows out of its key on the slab spring.
-            return new TallyLaunch(mTallyMotion, mLauncher, v, appSurfaces, openingSurfaces,
-                    windowTargetBounds, launcherIconBounds, dragLayerBounds[0],
+            Animator tallyLaunch = new TallyLaunch(mTallyMotion, mLauncher, v, appSurfaces,
+                    openingSurfaces, windowTargetBounds, launcherIconBounds, dragLayerBounds[0],
                     dragLayerBounds[1], hasSplashScreen, floatingView, surfaceApplier,
                     navBarSurface, launcherClosing,
                     appTargetsAreTranslucent ? 0 : mMaxShadowRadius).animator();
+            if (v instanceof BubbleTextView btv) {
+                // The key stops showing pressed once its window is open, as in stock's launch.
+                tallyLaunch.addListener(
+                        AnimatorListeners.forEndCallback(() -> btv.setStayPressed(false)));
+            }
+            return tallyLaunch;
         }
 
         AnimOpenProperties prop = new AnimOpenProperties(mLauncher.getResources(),
