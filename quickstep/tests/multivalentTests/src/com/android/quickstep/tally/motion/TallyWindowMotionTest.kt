@@ -97,17 +97,32 @@ class TallyWindowMotionTest {
 
     @Test
     fun backRect_atFullProgress_isAt09MovedWithTheFinger() {
-        TallyWindowMotion.backRect(1f, true, 400f * D, W, H, D, R, out)
+        TallyWindowMotion.backRect(1f, 1, 400f * D, W, H, D, R, out)
         assertThat(out.rect.width()).isWithin(0.5f).of(W * 0.9f)
         // From the left edge the window moves 8 dp right, away from the edge, with the finger.
         assertThat(out.rect.centerX() - W / 2f).isWithin(0.5f).of(8f * D)
         // A quarter of 400 dp is 100 dp, held to 40 dp.
         assertThat(out.rect.centerY() - H / 2f).isWithin(0.5f).of(40f * D)
         assertThat(out.radius).isWithin(0.01f).of(20f * D)
-        TallyWindowMotion.backRect(0.5f, false, -40f * D, W, H, D, R, out)
+        TallyWindowMotion.backRect(0.5f, -1, -40f * D, W, H, D, R, out)
         assertThat(out.rect.centerX() - W / 2f).isWithin(0.5f).of(-4f * D)
         assertThat(out.rect.centerY() - H / 2f).isWithin(0.5f).of(-5f * D)
         assertThat(out.rect.width()).isWithin(0.5f).of(W * 0.95f)
+        // A Back button's window does not move sideways.
+        TallyWindowMotion.backRect(1f, 0, 0f, W, H, D, R, out)
+        assertThat(out.rect.centerX()).isWithin(0.5f).of(W / 2f)
+        assertThat(out.rect.centerY()).isWithin(0.5f).of(H / 2f)
+    }
+
+    @Test
+    fun backProgress_isTheFingersTravelOver160dp() {
+        // The platform's progress is the travel over the display's width (372 dp on the FP6).
+        val at80dp = 80f / 372f
+        assertThat(TallyWindowMotion.backProgress(at80dp, true, W, D)).isWithin(1e-5f).of(0.5f)
+        assertThat(TallyWindowMotion.backProgress(160f / 372f, true, W, D)).isWithin(1e-5f).of(1f)
+        assertThat(TallyWindowMotion.backProgress(0.9f, true, W, D)).isEqualTo(1f)
+        // A Back button's progress is taken as it is.
+        assertThat(TallyWindowMotion.backProgress(at80dp, false, W, D)).isWithin(1e-6f).of(at80dp)
     }
 
     @Test
