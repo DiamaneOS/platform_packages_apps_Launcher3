@@ -1802,6 +1802,9 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                         finalFloatingIconView.update(tallyClose.getIconAlpha(),
                                 tallyClose.icon(currentRectF), progress, windowAlphaThreshold,
                                 tallyClose.getIconRadius(), false);
+                        // DiamaneOS Tally: the key shows only inside the window's rounded rect.
+                        finalFloatingIconView.setWindowClip(currentRectF,
+                                tallyClose.getWindow().getRadius());
                         return;
                     }
                     // We want the icon alpha to be 1 once this threshold is met, so that it can be
