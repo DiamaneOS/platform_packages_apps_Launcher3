@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-     Copyright (C) 2018 The Android Open Source Project
+     Copyright (C) 2026 The DiamaneOS Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -14,14 +14,12 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<com.android.quickstep.views.ClearAllButton
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:launcher="http://schemas.android.com/apk/res-auto"
-    android:theme="?attr/overviewActionButtonStyle"
-    android:id="@+id/clear_all"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:textAlignment="center"
-    android:text="@string/recents_clear_all"
-    launcher:focusBorderColor="@color/tally_accent"
-    android:textSize="@dimen/tally_recents_key_text_size" />
+<!-- Recents' keys in Tally (the OverviewActionButton style: the action keys and Clear all). The
+     token library gives the key's shape, colours and type; these two are the prototype's own for
+     Recents' smaller keys (design/prototypes/tally/app.css, .rc-keys .key-tonal). -->
+<resources>
+    <!-- 13 sp words, so three keys fit across the phone. -->
+    <dimen name="tally_recents_key_text_size">13sp</dimen>
+    <!-- 6 dp between a key's icon and its words. -->
+    <dimen name="tally_recents_key_icon_gap">6dp</dimen>
+</resources>

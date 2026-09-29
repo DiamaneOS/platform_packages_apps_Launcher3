@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-     Copyright (C) 2018 The Android Open Source Project
+     Copyright (C) 2026 The DiamaneOS Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -14,14 +14,9 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<com.android.quickstep.views.ClearAllButton
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:launcher="http://schemas.android.com/apk/res-auto"
-    android:theme="?attr/overviewActionButtonStyle"
-    android:id="@+id/clear_all"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:textAlignment="center"
-    android:text="@string/recents_clear_all"
-    launcher:focusBorderColor="@color/tally_accent"
-    android:textSize="@dimen/tally_recents_key_text_size" />
+<!-- Tally: the words and icons of Recents' keys, in ink; faded as stock's while a key is off. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:alpha="?android:disabledAlpha" android:color="@color/tally_ink"
+        android:state_enabled="false" />
+    <item android:color="@color/tally_ink" />
+</selector>
