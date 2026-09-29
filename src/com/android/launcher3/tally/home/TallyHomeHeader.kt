@@ -48,6 +48,10 @@ import kotlin.math.roundToInt
  * Home's state changes (WorkspaceStateTransitionAnimation sets its alpha). On a phone held sideways
  * or a tablet, where Home keeps stock's layout, it shows nothing.
  *
+ * The band comes off Home as a widget does ([TallyHomeLift]) and comes back in Home settings
+ * ([TallyHomeItem.TALLIES]); the date stays. Taken off, the band only hides: the notifications
+ * behind it are read as before, for the keys' LEDs.
+ *
  * The band shows what [com.android.launcher3.tally.live.TallyLiveRepository] publishes: things live
  * or failed now, read from the dots' notification listener. A tap on one opens its app (or the
  * notification shade for a system service with no app on Home); "+n more" opens the shade.
@@ -82,6 +86,8 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
     private val tallies = TallyTalliesRow(context)
     private var rowSubscription: SafeCloseable? = null
     private var applies = true
+    /** Whether the band is on Home: Tally's layout applies and the band's setting is on. */
+    private var bandOn = true
     private var items: List<TallyLiveItem> = emptyList()
     private var shownOnScreen = false
     private val tick = Runnable { onTick() }
@@ -94,6 +100,8 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
         addView(date, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
         addView(tallies, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         tallies.onTap = ::open
+        tallies.lift =
+            TallyHomeLift(tallies, TallyHomeItem.TALLIES, { bandOn }) { tallies.setLifted(it) }
     }
 
     override fun setInsets(insets: Rect) {
@@ -102,7 +110,10 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
         val properties = dp.deviceProperties
         applies =
             TallyHomeLayout.appliesTo(properties, dp.isVerticalBarLayout, dp.inv.isFixedLandscape)
+        bandOn = applies && TallyHomeItem.TALLIES.isShown(context)
         date.visibility = if (applies) VISIBLE else GONE
+        // Home was laid out again (the band came off or back, among others): nothing is lifted.
+        tallies.setLifted(false)
         show(items)
         if (!applies) return
         val rhythm =
@@ -143,7 +154,7 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
 
     private fun show(newItems: List<TallyLiveItem>) {
         items = newItems
-        tallies.setItems(if (applies) newItems else emptyList())
+        tallies.setItems(if (bandOn) newItems else emptyList())
         onTick()
     }
 

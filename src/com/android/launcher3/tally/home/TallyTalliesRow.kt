@@ -20,24 +20,33 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Outline
 import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.Rect
 import android.icu.text.ListFormatter
 import android.icu.text.NumberFormat
+import android.os.Bundle
 import android.os.SystemClock
 import android.text.TextUtils
 import android.text.format.DateUtils
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewOutlineProvider
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.android.launcher3.R
+import com.android.launcher3.dragndrop.DraggableView
+import com.android.launcher3.popup.Poppable
+import com.android.launcher3.popup.PoppableType
 import com.android.launcher3.tally.keycap.TallyKeycapLed
 import com.android.launcher3.tally.lamp.TallyLampSize
 import com.android.launcher3.tally.lamp.TallyLampState
 import com.android.launcher3.tally.lamp.TallyLampView
 import com.android.launcher3.tally.live.TallyLiveItem
 import com.android.launcher3.tally.live.TallyLiveRules
+import com.android.launcher3.util.SafeCloseable
 import kotlin.math.ceil
 import kotlin.math.max
 
@@ -48,11 +57,23 @@ import kotlin.math.max
  * there are more than two, "+n more", which opens the notification shade. Two keys sit side by side
  * (one alone spans the row); from 150 % text they stack. With nothing live the band is empty, and
  * Home keeps its place, so the grid never moves.
+ *
+ * On Home, the band comes off as a widget does ([lift], [TallyHomeLift]): a long press anywhere on
+ * it, and for TalkBack, the band's own node (named Tallies) with a widget's Remove action.
  */
-class TallyTalliesRow(context: Context) : ViewGroup(context) {
+class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Poppable {
 
     /** Called with a tapped thing, or null for "+n more". */
     var onTap: ((TallyLiveItem?) -> Unit)? = null
+
+    /** How the band comes off Home, or null where it cannot (a preview). */
+    var lift: TallyHomeLift? = null
+        set(value) {
+            field = value
+            isScreenReaderFocusable = value != null
+            contentDescription =
+                if (value != null) context.getString(R.string.tally_home_tallies) else null
+        }
 
     private val divider = resources.getDimensionPixelSize(R.dimen.tally_stroke_hairline)
     private val radius = resources.getDimension(R.dimen.tally_radius_m)
@@ -67,6 +88,11 @@ class TallyTalliesRow(context: Context) : ViewGroup(context) {
     private var shown = 0
     private var stacked = false
     private var items: List<TallyLiveItem> = emptyList()
+    /** Picked up by a long press: hidden under the drag's image. */
+    private var lifted = false
+    /** Being drawn into the drag's image, which Launcher draws without the outline's clip. */
+    private var drawingDragImage = false
+    private val outlinePath = Path()
 
     init {
         setBackgroundColor(context.getColor(R.color.tally_outline_variant))
@@ -94,8 +120,23 @@ class TallyTalliesRow(context: Context) : ViewGroup(context) {
             cells[0].bindItem(newItems[0])
             cells[1].bindMore(newItems.subList(1, newItems.size))
         }
-        visibility = if (shown == 0) GONE else VISIBLE
+        updateVisibility()
         requestLayout()
+    }
+
+    /** Hides the band while it is picked up ([TallyHomeLift]). */
+    fun setLifted(lifted: Boolean) {
+        this.lifted = lifted
+        updateVisibility()
+    }
+
+    private fun updateVisibility() {
+        visibility =
+            when {
+                shown == 0 -> GONE
+                lifted -> INVISIBLE
+                else -> VISIBLE
+            }
     }
 
     /** Updates the readouts (a chronometer's time); returns whether one is counting. */
@@ -169,6 +210,68 @@ class TallyTalliesRow(context: Context) : ViewGroup(context) {
             borderPaint,
         )
     }
+
+    override fun draw(canvas: Canvas) {
+        if (!drawingDragImage) {
+            super.draw(canvas)
+            return
+        }
+        outlinePath.reset()
+        outlinePath.addRoundRect(
+            0f,
+            0f,
+            width.toFloat(),
+            height.toFloat(),
+            radius,
+            radius,
+            Path.Direction.CW,
+        )
+        val count = canvas.save()
+        canvas.clipPath(outlinePath)
+        super.draw(canvas)
+        canvas.restoreToCount(count)
+    }
+
+    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
+        val lift = lift ?: return false
+        lift.onTouchEvent(ev)
+        return lift.hasPerformedLongPress()
+    }
+
+    override fun onTouchEvent(ev: MotionEvent): Boolean {
+        val lift = lift ?: return super.onTouchEvent(ev)
+        lift.onTouchEvent(ev)
+        // The dividers and the border are the band too: keep the touch for its long press.
+        return true
+    }
+
+    override fun cancelLongPress() {
+        super.cancelLongPress()
+        lift?.cancelLongPress()
+    }
+
+    override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
+        super.onInitializeAccessibilityNodeInfo(info)
+        lift?.onInitializeAccessibilityNodeInfo(info)
+    }
+
+    override fun performAccessibilityAction(action: Int, arguments: Bundle?): Boolean =
+        lift?.performAccessibilityAction(action) == true ||
+            super.performAccessibilityAction(action, arguments)
+
+    // DraggableView: lifted as a widget, the whole band.
+    override fun getViewType(): Int = DraggableView.DRAGGABLE_WIDGET
+
+    override fun getWorkspaceVisualDragBounds(bounds: Rect) {
+        bounds.set(0, 0, width, height)
+    }
+
+    override fun prepareDrawDragView(): SafeCloseable {
+        drawingDragImage = true
+        return SafeCloseable { drawingDragImage = false }
+    }
+
+    override fun getPoppableType(): PoppableType = PoppableType.WIDGET
 
     private fun exactly(size: Int) = MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY)
 
