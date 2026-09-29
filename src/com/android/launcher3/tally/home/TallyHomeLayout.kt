@@ -60,6 +60,12 @@ object TallyHomeLayout {
     /** App names, the date and the search text stop growing at this text scale. */
     const val TEXT_SCALE_CAP = 1.3f
 
+    /**
+     * The grid a phone starts on: 4 x 4, the prototype's four rows (100 dp at 828 dp). Five rows
+     * get 74 to 80 dp each, where a name at 150 % text no longer fits under its key.
+     */
+    const val STARTING_GRID = "4_by_4"
+
     const val HOME_KEY_DP = 56f
     const val ALL_APPS_KEY_DP = 52f
     const val LABEL_SP = 12f
@@ -91,6 +97,18 @@ object TallyHomeLayout {
         } else {
             val extra = max(0f, heightDp - CANVAS_HEIGHT_DP)
             Rhythm(64f, 104f, 184f + (extra * 0.1f).roundToInt(), 228f, 174f, 72f, 16f, 120f)
+        }
+
+    /**
+     * The grid Launcher starts from: [gridName] once one is chosen (by the user, a restore or an
+     * earlier start), else [STARTING_GRID] on a phone.
+     */
+    @JvmStatic
+    fun startingGridName(gridName: String?, deviceType: Int): String? =
+        if (gridName.isNullOrEmpty() && deviceType == InvariantDeviceProfile.TYPE_PHONE) {
+            STARTING_GRID
+        } else {
+            gridName
         }
 
     /** A key's visible size on the glass at [densityDpi], from its size at density 480. */
