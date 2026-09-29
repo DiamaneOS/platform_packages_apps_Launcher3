@@ -70,6 +70,11 @@ private constructor(
         // Delete old keys from preference, after the one-time migration is complete
         if (oldValue != null)
             prefs.remove(*(legacyThemeKeys.values + LEGACY_MONO_THEME_ICON).toTypedArray())
+        // DiamaneOS Tally: themed ("Minimal") keys until a style is chosen. Nothing is stored for
+        // this default; choosing Default stores "" and keeps the apps' own icons, and a legacy
+        // choice still migrates as above.
+        if (currentValue == null && !prefs.has(THEME_ID) && !prefs.has(LEGACY_MONO_THEME_ICON))
+            currentValue = MONO_THEME_VALUE
         themePref.dispatchValue(currentValue)
     }
 

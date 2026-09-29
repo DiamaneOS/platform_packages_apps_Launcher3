@@ -573,8 +573,8 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
         private const val SLOP_DP = 4f
 
         /**
-         * The padding All apps' A-Z lists keep at their end edge for the rail's column (px), or 0
-         * where the stock scroller is used.
+         * The padding All apps' A-Z lists keep at their end edge for the rail's column (px) while
+         * they can scroll (the rail shows only then), or 0 where the stock scroller is used.
          */
         @JvmStatic
         fun listEndPaddingPx(context: Context, dp: DeviceProfile): Int =
