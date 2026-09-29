@@ -153,6 +153,8 @@ import com.android.quickstep.LauncherBackAnimationController;
 import com.android.quickstep.SplitRecentsAnimUtils;
 import com.android.quickstep.SystemUiProxy;
 import com.android.quickstep.TaskViewUtils;
+import com.android.quickstep.tally.motion.TallyLaunch;
+import com.android.quickstep.tally.motion.TallyMotion;
 import com.android.quickstep.util.AlreadyStartedBackAnimState;
 import com.android.quickstep.util.AnimatorBackState;
 import com.android.quickstep.util.BackAnimState;
@@ -285,6 +287,8 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
     private boolean mIsLauncherAnimating = false;
 
     private LauncherBackAnimationController mBackAnimationController;
+    // DiamaneOS Tally: launch, return and Back to Home motion on an upright phone.
+    private final TallyMotion mTallyMotion;
     private final AnimatorListenerAdapter mForceInvisibleListener = new AnimatorListenerAdapter() {
         @Override
         public void onAnimationStart(Animator animation) {
@@ -310,6 +314,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
         mDragLayer = mLauncher.getDragLayer();
         mHandler = new Handler(Looper.getMainLooper());
         mDeviceProfile = mLauncher.getDeviceProfile();
+        mTallyMotion = new TallyMotion(launcher);
         mBackAnimationController = new LauncherBackAnimationController(mLauncher, this);
 
         Resources res = mLauncher.getResources();
@@ -375,6 +380,11 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
     @Override
     public void onDeviceProfileChanged(DeviceProfile dp) {
         mDeviceProfile = dp;
+    }
+
+    /** DiamaneOS Tally's motion for this Launcher. */
+    public TallyMotion getTallyMotion() {
+        return mTallyMotion;
     }
 
     private void startCrossDisplayMoveAnimation(TransitionInfo info, SurfaceControl.Transaction t,
@@ -629,7 +639,8 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                 v, appSurfaces, wallpaperSurfaces, nonAppSurfaces, launcherClosing);
         windowAnimator.setStartDelay(startDelay);
         anim.play(windowAnimator);
-        if (launcherClosing) {
+        // DiamaneOS Tally: Home stays in place and dims (TallyLaunch) instead of scaling down.
+        if (launcherClosing && !mTallyMotion.appliesToLaunch(appSurfaces)) {
             // Delay animation by a frame to avoid jank.
             Pair<AnimatorSet, Runnable> launcherContentAnimator =
                     getLauncherContentAnimator(true /* isAppOpening */, startDelay, false);
@@ -898,6 +909,15 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                 && mStartingWindowListener.consumeTaskLaunchInfo(
                         openingSurfaces.getFirstSurfaceTaskId()).windowType
                             == STARTING_WINDOW_TYPE_SPLASH_SCREEN;
+
+        if (mTallyMotion.appliesToLaunch(appSurfaces)) {
+            // DiamaneOS Tally: the window grows out of its key on the slab spring.
+            return new TallyLaunch(mTallyMotion, mLauncher, v, appSurfaces, openingSurfaces,
+                    windowTargetBounds, launcherIconBounds, dragLayerBounds[0],
+                    dragLayerBounds[1], hasSplashScreen, floatingView, surfaceApplier,
+                    navBarSurface, launcherClosing,
+                    appTargetsAreTranslucent ? 0 : mMaxShadowRadius).animator();
+        }
 
         AnimOpenProperties prop = new AnimOpenProperties(mLauncher.getResources(),
                 windowTargetBounds, launcherIconBounds, v, dragLayerBounds[0], dragLayerBounds[1],
