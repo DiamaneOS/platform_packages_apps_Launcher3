@@ -45,6 +45,7 @@ import com.android.launcher3.allapps.AllAppsStore;
 import com.android.launcher3.allapps.BaseAllAppsAdapter.AdapterItem;
 import com.android.launcher3.allapps.SearchUiManager;
 import com.android.launcher3.search.SearchCallback;
+import com.android.launcher3.tally.home.TallyHomeLayout;
 import com.android.launcher3.views.ActivityContext;
 
 import java.util.ArrayList;
@@ -134,6 +135,14 @@ public class AppsSearchContainerLayout extends ExtendedEditText
         // Update the width to match the grid padding
         DeviceProfile dp = mLauncher.getDeviceProfile();
         int myRequestedWidth = getSize(widthMeasureSpec);
+        if (TallyHomeLayout.appliesTo(dp)) {
+            // DiamaneOS Tally: on an upright phone the field spans the sheet less 16 dp on each
+            // side, as the prototype's (the lists leave the letter rail its column).
+            int side = getResources().getDimensionPixelSize(R.dimen.tally_space_l);
+            super.onMeasure(makeMeasureSpec(myRequestedWidth - 2 * side, EXACTLY),
+                    heightMeasureSpec);
+            return;
+        }
         int rowWidth = myRequestedWidth - mAppsView.getActiveRecyclerView().getPaddingLeft()
                 - mAppsView.getActiveRecyclerView().getPaddingRight();
 

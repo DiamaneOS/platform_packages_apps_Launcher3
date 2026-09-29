@@ -178,7 +178,7 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
     }
 
     override fun setInsets(insets: Rect) {
-        tally = appliesTo(activityContext().deviceProfile)
+        tally = TallyHomeLayout.appliesTo(activityContext().deviceProfile)
         val lp = layoutParams as? ViewGroup.MarginLayoutParams
         if (lp != null) {
             if (tally) {
@@ -571,23 +571,17 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
         /** How far a finger moves on the rail before it runs along it (else it is a tap). */
         private const val SLOP_DP = 4f
 
-        /** Whether Tally's rail applies to [dp] (an upright phone, as Tally's Home layout). */
-        @JvmStatic
-        fun appliesTo(dp: DeviceProfile): Boolean =
-            TallyHomeLayout.appliesTo(
-                dp.deviceProperties,
-                dp.isVerticalBarLayout,
-                dp.inv.isFixedLandscape,
-            )
-
         /**
          * The padding All apps' A-Z lists keep at their end edge for the rail's column (px), or 0
          * where the stock scroller is used.
          */
         @JvmStatic
         fun listEndPaddingPx(context: Context, dp: DeviceProfile): Int =
-            if (appliesTo(dp)) context.resources.getDimensionPixelSize(R.dimen.tally_target_min)
-            else 0
+            if (TallyHomeLayout.appliesTo(dp)) {
+                context.resources.getDimensionPixelSize(R.dimen.tally_target_min)
+            } else {
+                0
+            }
 
         private fun animationsOn(): Boolean =
             ValueAnimator.areAnimatorsEnabled() && ValueAnimator.getDurationScale() > 0f

@@ -89,6 +89,7 @@ import com.android.launcher3.model.repository.StringCacheRepository;
 import com.android.launcher3.pm.UserCache;
 import com.android.launcher3.recyclerview.AllAppsRecyclerViewPool;
 import com.android.launcher3.tally.allapps.TallyLetterRail;
+import com.android.launcher3.tally.home.TallyHomeLayout;
 import com.android.launcher3.util.ItemInfoMatcher;
 import com.android.launcher3.util.Preconditions;
 import com.android.launcher3.util.Themes;
@@ -186,6 +187,9 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
     private int mHeaderColor;
     private int mBottomSheetBackgroundColorBlurFallback;
     private int mBottomSheetBackgroundColorOverBlur;
+    // DiamaneOS Tally: on an upright phone the sheet is the theme's background, opaque.
+    private boolean mTallySheet;
+    private int mTallySheetColor;
     private int mTabsProtectionAlpha;
     @Nullable private AllAppsTransitionController mAllAppsTransitionController;
 
@@ -321,6 +325,7 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         mBottomSheetBackgroundColorBlurFallback = getContext().getColor(
                 Utilities.isDarkTheme(getContext()) ? android.R.color.system_accent2_800
                         : android.R.color.system_accent2_200);
+        mTallySheetColor = getContext().getColor(R.color.tally_background);
 
         mSearchUiManager.initializeSearch(this);
         if (useModelRepositoryBinding()) {
@@ -832,6 +837,9 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
     }
 
     int getBackgroundColor() {
+        if (mTallySheet) {
+            return mTallySheetColor;
+        }
         return isBackgroundBlurEnabled()
                 ? mBottomSheetBackgroundColorOverBlur
                 : mBottomSheetBackgroundColorBlurFallback;
@@ -1182,6 +1190,12 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
     public void setInsets(Rect insets) {
         mInsets.set(insets);
         DeviceProfile grid = mActivityContext.getDeviceProfile();
+
+        // DiamaneOS Tally: on an upright phone the sheet has the shell's 20 dp corners.
+        mTallySheet = TallyHomeLayout.appliesTo(grid);
+        Arrays.fill(mBottomSheetCornerRadii, 0, 4, mTallySheet
+                ? getResources().getDimension(R.dimen.tally_radius_l)
+                : Themes.getDialogCornerRadius(getContext()));
 
         applyAdapterSideAndBottomPaddings(grid);
 
