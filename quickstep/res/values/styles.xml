@@ -413,8 +413,10 @@
 
     </style>
 
+    <!-- Tally: without blur (the FP6 has none), Recents lies on the opaque surfaceHigh, as the
+         prototype's backdrop. -->
     <style name="OverviewBlurFallbackStyle">
-        <item name="overviewScrimColor">?attr/overviewScrimColorFallback</item>
+        <item name="overviewScrimColor">@color/tally_surface_high</item>
         <item name="overviewActionsContainerStyle">@style/OverviewActionsContainer</item>
         <item name="overviewActionButtonStyle">@style/OverviewActionButton</item>
         <item name="overviewScrimForegroundPrimary">@android:color/transparent</item>
