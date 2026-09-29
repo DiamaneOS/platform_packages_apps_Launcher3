@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The DiamaneOS Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<!-- Recents' "Still running · Stop" row (Tally). Sizes the token library has come from it; these
+     are the prototype's own for this row (design/prototypes/tally/app.css, .rc-still, .rs-stop). -->
+<resources>
+    <!-- The row: 10 dp before the lamp (its end padding is tally_space_xs). -->
+    <dimen name="tally_recents_still_running_padding_start">10dp</dimen>
+    <!-- 2 dp above and below the Stop key, so the row is 32 dp around the 28 dp key. -->
+    <dimen name="tally_recents_still_running_padding_vertical">2dp</dimen>
+    <!-- The Stop key: 28 dp tall at least, its word centred with 6 dp above and below. -->
+    <dimen name="tally_recents_stop_key_height">28dp</dimen>
+    <dimen name="tally_recents_stop_key_padding_vertical">6dp</dimen>
+
+    <style name="TallyRecents" />
+
+    <!-- "<app> is running": 12 sp caption in ink, at most two lines. -->
+    <style name="TallyRecents.StillRunningText">
+        <item name="android:textAppearance">@style/TextAppearance.Tally.Caption</item>
+        <item name="android:fontFamily">@string/tally_font_family</item>
+        <item name="android:textColor">@color/tally_ink</item>
+        <item name="android:lineHeight">@dimen/tally_type_caption_line_height</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textAlignment">viewStart</item>
+    </style>
+
+    <!-- The Stop key's word: 12 sp, weight 600, onAccent. Every text attribute is set here, not
+         only through the text appearance, because the action keys' button style (the
+         container's theme) sets its own. The key itself is drawn by TallyStopKeyDrawable. -->
+    <style name="TallyRecents.StopKey">
+        <item name="android:textAppearance">@style/TextAppearance.Tally.LabelSmall</item>
+        <item name="android:fontFamily">@string/tally_font_family</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textFontWeight">600</item>
+        <item name="android:textColor">@color/tally_on_accent</item>
+        <item name="android:lineHeight">@dimen/tally_type_label_small_line_height</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:background">@null</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:padding">0dp</item>
+        <item name="android:drawablePadding">0dp</item>
+    </style>
+</resources>
