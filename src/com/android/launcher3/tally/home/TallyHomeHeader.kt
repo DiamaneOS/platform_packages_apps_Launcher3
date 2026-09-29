@@ -25,14 +25,17 @@ import android.text.format.DateFormat
 import android.util.AttributeSet
 import android.util.Log
 import android.util.TypedValue
+import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextClock
 import com.android.launcher3.DeviceProfile
 import com.android.launcher3.Insettable
+import com.android.launcher3.Launcher
 import com.android.launcher3.R
 import com.android.launcher3.dagger.LauncherComponentProvider
 import com.android.launcher3.tally.live.TallyLiveItem
 import com.android.launcher3.util.ApiWrapper
+import com.android.launcher3.util.ComponentKey
 import com.android.launcher3.util.Executors.MAIN_EXECUTOR
 import com.android.launcher3.util.SafeCloseable
 import com.android.launcher3.util.Themes
@@ -49,8 +52,9 @@ import kotlin.math.roundToInt
  * or a tablet, where Home keeps stock's layout, it shows nothing.
  *
  * The band shows what [com.android.launcher3.tally.live.TallyLiveRepository] publishes: things live
- * or failed now, read from the dots' notification listener. A tap on one opens its app (or the
- * notification shade for a system service with no app on Home); "+n more" opens the shade.
+ * or failed now, read from the dots' notification listener. A tap on one opens its app through
+ * Launcher's own start path, its window growing out of the band's key (or the notification shade
+ * for a system service with no app on Home); "+n more" opens the shade.
  */
 class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
     FrameLayout(context, attrs), Insettable {
@@ -155,34 +159,45 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
         }
     }
 
-    private fun open(item: TallyLiveItem?) {
+    private fun open(item: TallyLiveItem?, key: View) {
         // "+n more", a system service with no app on Home, or an app that went or was disabled
         // since the band last changed: the shade has its words.
-        if (item == null || !startApp(item)) {
+        if (item == null || !startApp(item, key)) {
             ApiWrapper.INSTANCE[context].openNotificationShade()
         }
     }
 
-    /** Starts [item]'s app; returns whether it did. */
-    private fun startApp(item: TallyLiveItem): Boolean {
+    /**
+     * Starts [item]'s app as All apps starts it, through Launcher's own start path (its safe-mode,
+     * work profile and private space handling, and the launch animation, growing out of [key]);
+     * returns whether it started.
+     */
+    private fun startApp(item: TallyLiveItem, key: View): Boolean {
         val user = item.app.mUser ?: return false
         val launcherApps = context.getSystemService(LauncherApps::class.java) ?: return false
-        try {
-            val activity =
-                launcherApps.getActivityList(item.app.mPackageName, user).firstOrNull()
-                    ?: return false
-            val bounds = Rect()
-            tallies.getGlobalVisibleRect(bounds)
-            launcherApps.startMainActivity(activity.componentName, user, bounds, null)
-            return true
+        val component =
+            try {
+                launcherApps
+                    .getActivityList(item.app.mPackageName, user)
+                    .firstOrNull()
+                    ?.componentName ?: return false
+            } catch (e: SecurityException) {
+                onStartFailed(e)
+                return false
+            } catch (e: IllegalStateException) {
+                onStartFailed(e)
+                return false
+            }
+        val launcher = Launcher.getLauncher(context)
+        // As an item tap: nothing starts while Home changes state.
+        if (!launcher.workspace.isFinishedSwitchingState) return true
+        val app = launcher.appsView.appsStore.getApp(ComponentKey(component, user)) ?: return false
+        return try {
+            launcher.startActivitySafely(key, app.intent, app) != null
         } catch (e: ActivityNotFoundException) {
             onStartFailed(e)
-        } catch (e: SecurityException) {
-            onStartFailed(e)
-        } catch (e: IllegalStateException) {
-            onStartFailed(e)
+            false
         }
-        return false
     }
 
     /** Logs a failed start by its kind only: the message would name the app. */

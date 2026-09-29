@@ -49,8 +49,8 @@ import kotlin.math.max
  */
 class TallyTalliesRow(context: Context) : ViewGroup(context) {
 
-    /** Called with a tapped thing, or null for "+n more". */
-    var onTap: ((TallyLiveItem?) -> Unit)? = null
+    /** Called with a tapped thing (or null for "+n more") and its key. */
+    var onTap: ((TallyLiveItem?, View) -> Unit)? = null
 
     private val divider = resources.getDimensionPixelSize(R.dimen.tally_stroke_hairline)
     private val radius = resources.getDimension(R.dimen.tally_radius_m)
@@ -196,7 +196,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context) {
             )
             isClickable = true
             isFocusable = true
-            setOnClickListener { onTap?.invoke(item) }
+            setOnClickListener { onTap?.invoke(item, this) }
         }
 
         fun bindItem(newItem: TallyLiveItem) {
