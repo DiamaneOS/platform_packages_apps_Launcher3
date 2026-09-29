@@ -293,6 +293,7 @@ android_library {
     resource_dirs: ["res", "res-stock"],
     static_libs: [
         "dynamiccolors",
+        "tallytokens",
         "LauncherPluginLib",
         "launcher_quickstep_log_protos_lite",
         "androidx-constraintlayout_constraintlayout",
@@ -416,6 +417,8 @@ android_library {
     ],
     static_libs: [
         "Launcher3ResLib",
+        // Tally's design tokens (frameworks/libs/systemui), for Recents.
+        "tallytokens",
         "lottie",
         "SystemUISharedLib",
         "SettingsLibSettingsTheme",
