@@ -70,6 +70,10 @@ import com.android.launcher3.taskbar.TaskbarInteractor;
 import com.android.launcher3.uioverrides.QuickstepLauncher;
 import com.android.launcher3.util.NavigationMode;
 import com.android.launcher3.widget.LauncherAppWidgetHostView;
+import com.android.quickstep.tally.motion.TallyMotion;
+import com.android.quickstep.tally.motion.TallySpring;
+import com.android.quickstep.tally.motion.TallyWindowMotion;
+import com.android.quickstep.tally.motion.TallyWindowRect;
 import com.android.quickstep.util.BackAnimState;
 import com.android.quickstep.util.ScalingWorkspaceRevealAnim;
 import com.android.systemui.shared.system.QuickStepContract;
@@ -131,6 +135,15 @@ public class LauncherBackAnimationController {
     private int mMaxBlurRadius;
     private int mLastBlurRadius = 0;
 
+    // DiamaneOS Tally: Back to Home as the prototype's (the window scales to 0.9 and follows the
+    // finger; Home stays at rest under a lifting dim), or null for stock's.
+    private TallyMotion mTally;
+    private final TallyWindowRect mTallyRect = new TallyWindowRect();
+    private float mTallyProgress;
+    private float mTallyTouchDy;
+    private boolean mTallyFromLeftEdge;
+    private ValueAnimator mTallyCancelAnimator;
+
     private final ComponentCallbacks mComponentCallbacks = new ComponentCallbacks() {
         @Override
         public void onConfigurationChanged(Configuration newConfig) {
@@ -185,7 +198,11 @@ public class LauncherBackAnimationController {
         public void onBackCancelled() {
             mHandler.post(() -> {
                 LauncherBackAnimationController controller = mControllerRef.get();
-                if (controller != null) {
+                if (controller != null && controller.mTally != null) {
+                    // DiamaneOS Tally: the window goes back on the slab spring.
+                    mProgressAnimator.reset();
+                    controller.cancelTallyBack();
+                } else if (controller != null) {
                     mProgressAnimator.onBackCancelled(controller::onCancelFinished);
                 }
             });
@@ -297,7 +314,10 @@ public class LauncherBackAnimationController {
 
     private void onCancelFinished() {
         customizeStatusBarAppearance(false);
-        if (!mLauncher.getWorkspace().isOverlayShown()
+        if (mTally != null) {
+            // DiamaneOS Tally: the app is in front again; Launcher's dim goes with Launcher.
+            mTally.getDim().clear();
+        } else if (!mLauncher.getWorkspace().isOverlayShown()
                 && !mLauncher.isInState(LauncherState.ALL_APPS)) {
             setLauncherScale(ScalingWorkspaceRevealAnim.MAX_SIZE);
         }
@@ -321,6 +341,12 @@ public class LauncherBackAnimationController {
         // gesture was committed (not cancelled). BackAnimationController prevents that. Therefore
         // we don't have to handle that case.
         mProgressAnimator.removeOnBackCancelledFinishCallback();
+        if (mTallyCancelAnimator != null) {
+            // A new back gesture catches the window on its way back.
+            ValueAnimator cancel = mTallyCancelAnimator;
+            mTallyCancelAnimator = null;
+            cancel.cancel();
+        }
         mBackInProgress = true;
         mInitialTouchPos.set(backEvent.getTouchX(), backEvent.getTouchY());
     }
@@ -347,6 +373,20 @@ public class LauncherBackAnimationController {
                 new RemoteAnimationTarget[]{ mBackTarget });
         setLauncherTargetViewVisible(false);
         mCurrentRect.set(mStartRect);
+        TallyMotion tally = mQuickstepTransitionManager.getTallyMotion();
+        mTally = tally != null && !mLauncher.getWorkspace().isOverlayShown()
+                && !mLauncher.isInState(LauncherState.ALL_APPS)
+                && tally.appliesToReturn(new RemoteAnimationTarget[]{ mBackTarget })
+                ? tally : null;
+        if (mTally != null) {
+            // DiamaneOS Tally: Home stays at rest under its dim; no scale, blur or scrim.
+            mTallyProgress = 0;
+            mTallyTouchDy = 0;
+            mTallyRect.set(new RectF(mStartRect), QuickStepContract.getWindowCornerRadius(mLauncher));
+            mTally.getDim().set(TallyWindowMotion.backDim(0));
+            applyTransaction();
+            return;
+        }
         if (!mLauncher.getWorkspace().isOverlayShown()
                 && !mLauncher.isInState(LauncherState.ALL_APPS)) {
             Animations.cancelOngoingAnimation(mLauncher.getWorkspace());
@@ -419,6 +459,13 @@ public class LauncherBackAnimationController {
         if (!mBackInProgress || mBackTarget == null) {
             return;
         }
+        if (mTally != null) {
+            // DiamaneOS Tally: the prototype's back maps the gesture's progress straight.
+            mTallyFromLeftEdge = event.getSwipeEdge() == BackEvent.EDGE_LEFT;
+            mTallyTouchDy = event.getTouchY() - mInitialTouchPos.y;
+            applyTallyBack(event.getProgress());
+            return;
+        }
         if (mScrimLayer == null) {
             // Scrim hasn't been attached yet. Let's attach it.
             addScrimLayer();
@@ -485,6 +532,50 @@ public class LauncherBackAnimationController {
         mTransaction.apply();
     }
 
+    /**
+     * DiamaneOS Tally: places the window at back progress {@code progress} (the prototype's
+     * {@code wm.backMove}): it scales from 1 to 0.9, moves 8 dp with the finger, follows the
+     * finger's vertical travel by a quarter (at most 40 dp), its corners go to 20 dp, and Home's
+     * dim lifts to 0.3 × (1 − 0.6 × progress).
+     */
+    private void applyTallyBack(float progress) {
+        mTallyProgress = progress;
+        TallyWindowMotion.backRect(progress, mTallyFromLeftEdge, mTallyTouchDy,
+                mStartRect.width(), mStartRect.height(), mTally.getDensity(),
+                QuickStepContract.getWindowCornerRadius(mLauncher), mTallyRect);
+        mTallyRect.getRect().offset(mStartRect.left, mStartRect.top);
+        mCurrentRect.set(mTallyRect.getRect());
+        mTally.getDim().set(TallyWindowMotion.backDim(progress));
+        applyTransform(mCurrentRect, mTallyRect.getRadius() * mStartRect.width()
+                / mCurrentRect.width());
+        customizeStatusBarAppearance(mCurrentRect.top > mStatusBarHeight / 2);
+    }
+
+    /** DiamaneOS Tally: a cancelled back: the window goes back on the slab spring. */
+    private void cancelTallyBack() {
+        TallySpring slab = mTally.getSlab();
+        float from = mTallyProgress;
+        TallySpring.Move move = slab.new Move(from, 0, slab.impulse(-from), 0.0005, 0.005, false);
+        ValueAnimator cancel = ValueAnimator.ofFloat(0, 1);
+        cancel.setDuration(move.getMillis());
+        cancel.addUpdateListener(a -> {
+            if (mBackTarget != null) {
+                applyTallyBack((float) move.valueAtFraction(a.getAnimatedFraction()));
+            }
+        });
+        cancel.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (mTallyCancelAnimator == animation) {
+                    mTallyCancelAnimator = null;
+                    onCancelFinished();
+                }
+            }
+        });
+        mTallyCancelAnimator = cancel;
+        cancel.start();
+    }
+
     private void startTransition() {
         mWaitStartTransition = false;
         if (mLauncher.isDestroyed()) {
@@ -513,7 +604,7 @@ public class LauncherBackAnimationController {
         // Launcher#onResumed, but in the predictive back flow launcher is not resumed until
         // the transition is fully finished.)
         AbstractFloatingView.closeAllOpenViewsExcept(mLauncher, false, TYPE_REBIND_SAFE);
-        float cornerRadius = Utilities.mapRange(
+        float cornerRadius = mTally != null ? mTallyRect.getRadius() : Utilities.mapRange(
                 mBackProgress, mWindowScaleStartCornerRadius, mWindowScaleEndCornerRadius);
         final RectF resolveRectF = new RectF();
         new RemoteAnimationCoordinateTransfer(mLauncher)
@@ -571,10 +662,18 @@ public class LauncherBackAnimationController {
             mLauncher.getDepthController().pauseBlursOnWindows(false);
         }
         mLastBlurRadius = 0;
+        mTally = null;
     }
 
     private void startTransitionAnimations(BackAnimState backAnim) {
         backAnim.addOnAnimCompleteCallback(this::finishAnimation);
+        if (mTally != null) {
+            // DiamaneOS Tally: Home's dim clears with the window's flight (TallyHomeEntrance).
+            mLauncher.clearForceInvisibleFlag(INVISIBLE_ALL);
+            customizeStatusBarAppearance(true);
+            backAnim.start(mLauncher.getStateManager());
+            return;
+        }
         if (mScrimLayer == null) {
             // Scrim hasn't been attached yet. Let's attach it.
             addScrimLayer();
