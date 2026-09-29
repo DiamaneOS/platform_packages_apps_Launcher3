@@ -57,7 +57,8 @@
     </item>
     <item>
         <shape>
-            <solid android:color="@color/materialColorSurfaceBright" />
+            <!-- Tally: the menu's surface. -->
+            <solid android:color="@color/tally_surface" />
         </shape>
     </item>
 </selector>
