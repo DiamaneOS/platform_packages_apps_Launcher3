@@ -305,6 +305,16 @@ constructor(
                     ),
             )
 
+    // Tally: the ring round the card, just outside its edge, while Recents is settled.
+    private val tallyCardOutline: BorderAnimator =
+        createSimpleBorderAnimator(
+            TaskCornerRadius.get(context).toInt(),
+            context.resources.getDimensionPixelSize(R.dimen.tally_recents_card_outline_width),
+            { getThumbnailBounds(it) },
+            this,
+            context.getColor(R.color.tally_outline_variant),
+        )
+
     private val rootViewDisplayId: Int
         get() = rootView.display?.displayId ?: Display.DEFAULT_DISPLAY
 
@@ -518,6 +528,7 @@ constructor(
             // transition
             hoverBorderAnimator.setBorderVisibility(visible = field && isHovered, animated = true)
             focusBorderAnimator.setBorderVisibility(visible = field && isFocused, animated = true)
+            tallyCardOutline.setBorderVisibility(visible = field, animated = true)
         }
 
     /**
@@ -701,6 +712,7 @@ constructor(
 
     override fun draw(canvas: Canvas) {
         // Draw border first so any child views outside of the thumbnail bounds are drawn above it.
+        tallyCardOutline.drawBorder(canvas)
         focusBorderAnimator.drawBorder(canvas)
         hoverBorderAnimator.drawBorder(canvas)
         super.draw(canvas)
