@@ -77,6 +77,12 @@ class TallySpringTest {
     }
 
     @Test
+    fun slabFromRest_matchesThePrototypeFrameByFrame() {
+        // A cancelled Back: the window goes back to full screen from rest.
+        assertMatchesPrototype(TallySpring.SLAB, from = 0.9, to = 0.0, impulse = false)
+    }
+
+    @Test
     fun ratioOne_neverOvershootsFromATap() {
         for (k in
             listOf(TallySpring.PEBBLE, TallySpring.STONE, TallySpring.SLAB, TallySpring.FILL)) {

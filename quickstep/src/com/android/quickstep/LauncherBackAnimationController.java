@@ -28,6 +28,7 @@ import static com.android.launcher3.BaseActivity.PENDING_INVISIBLE_BY_WALLPAPER_
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
 import android.content.ComponentCallbacks;
 import android.content.res.Configuration;
@@ -141,8 +142,8 @@ public class LauncherBackAnimationController {
     private final TallyWindowRect mTallyRect = new TallyWindowRect();
     private float mTallyProgress;
     private float mTallyTouchDy;
-    private boolean mTallyFromLeftEdge;
-    private ValueAnimator mTallyCancelAnimator;
+    private int mTallyDirection;
+    private Animator mTallyCancelAnimator;
 
     private final ComponentCallbacks mComponentCallbacks = new ComponentCallbacks() {
         @Override
@@ -343,7 +344,7 @@ public class LauncherBackAnimationController {
         mProgressAnimator.removeOnBackCancelledFinishCallback();
         if (mTallyCancelAnimator != null) {
             // A new back gesture catches the window on its way back.
-            ValueAnimator cancel = mTallyCancelAnimator;
+            Animator cancel = mTallyCancelAnimator;
             mTallyCancelAnimator = null;
             cancel.cancel();
         }
@@ -382,7 +383,8 @@ public class LauncherBackAnimationController {
             // DiamaneOS Tally: Home stays at rest under its dim; no scale, blur or scrim.
             mTallyProgress = 0;
             mTallyTouchDy = 0;
-            mTallyRect.set(new RectF(mStartRect), QuickStepContract.getWindowCornerRadius(mLauncher));
+            mTallyDirection = 0;
+            mTallyRect.set(new RectF(mStartRect), mWindowScaleStartCornerRadius);
             mTally.getDim().set(TallyWindowMotion.backDim(0));
             applyTransaction();
             return;
@@ -460,10 +462,15 @@ public class LauncherBackAnimationController {
             return;
         }
         if (mTally != null) {
-            // DiamaneOS Tally: the prototype's back maps the gesture's progress straight.
-            mTallyFromLeftEdge = event.getSwipeEdge() == BackEvent.EDGE_LEFT;
+            // DiamaneOS Tally: the prototype's progress, the finger's travel over 160 dp (the
+            // platform's is the travel over the display's width, the window's width here), as WM
+            // Shell's page Back takes it; a Back button's progress as it is.
+            int edge = event.getSwipeEdge();
+            mTallyDirection =
+                    edge == BackEvent.EDGE_LEFT ? 1 : edge == BackEvent.EDGE_RIGHT ? -1 : 0;
             mTallyTouchDy = event.getTouchY() - mInitialTouchPos.y;
-            applyTallyBack(event.getProgress());
+            applyTallyBack(TallyWindowMotion.backProgress(event.getProgress(),
+                    mTallyDirection != 0, mStartRect.width(), mTally.getDensity()), true);
             return;
         }
         if (mScrimLayer == null) {
@@ -533,36 +540,44 @@ public class LauncherBackAnimationController {
     }
 
     /**
-     * DiamaneOS Tally: places the window at back progress {@code progress} (the prototype's
-     * {@code wm.backMove}): it scales from 1 to 0.9, moves 8 dp with the finger, follows the
-     * finger's vertical travel by a quarter (at most 40 dp), its corners go to 20 dp, and Home's
-     * dim lifts to 0.3 × (1 − 0.6 × progress).
+     * DiamaneOS Tally: places the window at the prototype's back progress {@code k} (its
+     * {@code wm.backMove}): it scales from 1 to 0.9, moves 8 dp the way the finger travels,
+     * follows the finger's vertical travel by a quarter (at most 40 dp), its corners go to 20 dp,
+     * and, with {@code withDim}, Home's dim lifts to 0.3 × (1 − 0.6 × k).
      */
-    private void applyTallyBack(float progress) {
-        mTallyProgress = progress;
-        TallyWindowMotion.backRect(progress, mTallyFromLeftEdge, mTallyTouchDy,
+    private void applyTallyBack(float k, boolean withDim) {
+        mTallyProgress = k;
+        TallyWindowMotion.backRect(k, mTallyDirection, mTallyTouchDy,
                 mStartRect.width(), mStartRect.height(), mTally.getDensity(),
-                QuickStepContract.getWindowCornerRadius(mLauncher), mTallyRect);
+                mWindowScaleStartCornerRadius, mTallyRect);
         mTallyRect.getRect().offset(mStartRect.left, mStartRect.top);
         mCurrentRect.set(mTallyRect.getRect());
-        mTally.getDim().set(TallyWindowMotion.backDim(progress));
+        if (withDim) {
+            mTally.getDim().set(TallyWindowMotion.backDim(k));
+        }
         applyTransform(mCurrentRect, mTallyRect.getRadius() * mStartRect.width()
                 / mCurrentRect.width());
         customizeStatusBarAppearance(mCurrentRect.top > mStatusBarHeight / 2);
     }
 
-    /** DiamaneOS Tally: a cancelled back: the window goes back on the slab spring. */
+    /**
+     * DiamaneOS Tally: a cancelled back (the prototype's {@code wm.backEnd}): the window goes
+     * back to full screen on the slab spring from rest, as WM Shell's pages do, and Home's dim
+     * returns to 0.3 on the fill spring.
+     */
     private void cancelTallyBack() {
         TallySpring slab = mTally.getSlab();
         float from = mTallyProgress;
-        TallySpring.Move move = slab.new Move(from, 0, slab.impulse(-from), 0.0005, 0.005, false);
-        ValueAnimator cancel = ValueAnimator.ofFloat(0, 1);
-        cancel.setDuration(move.getMillis());
-        cancel.addUpdateListener(a -> {
+        TallySpring.Move move = slab.new Move(from, 0, 0, 0.0005, 0.005, false);
+        ValueAnimator window = ValueAnimator.ofFloat(0, 1);
+        window.setDuration(move.getMillis());
+        window.addUpdateListener(a -> {
             if (mBackTarget != null) {
-                applyTallyBack((float) move.valueAtFraction(a.getAnimatedFraction()));
+                applyTallyBack((float) move.valueAtFraction(a.getAnimatedFraction()), false);
             }
         });
+        AnimatorSet cancel = new AnimatorSet();
+        cancel.playTogether(window, mTally.getDim().animatorTo(TallyWindowMotion.HOME_DIM));
         cancel.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
