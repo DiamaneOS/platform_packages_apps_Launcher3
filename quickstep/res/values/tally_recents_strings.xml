@@ -14,8 +14,9 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<!-- Tally's new words in Recents. English only for now. The row's other words are stock Android's
-     ("%1$s is running", the framework's app_running_notification_title). -->
+<!-- Tally's new words in Recents. The row's other words are stock Android's ("%1$s is running",
+     the framework's app_running_notification_title). The translations of tally_recents_stop are
+     SystemUI's for the same button (fgs_manager_app_item_stop_button_label). -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Label of the key that stops an app from Recents, after the user swiped away the card of an
          app that is still running (a foreground service). It does what the Stop button of the
