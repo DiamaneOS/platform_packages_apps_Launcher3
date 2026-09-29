@@ -23,5 +23,5 @@
     android:layout_height="wrap_content"
     android:textAlignment="center"
     android:text="@string/recents_clear_all"
-    launcher:focusBorderColor="@color/materialColorOutline"
-    android:textSize="14sp" />
+    launcher:focusBorderColor="@color/tally_accent"
+    android:textSize="@dimen/tally_recents_key_text_size" />

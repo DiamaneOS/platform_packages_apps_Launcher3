@@ -200,6 +200,8 @@ import com.android.quickstep.recents.viewmodel.RecentsViewModel;
 import com.android.quickstep.split.SplitAnimationController.Companion.SplitAnimInitProps;
 import com.android.quickstep.split.SplitAnimationTimings;
 import com.android.quickstep.split.SplitSelectStateController;
+import com.android.quickstep.tally.TallyStillRunning;
+import com.android.quickstep.tally.TallyStillRunningView;
 import com.android.quickstep.util.ActiveGestureLog;
 import com.android.quickstep.util.ActiveGestureProtoLogProxy;
 import com.android.quickstep.util.AnimUtils;
@@ -838,6 +840,8 @@ public abstract class RecentsView<
     @Inject TopTaskTracker mTopTaskTracker;
     @Inject VibratorWrapper mVibratorWrapper;
     @Inject RecentsOrientedState mOrientationState;
+    // Tally: "Still running · Stop".
+    @Inject TallyStillRunning mTallyStillRunning;
 
     // Package-private for Dagger only, should not use directly
     @VisibleForTesting
@@ -1044,6 +1048,10 @@ public abstract class RecentsView<
         mActionsView.updateHiddenFlags(HIDDEN_NO_TASKS, !hasTaskViews());
         // Update flags for 1p/3p launchers
         mActionsView.updateFor3pLauncher(mIs3PLauncher);
+        TallyStillRunningView stillRunning = actionsView.findViewById(R.id.tally_still_running);
+        if (stillRunning != null) {
+            stillRunning.setController(mTallyStillRunning);
+        }
 
         // RecentsViewContainer provided dependencies.
         mSplitSelectStateController = splitController;
@@ -1142,6 +1150,7 @@ public abstract class RecentsView<
         }
         mTaskLaunchListener = null;
         mOnTaskLaunchCancelledRunnable = null;
+        mTallyStillRunning.setRecentsShowing(this, false);
         reset();
     }
 
@@ -3424,6 +3433,10 @@ public abstract class RecentsView<
 
     protected void removeGroupTaskInternal(@NonNull GroupTask groupTask) {
         Log.d(TAG, "removeGroupTaskInternal: groupTask=" + groupTask);
+        if (!(groupTask instanceof DesktopTask)) {
+            // Tally: a swiped app that is still running gets "Still running · Stop".
+            mTallyStillRunning.onTasksRemoved(groupTask.getTasks());
+        }
         UI_HELPER_EXECUTOR
                 .getHandler()
                 .post(
@@ -5458,6 +5471,8 @@ public abstract class RecentsView<
             updateEnabledOverlays();
 
             mRecentsViewModel.setOverlayEnabled(overlayEnabled);
+            // Tally: Recents is open for the user to act on (or no longer is).
+            mTallyStillRunning.setRecentsShowing(this, overlayEnabled);
         }
     }
 

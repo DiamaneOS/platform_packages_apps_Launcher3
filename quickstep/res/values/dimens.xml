@@ -18,10 +18,12 @@
     <!-- For screens without rounded corners -->
     <dimen name="task_corner_radius_small">2dp</dimen>
     <!-- For Launchers that want to override the default dialog corner radius -->
-    <dimen name="task_corner_radius_override">-1dp</dimen>
+    <!-- Tally: Recents cards have 20 dp corners. -->
+    <dimen name="task_corner_radius_override">@dimen/tally_radius_l</dimen>
 
     <!--  Task Menu View  -->
-    <dimen name="task_menu_corner_radius">26dp</dimen>
+    <!-- Tally: a menu has 12 dp corners. -->
+    <dimen name="task_menu_corner_radius">@dimen/tally_radius_m</dimen>
     <dimen name="task_menu_item_corner_radius">4dp</dimen>
     <dimen name="task_menu_spacing">2dp</dimen>
     <dimen name="task_menu_width_grid">216dp</dimen>
@@ -29,7 +31,9 @@
     <dimen name="overview_proactive_row_height">48dp</dimen>
     <dimen name="overview_proactive_row_bottom_margin">16dp</dimen>
 
-    <dimen name="overview_minimum_next_prev_size">50dp</dimen>
+    <!-- Tally: 40 dp (with overview_task_margin) makes a phone's card 0.70 of the screen, 260 dp
+         wide at 372 dp, as the prototype's. -->
+    <dimen name="overview_minimum_next_prev_size">40dp</dimen>
 
     <!--  Overflown Apps Container View  -->
     <!--  The padding of the container view and the space between the child app icons -->
@@ -61,13 +65,16 @@
     <!--  The width of the thumbnail icon menu when expanded -->
     <dimen name="task_thumbnail_icon_menu_expanded_width">216dp</dimen>
     <!--  The height of the thumbnail icon menu when collapsed  -->
-    <dimen name="task_thumbnail_icon_menu_collapsed_height">36dp</dimen>
+    <!-- Tally: a 32 dp chip. -->
+    <dimen name="task_thumbnail_icon_menu_collapsed_height">@dimen/tally_chip_height</dimen>
     <!--  The height of the thumbnail icon menu when expanded -->
     <dimen name="task_thumbnail_icon_menu_expanded_height">52dp</dimen>
     <!--  The margin at the top/start of the task icon menu when expanded  -->
     <dimen name="task_thumbnail_icon_menu_expanded_top_start_margin">4dp</dimen>
     <!--  The margin at the start of the background when collapsed  -->
-    <dimen name="task_thumbnail_icon_menu_background_margin_top_start">8dp</dimen>
+    <!-- Tally: 10 dp keeps the 32 dp chip centred in its 52 dp frame, where its icon and name
+         are centred. -->
+    <dimen name="task_thumbnail_icon_menu_background_margin_top_start">10dp</dimen>
     <!--  The margin between the app name + app icon and app name + arrow icon when collapsed  -->
     <dimen name="task_thumbnail_icon_menu_app_name_margin_horizontal_collapsed">8dp</dimen>
     <!--  The margin between the app name + app icon and app name + arrow icon when expanded  -->
@@ -86,8 +93,10 @@
     <dimen name="task_thumbnail_icon_menu_app_icon_expanded_size">32dp</dimen>
     <!--  The size of the icon menu's icon touch target  -->
     <dimen name="task_thumbnail_icon_menu_drawable_touch_size">44dp</dimen>
-    <dimen name="task_thumbnail_icon_menu_elevation">4dp</dimen>
-    <dimen name="app_chip_round_corner_radius">28dp</dimen>
+    <!-- Tally: the chip and its menu lift by 2 dp, the prototype's one ambient shadow, and the
+         chip has 8 dp corners instead of a pill. -->
+    <dimen name="task_thumbnail_icon_menu_elevation">2dp</dimen>
+    <dimen name="app_chip_round_corner_radius">@dimen/tally_radius_s</dimen>
     <!--  The size of the text fading horizontally -->
     <dimen name="task_thumbnail_icon_menu_text_fading_size">20dp</dimen>
     <!--  The size of the task thumbnail header  -->
@@ -108,7 +117,8 @@
     <dimen name="desktop_bottom_margin_multi_rows">24dp</dimen>
     <dimen name="desktop_left_right_margin_multi_rows">24dp</dimen>
     <dimen name="desktop_min_task_width">72dp</dimen>
-    <dimen name="task_hover_focus_border_width">3dp</dimen>
+    <!-- Tally: the focus ring is 2 dp, 2 dp clear of the card (task_hover_focus_offset_size). -->
+    <dimen name="task_hover_focus_border_width">@dimen/tally_focus_ring_width</dimen>
     <dimen name="task_hover_focus_offset_size">2dp</dimen>
     <integer name="desktop_layout_max_rows">5</integer>
     <!-- The length of the fading edge (gradient) of the task header title -->
@@ -129,10 +139,12 @@
     <dimen name="task_dismiss_button_margin">4dp</dimen>
 
     <!-- Overrideable in overlay that provides the Overview Actions. -->
-    <dimen name="overview_actions_top_margin">24dp</dimen>
+    <!-- Tally: the keys sit 12 dp under the card, as the prototype's. -->
+    <dimen name="overview_actions_top_margin">@dimen/tally_space_m</dimen>
     <dimen name="overview_actions_height">48dp</dimen>
-    <dimen name="overview_actions_button_spacing">16dp</dimen>
-    <dimen name="overview_actions_button_radius">28dp</dimen>
+    <!-- Tally: keys 8 dp apart, with 8 dp corners (tally_recents_keys.xml). -->
+    <dimen name="overview_actions_button_spacing">@dimen/tally_space_s</dimen>
+    <dimen name="overview_actions_button_radius">@dimen/tally_radius_s</dimen>
     <dimen name="overview_actions_button_vertical_padding">10dp</dimen>
     <dimen name="overview_actions_button_horizontal_padding">16dp</dimen>
 
@@ -143,7 +155,8 @@
     <dimen name="default_task_dismiss_drag_velocity_grid_focus_task">5dp</dimen>
 
     <dimen name="recents_clear_all_deadzone_vertical_margin">70dp</dimen>
-    <dimen name="recents_clear_all_outline_radius">24dp</dimen>
+    <!-- Tally: the focus outline round the 8 dp Clear all key, 2 dp clear of it. -->
+    <dimen name="recents_clear_all_outline_radius">10dp</dimen>
     <dimen name="recents_clear_all_outline_padding">2dp</dimen>
 
     <!-- Recents add desktop button -->

@@ -248,18 +248,23 @@
         <item name="android:buttonStyle">@style/OverviewActionButton.Blur</item>
     </style>
 
+    <!-- Tally: Recents' keys (the action keys and Clear all) are the prototype's keys: 48 dp, 8 dp
+         corners, the surface with a hairline edge, 13 sp Sofia Sans in 500, the icon 6 dp from
+         the word (tally_recents_keys.xml). -->
     <style name="OverviewActionButton" parent="@android:style/Widget.DeviceDefault.Button.Borderless">
         <item name="android:maxHeight">@dimen/overview_actions_height</item>
         <item name="android:paddingVertical">4dp</item>
-        <item name="android:paddingHorizontal">@dimen/overview_actions_button_horizontal_padding
-        </item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:textColor">@color/overview_button</item>
-        <item name="android:drawableTint">@color/overview_button</item>
-        <item name="android:tint">@color/materialColorOnSurface</item>
-        <item name="android:drawablePadding">8dp</item>
+        <item name="android:paddingHorizontal">@dimen/tally_space_m</item>
+        <item name="android:textAppearance">@style/TextAppearance.Tally.Label</item>
+        <item name="android:fontFamily">@string/tally_font_family</item>
+        <item name="android:textSize">@dimen/tally_recents_key_text_size</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:textColor">@color/tally_recents_key_ink</item>
+        <item name="android:drawableTint">@color/tally_recents_key_ink</item>
+        <item name="android:tint">@color/tally_ink</item>
+        <item name="android:drawablePadding">@dimen/tally_recents_key_icon_gap</item>
         <item name="android:textAllCaps">false</item>
-        <item name="android:textFontWeight">600</item>
+        <item name="android:textFontWeight">500</item>
         <item name="android:gravity">center</item>
         <item name="android:layout_gravity">center</item>
         <item name="android:includeFontPadding">false</item>
@@ -348,13 +353,14 @@
         <item name="arrowTipTextColor">@color/materialColorOnSurface</item>
     </style>
 
-    <style name="IconAppChipMenuTextStyle">
-        <item name="android:fontFamily">google-sans-text-medium</item>
+    <!-- Tally: the app's name on its card in the label type, 14 sp Sofia Sans in 500, in ink. -->
+    <style name="IconAppChipMenuTextStyle" parent="@style/TextAppearance.Tally.Label">
+        <item name="android:fontFamily">@string/tally_font_family</item>
         <item name="android:textSize">@dimen/task_thumbnail_icon_menu_text_size</item>
-        <item name="android:textColor">@color/materialColorOnSurface</item>
+        <item name="android:textColor">@color/tally_ink</item>
         <item name="android:includeFontPadding">false</item>
-        <item name="android:letterSpacing">0.025</item>
-        <item name="android:lineHeight">20sp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:lineHeight">@dimen/tally_type_label_line_height</item>
     </style>
 
     <style name="TextAppearance.Nudge.Title" parent="@android:style/TextAppearance.DeviceDefault.DialogWindowTitle">
@@ -407,8 +413,10 @@
 
     </style>
 
+    <!-- Tally: without blur (the FP6 has none), Recents lies on the opaque surfaceHigh, as the
+         prototype's backdrop. -->
     <style name="OverviewBlurFallbackStyle">
-        <item name="overviewScrimColor">?attr/overviewScrimColorFallback</item>
+        <item name="overviewScrimColor">@color/tally_surface_high</item>
         <item name="overviewActionsContainerStyle">@style/OverviewActionsContainer</item>
         <item name="overviewActionButtonStyle">@style/OverviewActionButton</item>
         <item name="overviewScrimForegroundPrimary">@android:color/transparent</item>
