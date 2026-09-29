@@ -707,8 +707,13 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     }
 
     protected boolean shouldUseTheme() {
+        // DiamaneOS Tally: every key follows the icon style, All apps and search included, so a
+        // themed Home and All apps show the same keys (stock themes Home, folders and the taskbar
+        // only).
         return mDisplay == DISPLAY_WORKSPACE || mDisplay == DISPLAY_FOLDER
-                || mDisplay == DISPLAY_TASKBAR;
+                || mDisplay == DISPLAY_TASKBAR || mDisplay == DISPLAY_ALL_APPS
+                || mDisplay == DISPLAY_SEARCH_RESULT || mDisplay == DISPLAY_SEARCH_RESULT_SMALL
+                || mDisplay == DISPLAY_PREDICTION_ROW || mDisplay == DISPLAY_SEARCH_RESULT_APP_ROW;
     }
 
     /**

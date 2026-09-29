@@ -63,6 +63,15 @@ class ThemePreferenceTest {
     }
 
     @Test
+    fun no_choice_defaults_to_mono() {
+        assertEquals(MONO_THEME_VALUE, getThemePref().value)
+
+        // Choosing Default is kept
+        getThemePref().setValue(null)
+        assertNull(getThemePref().value)
+    }
+
+    @Test
     fun legacy_mono_true_value_properly_migrated() {
         prefs.put(LEGACY_MONO_THEME_ICON.to(true))
         assertEquals(MONO_THEME_VALUE, getThemePref().value)
