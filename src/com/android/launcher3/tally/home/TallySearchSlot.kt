@@ -1,0 +1,165 @@
+/*
+ * Copyright (C) 2026 The DiamaneOS Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.launcher3.tally.home
+
+import android.animation.Animator
+import android.content.Context
+import android.content.ContextWrapper
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
+import android.text.TextUtils
+import android.util.TypedValue
+import android.view.Gravity
+import android.view.View
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import com.android.launcher3.AbstractFloatingView
+import com.android.launcher3.Launcher
+import com.android.launcher3.LauncherState
+import com.android.launcher3.R
+import com.android.launcher3.anim.AnimationSuccessListener
+import kotlin.math.min
+
+/**
+ * Home's search slot under the dock, as the prototype's: a key recessed into the dock's band (a
+ * surface with a 1 dp outline, r12, and a 2 dp shade along its inner top edge), a search icon and
+ * "Search apps". A tap opens All apps with its search field and the keyboard, as All apps' own
+ * search does; it searches what All apps searches (the apps), nothing else. The hotseat lays it out
+ * in the space it reserves for a search bar (qsb_widget_height), 16 dp from the screen's sides.
+ */
+class TallySearchSlot(context: Context) : LinearLayout(context) {
+    private val density = resources.displayMetrics.density
+    private val radius = resources.getDimension(R.dimen.tally_radius_m)
+    private val sideMarginPx = resources.getDimensionPixelSize(R.dimen.tally_space_l)
+    private val outlineWidth = resources.getDimension(R.dimen.tally_stroke_hairline)
+    private val shadeHeight = SHADE_DP * density
+    private val fillPaint = paint(context.getColor(R.color.tally_surface), Paint.Style.FILL)
+    private val shadePaint = paint(context.getColor(R.color.tally_keycap_shade), Paint.Style.FILL)
+    private val outlinePaint =
+        paint(context.getColor(R.color.tally_outline), Paint.Style.STROKE).apply {
+            strokeWidth = outlineWidth
+        }
+    private val box = RectF()
+    private val boxPath = Path()
+
+    init {
+        orientation = HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        setWillNotDraw(false)
+        val padding = resources.getDimensionPixelSize(R.dimen.tally_space_l)
+        setPaddingRelative(padding, 0, padding, 0)
+        isClickable = true
+        isFocusable = true
+
+        val iconSize = resources.getDimensionPixelSize(R.dimen.tally_icon_size)
+        val icon =
+            ImageView(context).apply {
+                setImageResource(R.drawable.ic_allapps_search)
+                imageTintList = context.getColorStateList(R.color.tally_ink)
+                importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
+        addView(icon, LayoutParams(iconSize, iconSize))
+
+        val text =
+            TextView(context).apply {
+                setTextAppearance(R.style.TextAppearance_Tally_Body)
+                setTextColor(context.getColor(R.color.tally_ink))
+                // The search text stops growing at 130 %, as the prototype's.
+                val capPx =
+                    TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, TEXT_SP, displayMetrics)
+                setTextSize(
+                    TypedValue.COMPLEX_UNIT_PX,
+                    min(textSize, capPx * TallyHomeLayout.TEXT_SCALE_CAP),
+                )
+                setText(R.string.all_apps_search_bar_hint)
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+                importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
+        addView(
+            text,
+            LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = resources.getDimensionPixelSize(R.dimen.tally_space_m)
+            },
+        )
+        contentDescription = context.getString(R.string.all_apps_search_bar_hint)
+        setOnClickListener { openSearch() }
+    }
+
+    private val displayMetrics
+        get() = resources.displayMetrics
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        // The hotseat measures its search bar at the grid's width, which a phone's non-scalable
+        // grid leaves at 0: the slot spans the screen less 16 dp on each side instead.
+        val parentWidth = (parent as? View)?.width?.takeIf { it > 0 } ?: displayMetrics.widthPixels
+        val width = parentWidth - 2 * sideMarginPx
+        super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec)
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val inset = outlineWidth / 2f
+        box.set(inset, inset, width - inset, height - inset)
+        boxPath.reset()
+        boxPath.addRoundRect(box, radius, radius, Path.Direction.CW)
+        canvas.drawPath(boxPath, fillPaint)
+        // The recess: a shade along the inner top edge, where the box moved down does not reach.
+        val count = canvas.save()
+        canvas.clipPath(boxPath)
+        canvas.translate(0f, shadeHeight)
+        canvas.clipOutPath(boxPath)
+        canvas.translate(0f, -shadeHeight)
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), shadePaint)
+        canvas.restoreToCount(count)
+        canvas.drawPath(boxPath, outlinePaint)
+        super.onDraw(canvas)
+    }
+
+    private fun openSearch() {
+        // Only Home's own slot opens anything (not a grid preview's).
+        var c: Context? = context
+        while (c != null && c !is Launcher) c = (c as? ContextWrapper)?.baseContext
+        if (c !is Launcher) return
+        val launcher: Launcher = c
+        AbstractFloatingView.closeAllOpenViews(launcher)
+        launcher.stateManager.goToState(
+            LauncherState.ALL_APPS,
+            true,
+            object : AnimationSuccessListener() {
+                override fun onAnimationSuccess(animator: Animator) {
+                    launcher.appsView.searchUiManager.editText?.showKeyboard()
+                }
+            },
+        )
+    }
+
+    private companion object {
+        /** The search text's size (sp), before its cap. */
+        const val TEXT_SP = 14f
+        /** The recess's shade along the top edge. */
+        const val SHADE_DP = 2f
+
+        fun paint(color: Int, style: Paint.Style) =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                this.color = color
+                this.style = style
+            }
+    }
+}
