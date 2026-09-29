@@ -25,7 +25,9 @@
         android:layout_marginTop="@dimen/all_apps_header_bottom_padding"
         android:layout_marginEnd="@dimen/fastscroll_popup_margin" />
 
-    <com.android.launcher3.views.RecyclerViewFastScroller
+    <!-- DiamaneOS Tally: the letter rail, which is the stock scroller where Tally's layout does
+         not apply (it sets its own width and margins for the rail). -->
+    <com.android.launcher3.tally.allapps.TallyLetterRail
         android:id="@+id/fast_scroller"
         android:layout_width="@dimen/fastscroll_width"
         android:layout_height="wrap_content"
