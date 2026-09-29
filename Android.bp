@@ -293,6 +293,7 @@ android_library {
     resource_dirs: ["res"],
     static_libs: [
         "dynamiccolors",
+        "tallytokens",
         "LauncherPluginLib",
         "launcher_quickstep_log_protos_lite",
         "androidx-constraintlayout_constraintlayout",
