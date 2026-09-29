@@ -18,7 +18,8 @@
     <!-- For screens without rounded corners -->
     <dimen name="task_corner_radius_small">2dp</dimen>
     <!-- For Launchers that want to override the default dialog corner radius -->
-    <dimen name="task_corner_radius_override">-1dp</dimen>
+    <!-- Tally: Recents cards have 20 dp corners. -->
+    <dimen name="task_corner_radius_override">@dimen/tally_radius_l</dimen>
 
     <!--  Task Menu View  -->
     <dimen name="task_menu_corner_radius">26dp</dimen>
@@ -29,7 +30,9 @@
     <dimen name="overview_proactive_row_height">48dp</dimen>
     <dimen name="overview_proactive_row_bottom_margin">16dp</dimen>
 
-    <dimen name="overview_minimum_next_prev_size">50dp</dimen>
+    <!-- Tally: 40 dp (with overview_task_margin) makes a phone's card 0.70 of the screen, 260 dp
+         wide at 372 dp, as the prototype's. -->
+    <dimen name="overview_minimum_next_prev_size">40dp</dimen>
 
     <!--  Overflown Apps Container View  -->
     <!--  The padding of the container view and the space between the child app icons -->
@@ -108,7 +111,8 @@
     <dimen name="desktop_bottom_margin_multi_rows">24dp</dimen>
     <dimen name="desktop_left_right_margin_multi_rows">24dp</dimen>
     <dimen name="desktop_min_task_width">72dp</dimen>
-    <dimen name="task_hover_focus_border_width">3dp</dimen>
+    <!-- Tally: the focus ring is 2 dp, 2 dp clear of the card (task_hover_focus_offset_size). -->
+    <dimen name="task_hover_focus_border_width">@dimen/tally_focus_ring_width</dimen>
     <dimen name="task_hover_focus_offset_size">2dp</dimen>
     <integer name="desktop_layout_max_rows">5</integer>
     <!-- The length of the fading edge (gradient) of the task header title -->
@@ -129,7 +133,8 @@
     <dimen name="task_dismiss_button_margin">4dp</dimen>
 
     <!-- Overrideable in overlay that provides the Overview Actions. -->
-    <dimen name="overview_actions_top_margin">24dp</dimen>
+    <!-- Tally: the keys sit 12 dp under the card, as the prototype's. -->
+    <dimen name="overview_actions_top_margin">@dimen/tally_space_m</dimen>
     <dimen name="overview_actions_height">48dp</dimen>
     <!-- Tally: keys 8 dp apart, with 8 dp corners (tally_recents_keys.xml). -->
     <dimen name="overview_actions_button_spacing">@dimen/tally_space_s</dimen>
