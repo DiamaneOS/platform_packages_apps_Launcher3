@@ -91,6 +91,7 @@ constructor(
         }
         val state =
             TallyLiveRules.stateOf(
+                input.app.mPackageName,
                 input.flags,
                 input.category,
                 input.onDefaultChannel,
