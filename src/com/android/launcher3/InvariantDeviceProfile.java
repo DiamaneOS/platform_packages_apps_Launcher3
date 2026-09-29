@@ -64,6 +64,7 @@ import com.android.launcher3.display.LauncherDisplayInfo;
 import com.android.launcher3.graphics.ThemeManager;
 import com.android.launcher3.logging.FileLog;
 import com.android.launcher3.model.DeviceGridState;
+import com.android.launcher3.tally.home.TallyHomeLayout;
 import com.android.launcher3.testing.shared.ResourceUtils;
 import com.android.launcher3.util.DaggerSingletonObject;
 import com.android.launcher3.util.DaggerSingletonTracker;
@@ -372,6 +373,8 @@ public class InvariantDeviceProfile {
 
     private void initGridForDisplayOption(
             LauncherDisplayInfo displayInfo, DisplayOption displayOption) {
+        // DiamaneOS Tally: Home's keys, names and dock spacing on an upright phone.
+        TallyHomeLayout.applyToDisplayOption(displayInfo, displayOption);
         Context context = displayInfo.context;
         enableTwoLinesInAllApps = Flags.enableTwolineToggle()
                 && Utilities.isEnglishLanguage(context)

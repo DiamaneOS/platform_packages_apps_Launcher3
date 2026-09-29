@@ -1,0 +1,219 @@
+/*
+ * Copyright (C) 2026 The DiamaneOS Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.launcher3.tally.home
+
+import android.content.res.Resources
+import com.android.launcher3.InvariantDeviceProfile
+import com.android.launcher3.R
+import com.android.launcher3.deviceprofile.DeviceProperties
+import com.android.launcher3.deviceprofile.parser.DeviceTypedMap.INDEX_DEFAULT
+import com.android.launcher3.deviceprofile.parser.DisplayOption
+import com.android.launcher3.display.LauncherDisplayInfo
+import com.android.launcher3.folder.ClippedFolderIconLayoutRule.ICON_OVERLAP_FACTOR
+import com.android.launcher3.icons.IconNormalizer.ICON_VISIBLE_AREA_FACTOR
+import kotlin.math.ceil
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
+
+/**
+ * Tally Home's layout on a phone held upright, as the prototype's `T.home.layout` lays it out on
+ * the 372 × 828 dp canvas: one spacing rhythm from the top (the date, the tallies band, the grid)
+ * and one from the bottom (the dock's keys and the search slot), with equal rows between them. At
+ * 100 to 130 % text: the date at 64 dp, the tallies at 104, the grid from 184 (plus a tenth of any
+ * height over 828), the dock's band 228 dp above the bottom with its keys centred 174 dp above it,
+ * the search slot's bottom 72 dp above it, and 16 dp between the grid and the dock's band; rows are
+ * at most 120 dp. From 150 % text: 56, 94, 214, 232 (keys at 178, the slot at 76), 14 dp, at most
+ * 108 dp rows.
+ *
+ * App keys keep their size on the glass, as the prototype's `T.GLASS`: 56 dp on Home and in the
+ * dock and 52 dp in All apps at density 480, scaled by 480 / density and rounded to 4 dp at other
+ * display sizes. These are the keys' visible sizes; Launcher's icon sizes include the adaptive
+ * icon's margin, so they are larger by 1 / ICON_VISIBLE_AREA_FACTOR. App names are 12 sp and stop
+ * growing at 130 % text, as the prototype's labels do.
+ *
+ * Launcher applies this through two hooks: [applyToDisplayOption] when it picks a grid
+ * (InvariantDeviceProfile), and [workspacePaddingsPx] when it lays out the workspace
+ * (WorkspaceProfileNonResponsiveFactory). Landscape, tablets, fixed landscape and responsive grids
+ * keep stock's layout.
+ */
+object TallyHomeLayout {
+    /** The prototype's canvas height at density 480 (dp). */
+    const val CANVAS_HEIGHT_DP = 828f
+    /** Text from this scale takes the large-text rhythm. */
+    const val LARGE_TEXT_SCALE = 1.5f
+    /** App names, the date and the search text stop growing at this text scale. */
+    const val TEXT_SCALE_CAP = 1.3f
+
+    const val HOME_KEY_DP = 56f
+    const val ALL_APPS_KEY_DP = 52f
+    const val LABEL_SP = 12f
+    const val ALL_APPS_ROW_DP = 100f
+    private const val GLASS_DENSITY = 480f
+    private const val GLASS_STEP_DP = 4f
+
+    /** Positions from the top (dp), from the bottom (dp), and the rows' limits. */
+    data class Rhythm(
+        val dateTop: Float,
+        val talliesTop: Float,
+        val gridTop: Float,
+        /** The top of the dock's band, from the bottom of the screen. */
+        val keysFromBottom: Float,
+        /** The centre of the dock's keys, from the bottom. */
+        val dockCentreFromBottom: Float,
+        /** The bottom of the search slot, from the bottom. */
+        val slotBottomFromBottom: Float,
+        /** The space between the grid and the dock's band. */
+        val gridGap: Float,
+        val rowMax: Float,
+    )
+
+    /** The rhythm for a canvas [heightDp] tall at [fontScale]. */
+    @JvmStatic
+    fun rhythm(heightDp: Float, fontScale: Float): Rhythm =
+        if (fontScale >= LARGE_TEXT_SCALE) {
+            Rhythm(56f, 94f, 214f, 232f, 178f, 76f, 14f, 108f)
+        } else {
+            val extra = max(0f, heightDp - CANVAS_HEIGHT_DP)
+            Rhythm(64f, 104f, 184f + (extra * 0.1f).roundToInt(), 228f, 174f, 72f, 16f, 120f)
+        }
+
+    /** A key's visible size on the glass at [densityDpi], from its size at density 480. */
+    @JvmStatic
+    fun glassKeyDp(dp: Float, densityDpi: Int): Float =
+        (dp * GLASS_DENSITY / densityDpi / GLASS_STEP_DP).roundToInt() * GLASS_STEP_DP
+
+    /** Launcher's icon size for a key whose visible size is [keyDp]. */
+    @JvmStatic fun iconSizeDp(keyDp: Float): Float = keyDp / ICON_VISIBLE_AREA_FACTOR
+
+    /** The size (sp) for [sp] text that stops growing at [TEXT_SCALE_CAP]. */
+    @JvmStatic
+    fun cappedSp(sp: Float, fontScale: Float): Float =
+        if (fontScale > TEXT_SCALE_CAP) sp * TEXT_SCALE_CAP / fontScale else sp
+
+    /** Whether Tally's Home layout applies to a device of [deviceType] with [option]'s grid. */
+    @JvmStatic
+    fun appliesTo(deviceType: Int, option: DisplayOption): Boolean =
+        deviceType == InvariantDeviceProfile.TYPE_PHONE && !option.grid.isFixedLandscape
+
+    /**
+     * Sets the upright phone sizes of a grid's display option: the keys (Home and dock, All apps),
+     * the names, All apps' rows, and the dock's spacing that puts its keys and the search slot on
+     * the rhythm. Called as Launcher picks the grid, before it reads the option.
+     */
+    @JvmStatic
+    fun applyToDisplayOption(info: LauncherDisplayInfo, option: DisplayOption) {
+        if (!appliesTo(info.deviceType, option)) return
+        val dpi = info.densityDpi
+        val density = dpi / 160f
+        val fontScale = info.fontScale
+        val i = INDEX_DEFAULT
+        option.iconSizes[i] = iconSizeDp(glassKeyDp(HOME_KEY_DP, dpi))
+        option.allAppsIconSizes[i] = iconSizeDp(glassKeyDp(ALL_APPS_KEY_DP, dpi))
+        option.textSizes[i] = cappedSp(LABEL_SP, fontScale)
+        option.allAppsIconTextSizes[i] = cappedSp(LABEL_SP, fontScale)
+        option.allAppsCellSize[i].y = ALL_APPS_ROW_DP
+
+        val qsbPx = info.context.resources.getDimensionPixelSize(R.dimen.qsb_widget_height)
+        val iconPx = (option.iconSizes[i] * density).roundToInt()
+        val dock = dockSpacesDp(iconPx, density, qsbPx, fontScale)
+        option.hotseatQsbSpace[i] = dock[0]
+        option.hotseatBarBottomSpace[i] = dock[1]
+    }
+
+    /**
+     * The hotseat's space between its keys and the search slot, and below the slot (dp), that put
+     * the dock's keys and the slot on the rhythm. The hotseat's bar is its cell (the key and the
+     * reach of a folder preview), then that space, the slot and the space below it; its keys are
+     * centred in the cell at the top of the bar.
+     */
+    @JvmStatic
+    fun dockSpacesDp(iconPx: Int, density: Float, qsbPx: Int, fontScale: Float): FloatArray {
+        val rhythm = rhythm(CANVAS_HEIGHT_DP, fontScale)
+        val cellPx = ceil(iconPx * ICON_OVERLAP_FACTOR)
+        val barPx = rhythm.dockCentreFromBottom * density + cellPx / 2f
+        val slotBottomPx = rhythm.slotBottomFromBottom * density
+        return floatArrayOf(
+            max(0f, (barPx - iconPx - qsbPx - slotBottomPx) / density),
+            rhythm.slotBottomFromBottom,
+        )
+    }
+
+    /**
+     * The workspace's top and bottom padding (as the non-scalable workspace adds them to its edge
+     * margin and its hotseat and page indicator) that put the grid on the rhythm: its top on the
+     * rhythm's line, its bottom the rhythm's gap above the dock's band, rows no taller than the
+     * rhythm allows. Null where Tally's layout does not apply (landscape, a tablet, an external
+     * display, a taskbar).
+     */
+    @JvmStatic
+    fun workspacePaddingsPx(
+        res: Resources,
+        properties: DeviceProperties,
+        isVerticalLayout: Boolean,
+        isFixedLandscape: Boolean,
+        numRows: Int,
+        edgeMarginPx: Int,
+        hotseatBarSizePx: Int,
+        pageIndicatorPx: Int,
+    ): IntArray? {
+        if (
+            !properties.isPhone ||
+                properties.isLandscape ||
+                isVerticalLayout ||
+                isFixedLandscape ||
+                properties.deviceConfiguration.isExternalDisplay ||
+                properties.taskbarConfiguration.isTaskbarPresent ||
+                numRows <= 0
+        ) {
+            return null
+        }
+        return gridPaddingsPx(
+            heightPx = properties.heightPx,
+            density = res.displayMetrics.density,
+            fontScale = res.configuration.fontScale,
+            insetTopPx = properties.insets.top,
+            numRows = numRows,
+            edgeMarginPx = edgeMarginPx,
+            hotseatBarSizePx = hotseatBarSizePx,
+            pageIndicatorPx = pageIndicatorPx,
+        )
+    }
+
+    /** [workspacePaddingsPx]'s arithmetic, for a screen [heightPx] tall. */
+    @JvmStatic
+    fun gridPaddingsPx(
+        heightPx: Int,
+        density: Float,
+        fontScale: Float,
+        insetTopPx: Int,
+        numRows: Int,
+        edgeMarginPx: Int,
+        hotseatBarSizePx: Int,
+        pageIndicatorPx: Int,
+    ): IntArray {
+        val rhythm = rhythm(heightPx / density, fontScale)
+        val gridTopPx = rhythm.gridTop * density
+        var gridBottomPx = heightPx - (rhythm.keysFromBottom + rhythm.gridGap) * density
+        gridBottomPx = min(gridBottomPx, gridTopPx + rhythm.rowMax * density * numRows)
+        // The cells start at the top inset plus the top padding and the edge margin, and end at
+        // the hotseat's bar, the page indicator and the bottom padding.
+        val top = gridTopPx - insetTopPx - edgeMarginPx
+        val bottom = heightPx - gridBottomPx - hotseatBarSizePx - pageIndicatorPx
+        return intArrayOf(max(0, top.roundToInt()), max(0, bottom.roundToInt()))
+    }
+}
