@@ -30,6 +30,7 @@ import static com.android.launcher3.LauncherAnimUtils.VIEW_TRANSLATE_Y;
 import static com.android.launcher3.LauncherAnimUtils.WORKSPACE_SCALE_PROPERTY_FACTORY;
 import static com.android.launcher3.LauncherState.FLAG_HAS_SYS_UI_SCRIM;
 import static com.android.launcher3.LauncherState.FLAG_HOTSEAT_INACCESSIBLE;
+import static com.android.launcher3.LauncherState.FLAG_WORKSPACE_ICONS_BEING_DRAGGED;
 import static com.android.launcher3.LauncherState.HINT_STATE;
 import static com.android.launcher3.LauncherState.HOTSEAT_ICONS;
 import static com.android.launcher3.LauncherState.NORMAL;
@@ -160,9 +161,11 @@ public class WorkspaceStateTransitionAnimation {
                 workspaceFadeInterpolator);
         float hotseatIconsAlpha = (elements & HOTSEAT_ICONS) != 0 ? 1 : 0;
         propertySetter.setViewAlpha(hotseat, hotseatIconsAlpha, hotseatFadeInterpolator);
-        // DiamaneOS Tally: Home's date and tallies come and go with the dock.
+        // DiamaneOS Tally: Home's date and tallies come and go with the dock, and make way for
+        // the drop targets while Home is edited or an item is dragged.
         propertySetter.setViewAlpha(mLauncher.findViewById(R.id.tally_home_header),
-                hotseatIconsAlpha, hotseatFadeInterpolator);
+                state.hasFlag(FLAG_WORKSPACE_ICONS_BEING_DRAGGED) ? 0 : hotseatIconsAlpha,
+                hotseatFadeInterpolator);
 
         // Update the accessibility flags for hotseat based on launcher state.
         hotseat.setImportantForAccessibility(
