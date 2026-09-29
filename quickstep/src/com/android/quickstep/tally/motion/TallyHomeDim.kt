@@ -22,6 +22,7 @@ import android.animation.ValueAnimator
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.View
+import com.android.app.animation.Interpolators
 import kotlin.math.roundToInt
 
 /**
@@ -84,6 +85,7 @@ class TallyHomeDim(private val host: View, private val fill: TallySpring) {
         val animator = ValueAnimator.ofFloat(0f, 1f)
         var move = fill.Move(value.toDouble(), target.toDouble(), 0.0, REST_DELTA, REST_VELOCITY)
         animator.duration = move.millis
+        animator.interpolator = Interpolators.LINEAR
         animator.addListener(
             object : AnimatorListenerAdapter() {
                 override fun onAnimationStart(animation: Animator) {

@@ -21,6 +21,7 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.view.View
 import android.view.ViewGroup
+import com.android.app.animation.Interpolators
 import com.android.launcher3.BubbleTextView
 import com.android.launcher3.Reorderable
 import com.android.launcher3.Utilities
@@ -85,6 +86,7 @@ class TallyParting(private val stone: TallySpring, private val density: Float) {
         val total = settleAfterMs + back.millis
         return ValueAnimator.ofFloat(0f, 1f).apply {
             duration = total
+            interpolator = Interpolators.LINEAR
             addUpdateListener {
                 val t = it.animatedFraction * total / 1000.0
                 set((if (t < t1) out.valueAt(t) else back.valueAt(t - t1)).toFloat())
@@ -150,6 +152,7 @@ class TallyParting(private val stone: TallySpring, private val density: Float) {
         animator =
             ValueAnimator.ofFloat(0f, 1f).apply {
                 duration = move.millis
+                interpolator = Interpolators.LINEAR
                 addUpdateListener { set(move.valueAtFraction(it.animatedFraction).toFloat()) }
                 addListener(endListener())
                 start()

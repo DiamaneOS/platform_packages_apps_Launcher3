@@ -25,6 +25,7 @@ import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.RectF
 import android.view.View
+import com.android.app.animation.Interpolators
 import com.android.launcher3.BubbleTextView
 import com.android.launcher3.QuickstepTransitionManager.ANIMATION_DELAY_NAV_FADE_IN
 import com.android.launcher3.QuickstepTransitionManager.ANIMATION_NAV_FADE_IN_DURATION
@@ -128,6 +129,7 @@ class TallyLaunch(
         val windowAnimator =
             ValueAnimator.ofFloat(0f, 1f).apply {
                 duration = totalMillis
+                interpolator = Interpolators.LINEAR
                 addListener(floatingView)
                 addListener(
                     object : AnimatorListenerAdapter() {
