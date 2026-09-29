@@ -19,7 +19,9 @@ package com.android.launcher3.tally.live
 import android.app.Notification
 import android.app.NotificationChannel
 import android.media.session.MediaSession
+import android.os.Process
 import android.os.SystemClock
+import android.os.UserHandle
 import android.service.notification.NotificationListenerService.Ranking
 import android.service.notification.StatusBarNotification
 import androidx.annotation.WorkerThread
@@ -197,9 +199,13 @@ constructor(
                 val n = sbn.notification
                 val extras = n.extras
                 val channel = ranking?.channel
+                // A notification posted for every user (UserHandle.ALL, a system notification) is
+                // shown to this user, and belongs to this user here: user -1 is no profile, and
+                // asking the platform about it throws.
+                val user = if (sbn.user == UserHandle.ALL) Process.myUserHandle() else sbn.user
                 return Input(
                     key = sbn.key,
-                    app = PackageUserKey.fromNotification(sbn),
+                    app = PackageUserKey(sbn.packageName, user),
                     flags = n.flags,
                     category = n.category,
                     onDefaultChannel = channel?.id == NotificationChannel.DEFAULT_CHANNEL_ID,
