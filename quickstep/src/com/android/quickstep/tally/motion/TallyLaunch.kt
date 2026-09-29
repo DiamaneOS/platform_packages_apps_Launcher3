@@ -26,7 +26,6 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.view.View
 import com.android.app.animation.Interpolators
-import com.android.launcher3.BubbleTextView
 import com.android.launcher3.QuickstepTransitionManager.ANIMATION_DELAY_NAV_FADE_IN
 import com.android.launcher3.QuickstepTransitionManager.ANIMATION_NAV_FADE_IN_DURATION
 import com.android.launcher3.QuickstepTransitionManager.ANIMATION_NAV_FADE_OUT_DURATION
@@ -141,7 +140,6 @@ class TallyLaunch(
                         }
 
                         override fun onAnimationEnd(animation: Animator) {
-                            if (source is BubbleTextView) source.setStayPressed(false)
                             if (launcherClosing) {
                                 // Launcher is behind the window now; the dim goes with it.
                                 motion.dim.clear()
