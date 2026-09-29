@@ -71,8 +71,8 @@ object TallyHomeLayout {
     const val STARTING_GRID = "4_by_4"
 
     /**
-     * From 150 % text, a Home key shrinks in [GLASS_STEP_DP] steps down to this at most, so that
-     * its name stops reaching the key in the next row ([fittedKeyDp]).
+     * Where a name would reach the key in the next row, a Home key shrinks in [GLASS_STEP_DP] steps
+     * down to this at most ([fittedKeyDp]).
      */
     const val MIN_FITTED_KEY_DP = 24f
 
@@ -157,9 +157,9 @@ object TallyHomeLayout {
         val i = INDEX_DEFAULT
         option.textSizes[i] = cappedSp(LABEL_SP, fontScale)
         option.allAppsIconTextSizes[i] = cappedSp(LABEL_SP, fontScale)
-        // From 150 % text the rows can be too short for a key and its name at the largest display
-        // sizes: the key shrinks only as far as the name needs (the dock's keys, which Launcher
-        // sizes as Home's, follow).
+        // At the largest display sizes the rows can be too short for a key and its name (on the
+        // FP6 from 115 % text): the key shrinks only as far as the name needs (the dock's keys,
+        // which Launcher sizes as Home's, follow).
         val heightDp = max(info.currentSize.x, info.currentSize.y) / density
         val labelPx =
             TypedValue.applyDimension(
@@ -172,8 +172,7 @@ object TallyHomeLayout {
                 glassKeyDp(HOME_KEY_DP, dpi),
                 homeRowDp(heightDp, fontScale, option.grid.numRows),
                 density,
-                labelLineHeightPx(info.context, labelPx),
-                fontScale,
+                nameDepthPx(info.context, labelPx),
             )
         option.iconSizes[i] = iconSizeDp(keyDp)
         option.allAppsIconSizes[i] = iconSizeDp(glassKeyDp(ALL_APPS_KEY_DP, dpi))
@@ -195,24 +194,17 @@ object TallyHomeLayout {
     }
 
     /**
-     * The Home key (dp) for rows [rowDp] tall: [keyDp], except from 150 % text, where it shrinks in
-     * 4 dp steps (to [MIN_FITTED_KEY_DP] at most) only until its name, a line [labelLinePx] tall,
-     * no longer reaches the key in the next row ([nameClearsNextRow]). The key's touch target is
-     * its cell, which the rows keep taller than 48 dp.
+     * The Home key (dp) for rows [rowDp] tall: [keyDp], or, where its name would reach the key in
+     * the next row ([nameClearsNextRow]), smaller in 4 dp steps (to [MIN_FITTED_KEY_DP] at most)
+     * only until it no longer does. The key's touch target is its cell, which the rows keep taller
+     * than 48 dp.
      */
     @JvmStatic
-    fun fittedKeyDp(
-        keyDp: Float,
-        rowDp: Float,
-        density: Float,
-        labelLinePx: Int,
-        fontScale: Float,
-    ): Float {
-        if (fontScale < LARGE_TEXT_SCALE) return keyDp
+    fun fittedKeyDp(keyDp: Float, rowDp: Float, density: Float, nameDepthPx: Int): Float {
         var key = keyDp
         while (
             key - GLASS_STEP_DP >= MIN_FITTED_KEY_DP &&
-                !nameClearsNextRow(key, rowDp, density, labelLinePx)
+                !nameClearsNextRow(key, rowDp, density, nameDepthPx)
         ) {
             key -= GLASS_STEP_DP
         }
@@ -220,22 +212,26 @@ object TallyHomeLayout {
     }
 
     /**
-     * Whether a [keyDp] key's name, a line [labelLinePx] tall, stays clear of the key in the next
-     * row of [rowDp] rows. Launcher's Home icon is the key with its margin, then its drawable
-     * padding (7 dp less that margin), then the name, centred in the cell: what does not fit spills
-     * evenly above and below, and the name may reach into the next cell as far as the margin above
-     * that cell's key.
+     * Whether a [keyDp] key's name, whose descenders end [nameDepthPx] below the top of its line,
+     * stays clear of the key in the next row of [rowDp] rows. Launcher's Home icon is the key with
+     * its margin, then its drawable padding (7 dp less that margin), then the name's line, centred
+     * in the cell: what does not fit spills evenly above and below, and the name may reach into the
+     * next cell as far as the margin above that cell's key.
      */
     @JvmStatic
-    fun nameClearsNextRow(keyDp: Float, rowDp: Float, density: Float, labelLinePx: Int): Boolean {
+    fun nameClearsNextRow(keyDp: Float, rowDp: Float, density: Float, nameDepthPx: Int): Boolean {
         val iconPx = (iconSizeDp(keyDp) * density).roundToInt()
         val marginPx = (iconPx - (iconPx * ICON_VISIBLE_AREA_FACTOR).roundToInt()) / 2
         val paddingPx = max(0, (ICON_DRAWABLE_PADDING_DP * density + 0.5f).toInt() - marginPx)
-        return iconPx + paddingPx + labelLinePx - rowDp * density <= marginPx
+        return iconPx + paddingPx + nameDepthPx - rowDp * density <= marginPx
     }
 
-    /** The line height (px) of a Home name [textSizePx] tall, in the names' face. */
-    private fun labelLineHeightPx(context: Context, textSizePx: Float): Int {
+    /**
+     * How far below the top of its line (px) a Home name [textSizePx] tall reaches in the names'
+     * face: Launcher sets the name's baseline the face's top below the line's top (its font
+     * padding), and the name's descenders end at the face's descent.
+     */
+    private fun nameDepthPx(context: Context, textSizePx: Float): Int {
         val paint = Paint()
         paint.textSize = textSizePx
         paint.typeface =
@@ -245,7 +241,7 @@ object TallyHomeLayout {
                 false,
             )
         val fm = paint.fontMetrics
-        return ceil(fm.bottom - fm.top).toInt()
+        return ceil(fm.descent - fm.top).toInt()
     }
 
     /**
