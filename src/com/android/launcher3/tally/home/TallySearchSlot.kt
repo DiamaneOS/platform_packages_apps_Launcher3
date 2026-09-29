@@ -18,23 +18,30 @@ package com.android.launcher3.tally.home
 
 import android.animation.Animator
 import android.content.Context
-import android.content.ContextWrapper
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.Rect
 import android.graphics.RectF
+import android.os.Bundle
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.android.launcher3.AbstractFloatingView
-import com.android.launcher3.Launcher
+import com.android.launcher3.Insettable
 import com.android.launcher3.LauncherState
 import com.android.launcher3.R
 import com.android.launcher3.anim.AnimationSuccessListener
+import com.android.launcher3.dragndrop.DraggableView
+import com.android.launcher3.popup.Poppable
+import com.android.launcher3.popup.PoppableType
+import com.android.launcher3.views.ActivityContext
 import kotlin.math.min
 
 /**
@@ -43,8 +50,14 @@ import kotlin.math.min
  * "Search apps". A tap opens All apps with its search field and the keyboard, as All apps' own
  * search does; it searches what All apps searches (the apps), nothing else. The hotseat lays it out
  * in the space it reserves for a search bar (qsb_widget_height), 16 dp from the screen's sides.
+ *
+ * It comes off Home as a widget does ([TallyHomeLift]: a long press, or TalkBack's Remove) and
+ * comes back in Home settings ([TallyHomeItem.SEARCH]). Taken off, where Tally lays Home out, the
+ * hotseat keeps no room for it ([TallyHomeLayout.hotseatQsbHeightPx]) and it shows nothing and
+ * takes no touch; All apps' search stays a swipe up away.
  */
-class TallySearchSlot(context: Context) : LinearLayout(context) {
+class TallySearchSlot(context: Context) :
+    LinearLayout(context), Insettable, DraggableView, Poppable {
     private val density = resources.displayMetrics.density
     private val radius = resources.getDimension(R.dimen.tally_radius_m)
     private val sideMarginPx = resources.getDimensionPixelSize(R.dimen.tally_space_l)
@@ -58,6 +71,15 @@ class TallySearchSlot(context: Context) : LinearLayout(context) {
         }
     private val box = RectF()
     private val boxPath = Path()
+    /** Taken off Home (where Tally lays it out). */
+    private var removed = false
+    /** Picked up by a long press: hidden under the drag's image. */
+    private var lifted = false
+    private val lift =
+        TallyHomeLift(this, TallyHomeItem.SEARCH, { !removed }) {
+            lifted = it
+            invalidate()
+        }
 
     init {
         orientation = HORIZONTAL
@@ -101,6 +123,26 @@ class TallySearchSlot(context: Context) : LinearLayout(context) {
         )
         contentDescription = context.getString(R.string.all_apps_search_bar_hint)
         setOnClickListener { openSearch() }
+        refresh()
+    }
+
+    override fun setInsets(insets: Rect) {
+        // Home was laid out again (the slot came off or back, among others).
+        refresh()
+    }
+
+    private fun refresh() {
+        val activity: ActivityContext? = ActivityContext.lookupContextNoThrow(context)
+        val dp = activity?.deviceProfile
+        removed =
+            dp != null && TallyHomeLayout.appliesTo(dp) && !TallyHomeItem.SEARCH.isShown(context)
+        lifted = false
+        isClickable = !removed
+        isFocusable = !removed
+        importantForAccessibility =
+            if (removed) IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+            else IMPORTANT_FOR_ACCESSIBILITY_AUTO
+        invalidate()
     }
 
     private val displayMetrics
@@ -113,6 +155,40 @@ class TallySearchSlot(context: Context) : LinearLayout(context) {
         val width = parentWidth - 2 * sideMarginPx
         super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec)
     }
+
+    override fun draw(canvas: Canvas) {
+        if (removed || lifted) return
+        super.draw(canvas)
+    }
+
+    override fun onTouchEvent(ev: MotionEvent): Boolean {
+        if (removed) return false
+        lift.onTouchEvent(ev)
+        return super.onTouchEvent(ev)
+    }
+
+    override fun cancelLongPress() {
+        super.cancelLongPress()
+        lift.cancelLongPress()
+    }
+
+    override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
+        super.onInitializeAccessibilityNodeInfo(info)
+        lift.onInitializeAccessibilityNodeInfo(info)
+    }
+
+    override fun performAccessibilityAction(action: Int, arguments: Bundle?): Boolean =
+        lift.performAccessibilityAction(action) ||
+            super.performAccessibilityAction(action, arguments)
+
+    // DraggableView: lifted as a widget, the whole slot.
+    override fun getViewType(): Int = DraggableView.DRAGGABLE_WIDGET
+
+    override fun getWorkspaceVisualDragBounds(bounds: Rect) {
+        bounds.set(0, 0, width, height)
+    }
+
+    override fun getPoppableType(): PoppableType = PoppableType.WIDGET
 
     override fun onDraw(canvas: Canvas) {
         val inset = outlineWidth / 2f
@@ -134,10 +210,7 @@ class TallySearchSlot(context: Context) : LinearLayout(context) {
 
     private fun openSearch() {
         // Only Home's own slot opens anything (not a grid preview's).
-        var c: Context? = context
-        while (c != null && c !is Launcher) c = (c as? ContextWrapper)?.baseContext
-        if (c !is Launcher) return
-        val launcher: Launcher = c
+        val launcher = TallyHomeLift.launcherOf(context) ?: return
         AbstractFloatingView.closeAllOpenViews(launcher)
         launcher.stateManager.goToState(
             LauncherState.ALL_APPS,
