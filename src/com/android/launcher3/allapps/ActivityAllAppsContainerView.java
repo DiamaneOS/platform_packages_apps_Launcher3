@@ -88,6 +88,7 @@ import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.repository.StringCacheRepository;
 import com.android.launcher3.pm.UserCache;
 import com.android.launcher3.recyclerview.AllAppsRecyclerViewPool;
+import com.android.launcher3.tally.allapps.TallyLetterRail;
 import com.android.launcher3.util.ItemInfoMatcher;
 import com.android.launcher3.util.Preconditions;
 import com.android.launcher3.util.Themes;
@@ -1252,10 +1253,22 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
 
     private void applyAdapterSideAndBottomPaddings(DeviceProfile grid) {
         int bottomPadding = Math.max(mInsets.bottom, mNavBarScrimHeight);
+        // DiamaneOS Tally: the A-Z lists keep the letter rail's column at their end edge.
+        int railPadding = TallyLetterRail.listEndPaddingPx(getContext(), grid);
+        boolean rtl = Utilities.isRtl(getResources());
         mAH.forEach(adapterHolder -> {
             adapterHolder.mPadding.bottom = bottomPadding;
             adapterHolder.mPadding.left = grid.getAllAppsProfile().getPadding().left;
             adapterHolder.mPadding.right = grid.getAllAppsProfile().getPadding().right;
+            if (!adapterHolder.isSearch()) {
+                if (rtl) {
+                    adapterHolder.mPadding.left = Math.max(adapterHolder.mPadding.left,
+                            railPadding);
+                } else {
+                    adapterHolder.mPadding.right = Math.max(adapterHolder.mPadding.right,
+                            railPadding);
+                }
+            }
             adapterHolder.applyPadding();
         });
     }
