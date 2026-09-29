@@ -42,9 +42,12 @@ import com.android.launcher3.touch.PagedOrientationHandler;
 import com.android.launcher3.views.ClipIconView;
 import com.android.quickstep.RemoteTargetGluer.RemoteTargetHandle;
 import com.android.quickstep.orientation.RecentsPagedOrientationHandler;
+import com.android.quickstep.tally.motion.TallyClose;
+import com.android.quickstep.tally.motion.TallySpring;
 import com.android.quickstep.util.AnimatorControllerWithResistance;
 import com.android.quickstep.util.RectFSpringAnim;
 import com.android.quickstep.util.RectFSpringAnim.DefaultSpringConfig;
+import com.android.quickstep.util.RectFSpringAnim.TallySpringConfig;
 import com.android.quickstep.util.RectFSpringAnim.TaskbarHotseatSpringConfig;
 import com.android.quickstep.util.RectFSpringAnim.WidgetSpringConfig;
 import com.android.quickstep.util.SurfaceTransaction.SurfaceProperties;
@@ -294,6 +297,30 @@ public abstract class SwipeUpAnimationLogic implements
         public boolean isPortrait() {
             return !mDp.getDeviceProperties().isLandscape() && !mDp.isSeascape();
         }
+
+        /**
+         * DiamaneOS Tally: the spring the window flies home on, when Tally's motion applies to
+         * this return, else null (stock's springs).
+         */
+        @Nullable
+        public TallySpring getTallySpring() {
+            return null;
+        }
+
+        /** DiamaneOS Tally: the share of the target rect the window lands on (its visible key). */
+        public float getTallyVisibleFactor() {
+            return 1f;
+        }
+
+        /**
+         * DiamaneOS Tally: how each frame of the flight looks, for a window whose corners on screen
+         * are {@code stockStartRadius} where stock's motion left it; only called when
+         * {@link #getTallySpring()} is not null.
+         */
+        @Nullable
+        public TallyClose getTallyClose(float stockStartRadius) {
+            return null;
+        }
     }
 
     /**
@@ -424,7 +451,13 @@ public abstract class SwipeUpAnimationLogic implements
         boolean useTaskbarHotseatParams =
                 mDp.getDeviceProperties().getTaskbarConfiguration().isTaskbarPresent()
                 && homeAnimationFactory.isInHotseat();
-        RectFSpringAnim anim = new RectFSpringAnim(useTaskbarHotseatParams
+        // DiamaneOS Tally: one slab spring flies the window into its key (TallyFlight).
+        TallySpring tallySpring = targetTaskView == null
+                ? homeAnimationFactory.getTallySpring() : null;
+        RectFSpringAnim anim = new RectFSpringAnim(tallySpring != null
+                ? new TallySpringConfig(mContext, startRect, targetRect, tallySpring,
+                        homeAnimationFactory.getTallyVisibleFactor())
+                : useTaskbarHotseatParams
                 ? new TaskbarHotseatSpringConfig(mContext, mDp, startRect, targetRect)
                 : (homeAnimationFactory.isWidget()
                         ? new WidgetSpringConfig(mContext, mDp, startRect, targetRect)
@@ -439,6 +472,10 @@ public abstract class SwipeUpAnimationLogic implements
                 transformParams,
                 taskViewSimulator,
                 invariantStartRect);
+        if (tallySpring != null) {
+            runner.mTally = homeAnimationFactory.getTallyClose(
+                    taskViewSimulator.getScaledCornerRadius());
+        }
         anim.addAnimatorListener(runner);
         anim.addOnUpdateListener(runner);
         return anim;
@@ -476,6 +513,10 @@ public abstract class SwipeUpAnimationLogic implements
         float mTaskViewPivotFractionY;
         float mInitialScroll;
 
+        // DiamaneOS Tally: the flight's frames (TallyClose), else null for stock's.
+        @Nullable TallyClose mTally;
+        private final RectF mTallyWindowBounds = new RectF();
+
         SpringAnimationRunner(
                 HomeAnimationFactory factory,
                 RectF cropRectF,
@@ -506,10 +547,37 @@ public abstract class SwipeUpAnimationLogic implements
             mRunningTaskViewScrollOffset = factory.isRtl()
                     ? (Math.min(0, -invariantStartRect.right))
                     : (Math.max(0, mDp.getDeviceProperties().getWidthPx() - invariantStartRect.left));
+            // The whole window, in its own coordinates.
+            mTallyWindowBounds.set(0, 0, cropRectF.width(), cropRectF.height());
+            if (transformParams.getTargetSet() != null) {
+                for (RemoteAnimationTarget app : transformParams.getTargetSet().apps) {
+                    if (app.mode == transformParams.getTargetSet().targetMode) {
+                        mTallyWindowBounds.set(0, 0, app.screenSpaceBounds.width(),
+                                app.screenSpaceBounds.height());
+                        break;
+                    }
+                }
+            }
         }
 
         @Override
         public void onUpdate(RectF currentRect, float progress) {
+            if (mTally != null && mTargetTaskView == null) {
+                // DiamaneOS Tally: the content scales uniformly into the rect, and the window
+                // fades as its key comes back over it.
+                mHomeToWindowPositionMap.mapRect(mWindowCurrentRect, currentRect);
+                mTally.update(mWindowCurrentRect, progress, mTallyWindowBounds);
+                mMatrix.set(mTally.getContent().getMatrix());
+                mCropRect.set(mTally.getContent().getCrop());
+                mLocalTransformParams
+                        .setTargetAlpha(mTally.getWindowAlpha())
+                        .setCornerRadius(mTally.getContent().getLayerRadius());
+                mHomeAnim.setPlayFraction(progress);
+                mLocalTransformParams.applySurfaceParams(
+                        mLocalTransformParams.createSurfaceParams(this));
+                mAnimationFactory.update(currentRect, progress, mTally.getIconRadius(), 0);
+                return;
+            }
             float cornerRadius = Utilities.mapRange(progress, mStartRadius, mEndRadius);
             float alpha = mAnimationFactory.getWindowAlpha(progress);
 

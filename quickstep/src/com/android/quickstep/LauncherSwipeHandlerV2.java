@@ -50,6 +50,11 @@ import com.android.launcher3.views.ClipIconView;
 import com.android.launcher3.views.FloatingIconView;
 import com.android.launcher3.views.FloatingView;
 import com.android.launcher3.widget.LauncherAppWidgetHostView;
+import com.android.quickstep.tally.motion.TallyClose;
+import com.android.quickstep.tally.motion.TallyHomeEntrance;
+import com.android.quickstep.tally.motion.TallyMotion;
+import com.android.quickstep.tally.motion.TallySpring;
+import com.android.quickstep.tally.motion.TallyWindowMotion;
 import com.android.quickstep.util.ActiveGestureLog;
 import com.android.quickstep.util.RectFSpringAnim;
 import com.android.quickstep.util.ScalingWorkspaceRevealAnim;
@@ -132,7 +137,14 @@ public class LauncherSwipeHandlerV2 extends AbsSwipeUpHandler<
 
         mContainer.getRootView().setForceHideBackArrow(true);
 
+        // DiamaneOS Tally: the window flies into its key, or to the dock, on the slab spring.
+        TallyMotion tally = !mHandOffAnimationToHome && !appCanEnterPip && !mIsSwipeForSplit
+                && targetTaskView == null ? tallyMotionFor(runningTaskTarget) : null;
+
         if (mHandOffAnimationToHome || !canUseWorkspaceView || appCanEnterPip || mIsSwipeForSplit) {
+            if (tally != null) {
+                return createTallyDockHomeAnimationFactory(tally);
+            }
             return new LauncherHomeAnimationFactory() {
 
                 @Nullable
@@ -146,7 +158,7 @@ public class LauncherSwipeHandlerV2 extends AbsSwipeUpHandler<
             return createWidgetHomeAnimationFactory((LauncherAppWidgetHostView) workspaceView,
                     isTargetTranslucent, runningTaskTarget);
         }
-        return createIconHomeAnimationFactory(workspaceView, targetTaskView);
+        return createIconHomeAnimationFactory(workspaceView, targetTaskView, tally);
     }
 
     @Override
@@ -154,8 +166,65 @@ public class LauncherSwipeHandlerV2 extends AbsSwipeUpHandler<
         return true;
     }
 
+    /** DiamaneOS Tally's motion for a return of {@code runningTaskTarget}, or null for stock's. */
+    @Nullable
+    private TallyMotion tallyMotionFor(@Nullable RemoteAnimationTarget runningTaskTarget) {
+        if (mContainer == null || runningTaskTarget == null
+                || mContainer.getAppTransitionManager() == null) {
+            return null;
+        }
+        TallyMotion tally = mContainer.getAppTransitionManager().getTallyMotion();
+        return tally.appliesToReturn(new RemoteAnimationTarget[] {runningTaskTarget})
+                ? tally : null;
+    }
+
+    /** DiamaneOS Tally: the corners the flight starts from, where the finger left the window. */
+    private float tallyStartRadius(float stockStartRadius) {
+        return mTallySwipe != null ? mTallySwipe.getCurrent().getRadius() : stockStartRadius;
+    }
+
+    /** DiamaneOS Tally: Home's dim as the window leaves the finger (0.3 × (1 − progress)). */
+    private float tallyReleaseDim() {
+        float density = mContext.getResources().getDisplayMetrics().density;
+        return TallyWindowMotion.homeDim(mTallySwipe != null ? mTallySwipe.getHomeProgress()
+                : TallyWindowMotion.homeProgress(mCurrentDisplacement, density));
+    }
+
+    /**
+     * DiamaneOS Tally: with no key on Home, the window flies to the dock's centre and fades, and
+     * Home comes in at rest (no key to make room).
+     */
+    private HomeAnimationFactory createTallyDockHomeAnimationFactory(TallyMotion tally) {
+        RectF dock = tally.dockTarget(new RectF());
+        return new LauncherHomeAnimationFactory() {
+            @NonNull
+            @Override
+            public RectF getWindowTargetRect() {
+                return dock;
+            }
+
+            @Override
+            public TallySpring getTallySpring() {
+                return tally.getSlab();
+            }
+
+            @Override
+            public TallyClose getTallyClose(float stockStartRadius) {
+                return tally.close(null, dock, tallyStartRadius(stockStartRadius));
+            }
+
+            @Override
+            protected void playScalingRevealAnimation() {
+                if (mContainer != null) {
+                    new TallyHomeEntrance(mContainer, tally, null, null, tallyReleaseDim(),
+                            true /* fadeIn */, 0).start();
+                }
+            }
+        };
+    }
+
     private HomeAnimationFactory createIconHomeAnimationFactory(
-            View workspaceView, @Nullable TaskView targetTaskView) {
+            View workspaceView, @Nullable TaskView targetTaskView, @Nullable TallyMotion tally) {
         RectF iconLocation = new RectF();
         FloatingIconView floatingIconView = getFloatingIconView(mContainer, workspaceView, null,
                 mContainer.getTaskbarInteractor() == null
@@ -170,11 +239,44 @@ public class LauncherSwipeHandlerV2 extends AbsSwipeUpHandler<
         return new FloatingViewHomeAnimationFactory(floatingIconView) {
             @Nullable
             private RectF mTargetRect;
+            @Nullable
+            private TallyClose mTallyClose;
 
             @Nullable
             @Override
             protected View getViewIgnoredInWorkspaceRevealAnimation() {
                 return workspaceView;
+            }
+
+            @Nullable
+            @Override
+            public TallySpring getTallySpring() {
+                return tally != null ? tally.getSlab() : null;
+            }
+
+            @Override
+            public float getTallyVisibleFactor() {
+                return tally != null ? tally.visibleFactor(workspaceView) : 1f;
+            }
+
+            @Nullable
+            @Override
+            public TallyClose getTallyClose(float stockStartRadius) {
+                mTallyClose = tally == null ? null : tally.close(workspaceView,
+                        getWindowTargetRect(), tallyStartRadius(stockStartRadius));
+                return mTallyClose;
+            }
+
+            @Override
+            protected void playScalingRevealAnimation() {
+                if (tally != null && mContainer != null) {
+                    // DiamaneOS Tally: Home at rest; the key's neighbours make room and settle as
+                    // the window lands (TallyHomeEntrance).
+                    new TallyHomeEntrance(mContainer, tally, workspaceView, mSiblingAnimation,
+                            tallyReleaseDim(), true /* fadeIn */, 0).start();
+                    return;
+                }
+                super.playScalingRevealAnimation();
             }
 
             @Override
@@ -208,6 +310,13 @@ public class LauncherSwipeHandlerV2 extends AbsSwipeUpHandler<
                     float progress,
                     float radius,
                     int overlayAlpha) {
+                if (mTallyClose != null) {
+                    // DiamaneOS Tally: the key comes back over the window as it narrows.
+                    floatingIconView.update(mTallyClose.getIconAlpha(),
+                            mTallyClose.icon(currentRect), progress, windowAlphaThreshold,
+                            mTallyClose.getIconRadius(), false, overlayAlpha);
+                    return;
+                }
                 // We want the icon alpha to be 1 once this threshold is met, so that it can be
                 // seen morphing into the icon shape. But before the threshold, we want to limit
                 // the alpha to reduce the blur effect behind the window.

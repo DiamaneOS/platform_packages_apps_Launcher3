@@ -36,6 +36,8 @@ import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.util.DynamicResource;
 import com.android.quickstep.SurfaceReleaseCheck;
+import com.android.quickstep.tally.motion.TallyFlight;
+import com.android.quickstep.tally.motion.TallySpring;
 import com.android.systemui.plugins.ResourceProvider;
 
 import java.lang.annotation.Retention;
@@ -130,10 +132,23 @@ public class RectFSpringAnim extends SurfaceReleaseCheck {
     protected final float mDampingY;
     protected final float mRectStiffness;
 
+    // DiamaneOS Tally: one slab spring for the whole rect (TallySpringConfig), else null.
+    @Nullable
+    private final TallyFlight mTallyFlight;
+    private final float mTallyVisibleFactor;
+    private final RectF mTallyTarget = new RectF();
+
     public RectFSpringAnim(SpringConfig config) {
         mStartRect = config.startRect;
         mTargetRect = config.targetRect;
         mCurrentCenterX = mStartRect.centerX();
+        if (config instanceof TallySpringConfig tally) {
+            mTallyFlight = new TallyFlight(tally.mSpring);
+            mTallyVisibleFactor = tally.mVisibleFactor;
+        } else {
+            mTallyFlight = null;
+            mTallyVisibleFactor = 1f;
+        }
 
         setCanRelease(true);
 
@@ -164,7 +179,8 @@ public class RectFSpringAnim extends SurfaceReleaseCheck {
     }
 
     public void onTargetPositionChanged() {
-        if (isEnded()) {
+        if (isEnded() || mTallyFlight != null) {
+            // A Tally flight reads the target every frame.
             return;
         }
 
@@ -203,6 +219,10 @@ public class RectFSpringAnim extends SurfaceReleaseCheck {
      * @param velocityPxPerMs Velocity of swipe in px/ms.
      */
     public void start(Context context, @Nullable DeviceProfile profile, PointF velocityPxPerMs) {
+        if (mTallyFlight != null) {
+            startTally(velocityPxPerMs);
+            return;
+        }
         // Only tell caller that we ended if both x and y animations have ended.
         OnAnimationEndListener onXEndListener = ((animation, canceled, centerX, velocityX) -> {
             mRectXAnimEnded = true;
@@ -285,7 +305,10 @@ public class RectFSpringAnim extends SurfaceReleaseCheck {
     }
 
     public void end() {
-        if (mAnimsStarted) {
+        if (mAnimsStarted && mTallyFlight != null) {
+            // Lands at once: the last frame, then onTallyEnd.
+            mTallyFlight.end();
+        } else if (mAnimsStarted) {
             if (mRectXSpring.canSkipToEnd()) {
                 mRectXSpring.skipToEnd();
             }
@@ -314,6 +337,54 @@ public class RectFSpringAnim extends SurfaceReleaseCheck {
         return mRectXAnimEnded && mRectYAnimEnded && mRectScaleAnimEnded;
     }
 
+    /**
+     * DiamaneOS Tally: flies the rect to the target's visible key on one spring, with the finger's
+     * velocity (or a tap impulse), every edge moving together (TallyFlight).
+     */
+    private void startTally(PointF velocityPxPerMs) {
+        updateTallyTarget();
+        mRectXAnimEnded = false;
+        mRectYAnimEnded = false;
+        mRectScaleAnimEnded = false;
+        setCanRelease(false);
+        mAnimsStarted = true;
+        TallySpring.Move move = mTallyFlight.move(mStartRect, mTallyTarget,
+                velocityPxPerMs.x * 1000, velocityPxPerMs.y * 1000);
+        for (Animator.AnimatorListener animatorListener : mAnimatorListeners) {
+            animatorListener.onAnimationStart(null);
+        }
+        mTallyFlight.start(move, this::onTallyFrame, this::onTallyEnd);
+    }
+
+    private void onTallyFrame(float q) {
+        updateTallyTarget();
+        mCurrentScaleProgress = q;
+        mCurrentCenterX = Utilities.mapRange(q, mStartRect.centerX(), mTallyTarget.centerX());
+        mCurrentY = Utilities.mapRange(q, getTrackedYFromRect(mStartRect),
+                getTrackedYFromRect(mTallyTarget));
+        onUpdate();
+    }
+
+    private void onTallyEnd() {
+        mRectXAnimEnded = true;
+        mRectYAnimEnded = true;
+        mRectScaleAnimEnded = true;
+        maybeOnEnd();
+    }
+
+    /** The target's visible key: the target rect scaled about its centre. */
+    private void updateTallyTarget() {
+        float hw = mTargetRect.width() * mTallyVisibleFactor / 2f;
+        float hh = mTargetRect.height() * mTallyVisibleFactor / 2f;
+        mTallyTarget.set(mTargetRect.centerX() - hw, mTargetRect.centerY() - hh,
+                mTargetRect.centerX() + hw, mTargetRect.centerY() + hh);
+    }
+
+    /** Whether the animation has run and ended (false before it starts). */
+    public boolean hasLanded() {
+        return !mAnimsStarted && isEnded();
+    }
+
     private void onUpdate() {
         if (isEnded()) {
             // Prevent further updates from being called. This can happen between callbacks for
@@ -322,10 +393,11 @@ public class RectFSpringAnim extends SurfaceReleaseCheck {
         }
 
         if (!mOnUpdateListeners.isEmpty()) {
+            RectF target = mTallyFlight != null ? mTallyTarget : mTargetRect;
             float currentWidth = Utilities.mapRange(mCurrentScaleProgress, mStartRect.width(),
-                    mTargetRect.width());
+                    target.width());
             float currentHeight = Utilities.mapRange(mCurrentScaleProgress, mStartRect.height(),
-                    mTargetRect.height());
+                    target.height());
             switch (mTracking) {
                 case TRACKING_TOP:
                     mCurrentRect.set(mCurrentCenterX - currentWidth / 2,
@@ -487,6 +559,24 @@ public class RectFSpringAnim extends SurfaceReleaseCheck {
             stiffnessX = rp.getFloat(R.dimen.widget_x_stiffness);
             stiffnessY = rp.getFloat(R.dimen.widget_y_stiffness);
             rectStiffness = rp.getFloat(R.dimen.widget_rect_scale_stiffness);
+        }
+    }
+
+    /**
+     * DiamaneOS Tally: one spring ([spring], damping ratio 1) moves every edge together, landing
+     * the rect on the target's visible key ([visibleFactor] of the target, about its centre); the
+     * three springs above are not used.
+     */
+    public static class TallySpringConfig extends SpringConfig {
+        final TallySpring mSpring;
+        final float mVisibleFactor;
+
+        public TallySpringConfig(Context context, RectF startRect, RectF targetRect,
+                TallySpring spring, float visibleFactor) {
+            super(context, startRect, targetRect);
+            tracking = TRACKING_CENTER;
+            mSpring = spring;
+            mVisibleFactor = visibleFactor;
         }
     }
 
