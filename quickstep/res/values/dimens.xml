@@ -131,8 +131,9 @@
     <!-- Overrideable in overlay that provides the Overview Actions. -->
     <dimen name="overview_actions_top_margin">24dp</dimen>
     <dimen name="overview_actions_height">48dp</dimen>
-    <dimen name="overview_actions_button_spacing">16dp</dimen>
-    <dimen name="overview_actions_button_radius">28dp</dimen>
+    <!-- Tally: keys 8 dp apart, with 8 dp corners (tally_recents_keys.xml). -->
+    <dimen name="overview_actions_button_spacing">@dimen/tally_space_s</dimen>
+    <dimen name="overview_actions_button_radius">@dimen/tally_radius_s</dimen>
     <dimen name="overview_actions_button_vertical_padding">10dp</dimen>
     <dimen name="overview_actions_button_horizontal_padding">16dp</dimen>
 
@@ -143,7 +144,8 @@
     <dimen name="default_task_dismiss_drag_velocity_grid_focus_task">5dp</dimen>
 
     <dimen name="recents_clear_all_deadzone_vertical_margin">70dp</dimen>
-    <dimen name="recents_clear_all_outline_radius">24dp</dimen>
+    <!-- Tally: the focus outline round the 8 dp Clear all key, 2 dp clear of it. -->
+    <dimen name="recents_clear_all_outline_radius">10dp</dimen>
     <dimen name="recents_clear_all_outline_padding">2dp</dimen>
 
     <!-- Recents add desktop button -->
