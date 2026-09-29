@@ -28,20 +28,29 @@ import com.android.launcher3.tally.lamp.TallyLampState
  * - Live (running now): a notification of a foreground service
  *   ([Notification.FLAG_FOREGROUND_SERVICE]), or an ongoing one ([Notification.FLAG_ONGOING_EVENT])
  *   outside the legacy default channel (the same exception the dots make for old apps), unless it
- *   is a system status notice ([Notification.CATEGORY_SYSTEM], for example "USB debugging
- *   connected") or minimized (a channel of minimum importance, out of the way by the app's or the
- *   user's choice).
+ *   is a system status notice ([Notification.CATEGORY_SYSTEM]) or minimized (a channel of minimum
+ *   importance, out of the way by the app's or the user's choice).
  * - A group summary gives nothing: its children do.
+ * - A notice the OS posts itself gives nothing ([postedByOs]): the system's own ("android", for
+ *   example "USB debugging connected" and "Serial console enabled", which carry no category) and
+ *   SystemUI's (for example screen recording, battery and storage notices). They have their own
+ *   status bar icons, and no app on Home.
  *
- * Only these flags, the category and the ranking's channel are read here. For the tallies row,
- * [TallyLiveTracker] also reads the progress bar and the chronometer the system itself draws;
- * titles and texts are never read.
+ * Only these flags, the category, the posting package and the ranking's channel are read here. For
+ * the tallies row, [TallyLiveTracker] also reads the progress bar and the chronometer the system
+ * itself draws; titles and texts are never read.
  *
  * A notification the shade does not show gives nothing at all ([shownInShade]).
  */
 object TallyLiveRules {
     /** Notification.FLAG_USER_INITIATED_JOB, which the SDK does not publish. */
     private const val FLAG_USER_INITIATED_JOB = 0x00008000
+
+    /**
+     * The packages that post the OS's own notices: the system itself (system_server's notices,
+     * posted as "android") and SystemUI.
+     */
+    private val OS_PACKAGES = setOf("android", "com.android.systemui")
 
     /**
      * The categories Do Not Disturb's settings name, which it hides even from a foreground service
@@ -94,14 +103,19 @@ object TallyLiveRules {
         return media || !blockable
     }
 
-    /** The state one notification gives its app, or null for none. */
+    /** Whether a notification from [packageName] is one of the OS's own notices. */
+    @JvmStatic fun postedByOs(packageName: String?): Boolean = packageName in OS_PACKAGES
+
+    /** The state one notification from [packageName] gives its app, or null for none. */
     @JvmStatic
     fun stateOf(
+        packageName: String?,
         flags: Int,
         category: String?,
         onDefaultChannel: Boolean,
         minimized: Boolean,
     ): TallyLampState? {
+        if (postedByOs(packageName)) return null
         if (flags and Notification.FLAG_GROUP_SUMMARY != 0) return null
         if (category == Notification.CATEGORY_ERROR) return TallyLampState.FAILED
         if (category == Notification.CATEGORY_SYSTEM || minimized) return null
