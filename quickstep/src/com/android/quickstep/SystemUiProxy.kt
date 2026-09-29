@@ -70,6 +70,7 @@ import com.android.quickstep.util.ContextualSearchInvoker
 import com.android.quickstep.util.binder.OneWayBinderList
 import com.android.quickstep.util.unfold.ProxyUnfoldTransitionProvider
 import com.android.systemui.contextualeducation.GestureType
+import com.android.systemui.shared.recents.IStoppableAppsListener
 import com.android.systemui.shared.recents.ISystemUiProxy
 import com.android.systemui.shared.recents.model.ThumbnailData.Companion.wrap
 import com.android.systemui.shared.system.QuickStepContract
@@ -194,6 +195,13 @@ constructor(
         OneWayBinderList.forNullableSetter(
             mapper = IDesktopTaskListener.Stub::asInterface,
             setter = { desktopMode?.setTaskListener(it) },
+        )
+
+    /** Tally: listeners that learn which apps Recents' "Still running · Stop" may offer to stop. */
+    val stoppableAppsListeners =
+        OneWayBinderList.forNullableSetter(
+            mapper = IStoppableAppsListener.Stub::asInterface,
+            setter = { systemUiProxy?.setStoppableAppsListener(it) },
         )
 
     private val remoteTransitions = LinkedHashSet<RemoteTransition>()
@@ -343,6 +351,7 @@ constructor(
         recentTasksListeners.triggerRegisterEvent()
         unfoldAnimationListeners.triggerRegisterEvent()
         desktopTaskListeners.triggerRegisterEvent()
+        stoppableAppsListeners.triggerRegisterEvent()
 
         homeVisibilityState.init(this.shellTransitions)
         focusState.init(this.shellTransitions)
@@ -414,6 +423,16 @@ constructor(
     fun onOverviewHidden(displayId: Int, tag: String = TAG) =
         executeWithErrorLog({ "Failed call onOverviewHidden in displayId=$displayId" }, tag = tag) {
             systemUiProxy?.onOverviewHidden(displayId)
+        }
+
+    /**
+     * Tally: stops [packageName] in [userId] for Recents' "Still running · Stop", as the Stop
+     * button of SystemUI's Active apps dialog does. SystemUI checks the app again and ignores the
+     * call if it would not offer Stop for it.
+     */
+    fun stopApp(packageName: String, userId: Int) =
+        executeWithErrorLog({ "Failed call stopApp" }) {
+            systemUiProxy?.stopApp(packageName, userId)
         }
 
     @MainThread
