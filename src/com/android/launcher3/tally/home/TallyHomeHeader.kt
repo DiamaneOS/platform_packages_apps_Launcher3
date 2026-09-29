@@ -57,6 +57,13 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
         TextClock(context).apply {
             setTextAppearance(R.style.TextAppearance_Tally_Title)
             setTextColor(Themes.getAttrColor(context, R.attr.workspaceTextColor))
+            // On the wallpaper, with the shadow Home's names have (none with dark text).
+            setShadowLayer(
+                SHADOW_BLUR_DP * density,
+                0f,
+                SHADOW_DY_DP * density,
+                Themes.getAttrColor(context, R.attr.workspaceShadowColor),
+            )
             // The date stops growing at 130 % text, as the prototype's.
             val capPx =
                 TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, DATE_SP, displayMetrics)
@@ -98,15 +105,17 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
         if (!applies) return
         val rhythm =
             TallyHomeLayout.rhythm(properties.heightPx / density, resources.configuration.fontScale)
+        // Equal side margins, so left and right serve either direction (start and end margins set
+        // on params already in place would not be resolved).
         (date.layoutParams as LayoutParams).apply {
             topMargin = (rhythm.dateTop * density).roundToInt()
-            marginStart = (DATE_START_DP * density).roundToInt()
-            marginEnd = (DATE_START_DP * density).roundToInt()
+            leftMargin = (DATE_START_DP * density).roundToInt()
+            rightMargin = leftMargin
         }
         (tallies.layoutParams as LayoutParams).apply {
             topMargin = (rhythm.talliesTop * density).roundToInt()
-            marginStart = (TALLIES_SIDE_DP * density).roundToInt()
-            marginEnd = (TALLIES_SIDE_DP * density).roundToInt()
+            leftMargin = (TALLIES_SIDE_DP * density).roundToInt()
+            rightMargin = leftMargin
         }
         requestLayout()
     }
@@ -166,6 +175,9 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
         private const val DATE_LINE_DP = 28f
         private const val DATE_START_DP = 24f
         private const val DATE_SKELETON = "EEEEdMMMM"
+        /** The date's shadow: the blur and offset of the names' shadows on Home. */
+        private const val SHADOW_BLUR_DP = 1.5f
+        private const val SHADOW_DY_DP = 0.5f
         /** The tallies band spans the screen less 16 dp on each side. */
         private const val TALLIES_SIDE_DP = 16f
         private const val TICK_MS = 1000L
