@@ -542,6 +542,7 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
             }
             node.contentDescription = labelOf(slot)
             node.className = Button::class.java.name
+            node.isClickable = true
             node.addAction(AccessibilityNodeInfoCompat.ACTION_CLICK)
             slotBounds(virtualViewId, slotRect)
             @Suppress("DEPRECATION") node.setBoundsInParent(slotRect)
