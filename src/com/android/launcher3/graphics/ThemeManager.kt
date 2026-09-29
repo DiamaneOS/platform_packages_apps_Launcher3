@@ -18,6 +18,7 @@ package com.android.launcher3.graphics
 
 import android.content.Context
 import android.content.res.Resources
+import android.graphics.Bitmap
 import androidx.annotation.AnyThread
 import com.android.launcher3.LauncherPrefChangeListener
 import com.android.launcher3.LauncherPrefs
@@ -241,8 +242,14 @@ constructor(
         private val CONFIG_ICON_MASK_RES_ID: Int =
             Resources.getSystem().getIdentifier("config_icon_mask", "string", "android")
 
+        /**
+         * A transparent shadow layer: DiamaneOS Tally's keycaps have no blurred shadow under them
+         * (their relief is drawn over the icon by TallyKeycap).
+         */
+        private val NO_SHADOW: Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+
         private fun ShapeDelegate.createIconShape(size: Int) =
-            generateIconShape(size, getPath(size.toFloat()))
+            generateIconShape(size, getPath(size.toFloat())).copy(shadowLayer = NO_SHADOW)
 
         const val ICON_FACTORY_DAGGER_KEY = "ICON_FACTORIES"
     }
