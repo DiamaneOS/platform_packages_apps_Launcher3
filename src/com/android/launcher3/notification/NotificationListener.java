@@ -40,6 +40,7 @@ import com.android.launcher3.dot.DotInfo;
 import com.android.launcher3.pm.UserCache;
 import com.android.launcher3.tally.live.TallyAppLabels;
 import com.android.launcher3.tally.live.TallyLiveTracker;
+import com.android.launcher3.util.ApiWrapper;
 import com.android.launcher3.util.PackageUserKey;
 import com.android.launcher3.util.SafeCloseable;
 import com.android.launcher3.util.SettingsCache;
@@ -228,7 +229,9 @@ public class NotificationListener extends NotificationListenerService {
     private TallyLiveTracker.Input tallyInput(StatusBarNotification sbn) {
         RankingMap rankings = getCurrentRanking();
         boolean ranked = rankings != null && rankings.getRanking(sbn.getKey(), mTallyRanking);
-        return TallyLiveTracker.Input.from(sbn, ranked ? mTallyRanking : null);
+        ApiWrapper apiWrapper = ApiWrapper.INSTANCE.get(this);
+        return TallyLiveTracker.Input.from(sbn, ranked ? mTallyRanking : null,
+                apiWrapper::isImportanceLockedByCriticalDeviceFunction);
     }
 
     private List<TallyLiveTracker.Input> tallyInputs(StatusBarNotification[] notifications) {

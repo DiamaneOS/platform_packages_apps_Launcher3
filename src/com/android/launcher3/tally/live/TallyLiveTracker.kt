@@ -18,6 +18,7 @@ package com.android.launcher3.tally.live
 
 import android.app.Notification
 import android.app.NotificationChannel
+import android.media.session.MediaSession
 import android.os.SystemClock
 import android.service.notification.NotificationListenerService.Ranking
 import android.service.notification.StatusBarNotification
@@ -28,6 +29,9 @@ import com.android.launcher3.util.PackageUserKey
  * Keeps [TallyLiveRepository] in step with the notifications Launcher's listener receives. It runs
  * on the listener's worker thread and keeps, per notification key, only a [TallyLiveItem]: never
  * the notification itself. Each call returns the apps whose LED changed.
+ *
+ * A notification the shade does not show ([TallyLiveRules.shownInShade]) gives nothing, neither an
+ * LED nor a place in the row.
  *
  * @param labelOf the app's name for the tallies row (badged for a work profile)
  * @param profileOf which kind of profile a user is ([Profile]), which decides what the row shows
@@ -71,6 +75,18 @@ constructor(
     }
 
     private fun itemFor(input: Input, previous: TallyLiveItem? = items[input.key]): TallyLiveItem? {
+        if (
+            !TallyLiveRules.shownInShade(
+                input.suspended,
+                input.suppressedVisualEffects,
+                input.flags,
+                input.category,
+                input.media,
+                input.blockable,
+            )
+        ) {
+            return null
+        }
         val state =
             TallyLiveRules.stateOf(
                 input.flags,
@@ -134,7 +150,8 @@ constructor(
 
     /**
      * What the tracker reads from one notification and its ranking: flags, category, channel and
-     * importance, and the progress bar and chronometer the system draws. Nothing else.
+     * importance, whether the shade shows it, and the progress bar and chronometer the system
+     * draws. Nothing else.
      */
     data class Input(
         val key: String,
@@ -150,22 +167,57 @@ constructor(
         val showsChronometer: Boolean = false,
         val whenMillis: Long = 0L,
         val chronometerCountDown: Boolean = false,
+        /** The system suspends the app (Ranking.isSuspended). */
+        val suspended: Boolean = false,
+        /** What Do Not Disturb suppresses of it (Ranking.getSuppressedVisualEffects). */
+        val suppressedVisualEffects: Int = 0,
+        /** A media notification with a session, as Notification.isMediaNotification decides. */
+        val media: Boolean = false,
+        /** Whether its channel is blockable, as SystemUI's NotificationEntry decides. */
+        val blockable: Boolean = true,
     ) {
         companion object {
-            /** Reads [sbn] with its [ranking] (null when the ranking has no entry for it). */
+            private val MEDIA_TEMPLATES =
+                setOf(
+                    Notification.MediaStyle::class.java.name,
+                    Notification.DecoratedMediaCustomViewStyle::class.java.name,
+                )
+
+            /**
+             * Reads [sbn] with its [ranking] (null when the ranking has no entry for it).
+             * [lockedByCriticalDeviceFunction] tells whether the system locks a channel's
+             * importance for a critical device function (only Quickstep can read it).
+             */
             @JvmStatic
-            fun from(sbn: StatusBarNotification, ranking: Ranking?): Input {
+            fun from(
+                sbn: StatusBarNotification,
+                ranking: Ranking?,
+                lockedByCriticalDeviceFunction: (NotificationChannel) -> Boolean,
+            ): Input {
                 val n = sbn.notification
                 val extras = n.extras
+                val channel = ranking?.channel
                 return Input(
                     key = sbn.key,
                     app = PackageUserKey.fromNotification(sbn),
                     flags = n.flags,
                     category = n.category,
-                    onDefaultChannel =
-                        ranking?.channel?.id == NotificationChannel.DEFAULT_CHANNEL_ID,
+                    onDefaultChannel = channel?.id == NotificationChannel.DEFAULT_CHANNEL_ID,
                     minimized = ranking?.isAmbient ?: false,
                     canShowBadge = ranking?.canShowBadge() ?: false,
+                    suspended = ranking?.isSuspended ?: false,
+                    suppressedVisualEffects = ranking?.suppressedVisualEffects ?: 0,
+                    media =
+                        extras.getString(Notification.EXTRA_TEMPLATE) in MEDIA_TEMPLATES &&
+                            extras.getParcelable(
+                                Notification.EXTRA_MEDIA_SESSION,
+                                MediaSession.Token::class.java,
+                            ) != null,
+                    // As SystemUI: no channel, or one locked for a critical device function that
+                    // is not always blockable, is not blockable.
+                    blockable =
+                        channel != null &&
+                            !(lockedByCriticalDeviceFunction(channel) && !channel.isBlockable),
                     progress = extras.getInt(Notification.EXTRA_PROGRESS),
                     progressMax = extras.getInt(Notification.EXTRA_PROGRESS_MAX),
                     progressIndeterminate =
