@@ -54,6 +54,11 @@ class TallyAppLabels(context: Context) {
             } catch (e: SecurityException) {
                 app.mPackageName
             }
-        return packageManager.getUserBadgedLabel(label, user)
+        return try {
+            packageManager.getUserBadgedLabel(label, user)
+        } catch (e: SecurityException) {
+            // A user outside this profile group: its badge is not this app's to ask for.
+            label
+        }
     }
 }
