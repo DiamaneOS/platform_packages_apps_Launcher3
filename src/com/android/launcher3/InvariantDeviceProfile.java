@@ -64,6 +64,7 @@ import com.android.launcher3.display.LauncherDisplayInfo;
 import com.android.launcher3.graphics.ThemeManager;
 import com.android.launcher3.logging.FileLog;
 import com.android.launcher3.model.DeviceGridState;
+import com.android.launcher3.tally.home.TallyHomeItem;
 import com.android.launcher3.tally.home.TallyHomeLayout;
 import com.android.launcher3.testing.shared.ResourceUtils;
 import com.android.launcher3.util.DaggerSingletonObject;
@@ -300,6 +301,10 @@ public class InvariantDeviceProfile {
                 onConfigChanged();
             } else if (WORKSPACE_ITEMS_LABEL_HIDDEN.getSharedPrefKey().equals(key)
                     && com.android.systemui.shared.Flags.workspaceItemsLabelHidden()) {
+                onConfigChanged();
+            } else if (TallyHomeItem.forKey(key) != null) {
+                // DiamaneOS Tally: Home's tallies band or search slot came off or back (a setting
+                // in the same file as the ones above), and Home's layout follows.
                 onConfigChanged();
             }
         };

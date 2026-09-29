@@ -37,4 +37,20 @@
         launcher:logIdOn="613"
         launcher:logIdOff="614" />
 
+    <!-- DiamaneOS Tally: Home's tallies band and search slot, which come off Home as a widget
+         does and come back here (keys as TallyHomeItem's). -->
+    <SwitchPreference
+        android:key="pref_tally_home_tallies"
+        android:title="@string/tally_home_tallies"
+        android:summary="@string/tally_home_tallies_summary"
+        android:defaultValue="true"
+        android:persistent="true" />
+
+    <SwitchPreference
+        android:key="pref_tally_home_search"
+        android:title="@string/all_apps_search_bar_hint"
+        android:summary="@string/tally_home_search_summary"
+        android:defaultValue="true"
+        android:persistent="true" />
+
 </androidx.preference.PreferenceScreen>
