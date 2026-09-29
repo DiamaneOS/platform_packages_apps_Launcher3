@@ -319,7 +319,8 @@ public class InvariantDeviceProfile {
         LauncherDisplayInfo displayInfo = mDisplayController.getInfo();
         List<DisplayOption> allOptions = getPredefinedDeviceProfiles(
                 displayInfo,
-                gridName,
+                // DiamaneOS Tally: a phone with no grid chosen yet starts on Tally's 4 x 4 grid.
+                TallyHomeLayout.startingGridName(gridName, displayInfo.getDeviceType()),
                 mPrefs.get(FIXED_LANDSCAPE_MODE)
         );
 
