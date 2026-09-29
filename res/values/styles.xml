@@ -375,8 +375,8 @@
         <item name="android:focusable">true</item>
         <item name="android:gravity">center_horizontal</item>
         <item name="android:textColor">@color/workspace_text_color_light</item>
-        <!-- DiamaneOS Tally: app names in Tally's small label face (TextAppearance.Tally.LabelSmall:
-             the family, weight 500). Their size comes from the grid. -->
+        <!-- DiamaneOS Tally: app names in Tally's small label face (the family and weight 500
+             of TextAppearance.Tally.LabelSmall). Their size comes from the grid. -->
         <item name="android:fontFamily">@string/tally_font_family</item>
         <item name="android:textFontWeight">500</item>
         <item name="android:defaultFocusHighlightEnabled">false</item>
