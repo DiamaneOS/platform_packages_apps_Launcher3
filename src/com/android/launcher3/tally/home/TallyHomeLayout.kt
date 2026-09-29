@@ -154,6 +154,23 @@ object TallyHomeLayout {
     }
 
     /**
+     * Whether Tally's Home layout applies to a device profile: a phone held upright, with no
+     * taskbar, not an external display and not the fixed landscape grid.
+     */
+    @JvmStatic
+    fun appliesTo(
+        properties: DeviceProperties,
+        isVerticalLayout: Boolean,
+        isFixedLandscape: Boolean,
+    ): Boolean =
+        properties.isPhone &&
+            !properties.isLandscape &&
+            !isVerticalLayout &&
+            !isFixedLandscape &&
+            !properties.deviceConfiguration.isExternalDisplay &&
+            !properties.taskbarConfiguration.isTaskbarPresent
+
+    /**
      * The workspace's top and bottom padding (as the non-scalable workspace adds them to its edge
      * margin and its hotseat and page indicator) that put the grid on the rhythm: its top on the
      * rhythm's line, its bottom the rhythm's gap above the dock's band, rows no taller than the
@@ -171,15 +188,7 @@ object TallyHomeLayout {
         hotseatBarSizePx: Int,
         pageIndicatorPx: Int,
     ): IntArray? {
-        if (
-            !properties.isPhone ||
-                properties.isLandscape ||
-                isVerticalLayout ||
-                isFixedLandscape ||
-                properties.deviceConfiguration.isExternalDisplay ||
-                properties.taskbarConfiguration.isTaskbarPresent ||
-                numRows <= 0
-        ) {
+        if (!appliesTo(properties, isVerticalLayout, isFixedLandscape) || numRows <= 0) {
             return null
         }
         return gridPaddingsPx(

@@ -179,6 +179,12 @@ public class ApiWrapper {
         return null;
     }
 
+    /**
+     * Opens the notification shade (DiamaneOS Tally: Home's "+n more" tally). Overridden in
+     * Quickstep, which asks SystemUI through its proxy; nothing here.
+     */
+    public void openNotificationShade() { }
+
     /** Captures a snapshot of the host content as a bitmap */
     public Bitmap captureSnapshot(SurfaceControlViewHost host, int width, int height) {
         return BitmapRenderer.createHardwareBitmap(width, height, host.getView()::draw);

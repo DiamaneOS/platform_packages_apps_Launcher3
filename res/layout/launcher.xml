@@ -50,6 +50,13 @@
             android:id="@+id/hotseat"
             layout="@layout/hotseat" />
 
+        <!-- DiamaneOS Tally: Home's date and tallies band, above the grid. -->
+        <com.android.launcher3.tally.home.TallyHomeHeader
+            android:id="@+id/tally_home_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:theme="@style/HomeScreenElementTheme" />
+
         <!-- Keep these behind the workspace so that they are not visible when
          we go into AllApps -->
 
