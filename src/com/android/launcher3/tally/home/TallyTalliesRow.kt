@@ -201,6 +201,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context) {
 
         fun bindItem(newItem: TallyLiveItem) {
             item = newItem
+            giveWay(readout = false)
             lamp.setState(newItem.state)
             label.text = newItem.label
             refreshReadout()
@@ -208,6 +209,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context) {
 
         fun bindMore(hidden: List<TallyLiveItem>) {
             item = null
+            giveWay(readout = true)
             var state: TallyLampState? = null
             for (h in hidden) state = TallyLiveRules.moreUrgent(state, h.state)
             lamp.setState(state ?: TallyLampState.OFF)
@@ -220,6 +222,23 @@ class TallyTalliesRow(context: Context) : ViewGroup(context) {
                     hidden.size,
                     ListFormatter.getInstance().format(hidden.map { it.label.toString() }),
                 )
+        }
+
+        /**
+         * Which words give way in a narrow key: a thing's name (its readout is the news), or the
+         * readout of "+n more" ("Show", long in some languages), so the count stays whole.
+         */
+        private fun giveWay(readout: Boolean) {
+            val labelParams = label.layoutParams as LayoutParams
+            val valueParams = value.layoutParams as LayoutParams
+            labelParams.width = if (readout) LayoutParams.WRAP_CONTENT else 0
+            labelParams.weight = if (readout) 0f else 1f
+            valueParams.width = if (readout) 0 else LayoutParams.WRAP_CONTENT
+            valueParams.weight = if (readout) 1f else 0f
+            value.gravity = (if (readout) Gravity.END else Gravity.START) or Gravity.CENTER_VERTICAL
+            value.ellipsize = if (readout) TextUtils.TruncateAt.END else null
+            label.layoutParams = labelParams
+            value.layoutParams = valueParams
         }
 
         /** Updates the readout; returns whether it is a counting chronometer. */
