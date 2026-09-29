@@ -233,7 +233,8 @@ constructor(
     companion object {
 
         @JvmField val INSTANCE = DaggerSingletonObject(LauncherAppComponent::getThemeManager)
-        @JvmField val PREF_ICON_SHAPE = backedUpItem("icon_shape_model", "")
+        // DiamaneOS: the keycap is the default shape, so folders take its corner too.
+        @JvmField val PREF_ICON_SHAPE = backedUpItem("icon_shape_model", ShapesProvider.KEYCAP_KEY)
 
         @JvmField val DEFAULT_SHAPE_DELEGATE = pickBestShape(shapeStr = "")
 
