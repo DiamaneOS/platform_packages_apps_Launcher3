@@ -107,6 +107,7 @@ import com.android.launcher3.popup.PoppableType;
 import com.android.launcher3.popup.Popup;
 import com.android.launcher3.popup.PopupController;
 import com.android.launcher3.search.StringMatcherUtility;
+import com.android.launcher3.tally.keycap.TallyKeycap;
 import com.android.launcher3.touch.CustomActionsListener;
 import com.android.launcher3.touch.CustomEventsTouchHandler;
 import com.android.launcher3.touch.CustomTouchDelegate;
@@ -210,6 +211,10 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     private Animator mDotScaleAnim;
     private boolean mForceHideDot;
     private boolean mIsShowingMinimalPopup;
+    // DiamaneOS Tally: app keys on Home, in the dock, in folders and in All apps are keycaps.
+    @Nullable private final TallyKeycap mTallyKeycap;
+    @Nullable private final ThemeManager mTallyThemeManager;
+    private final Rect mTallyKeycapBounds = new Rect();
 
     // These fields, related to showing running apps, are only used for Taskbar.
     private final int mRunningAppIndicatorHeight;
@@ -423,6 +428,10 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         setAccessibilityDelegate(mActivity.getAccessibilityDelegate());
 
         setContainerTextVisibility(mDisplay != DISPLAY_TASKBAR);
+
+        mTallyKeycap = (mDisplay == DISPLAY_WORKSPACE || mDisplay == DISPLAY_ALL_APPS
+                || mDisplay == DISPLAY_FOLDER) ? new TallyKeycap(context) : null;
+        mTallyThemeManager = mTallyKeycap != null ? ThemeManager.INSTANCE.get(context) : null;
     }
 
     @Override
@@ -448,6 +457,10 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         cancelDotScaleAnim();
         mDotParams.scale = 0f;
         mForceHideDot = false;
+        if (mTallyKeycap != null) {
+            mTallyKeycap.reset();
+            resetIconScale();
+        }
         setBackground(null);
         configureMinimalPopup(false);
 
@@ -950,6 +963,7 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
      * @param canvas The canvas to draw to.
      */
     protected void drawDotIfNecessary(Canvas canvas) {
+        drawTallyKeycapIfNecessary(canvas);
         if (!mForceHideDot && (hasDot() || mDotParams.scale > 0)) {
             getIconBounds(mDotParams.iconBounds);
             Utilities.scaleRectAboutCenter(mDotParams.iconBounds, ICON_VISIBLE_AREA_FACTOR);
@@ -958,6 +972,50 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
             canvas.translate(scrollX, scrollY);
             mDotRenderer.draw(canvas, mDotParams);
             canvas.translate(-scrollX, -scrollY);
+        }
+    }
+
+    /**
+     * Draws the keycap's relief over the icon just drawn, and moves a key that is being pressed or
+     * let go (DiamaneOS Tally).
+     */
+    private void drawTallyKeycapIfNecessary(Canvas canvas) {
+        if (mTallyKeycap == null || mIcon == null || !mIsIconVisible
+                || mIcon.getDelegate() instanceof PreloadIconDelegate) {
+            return;
+        }
+        getIconBounds(mTallyKeycapBounds);
+        float drawnScale = FastBitmapDrawable.SCALE.get(mIcon);
+        final int scrollX = getScrollX();
+        final int scrollY = getScrollY();
+        canvas.translate(scrollX, scrollY);
+        mTallyKeycap.draw(canvas, mTallyKeycapBounds, drawnScale,
+                mTallyThemeManager.getIconShape(),
+                getTag() instanceof ItemInfo info && info.isInHotseat());
+        canvas.translate(-scrollX, -scrollY);
+        float nextScale = mTallyKeycap.advance();
+        if (nextScale != drawnScale) {
+            // Invalidates this view: the next frame draws the icon at the new scale.
+            FastBitmapDrawable.SCALE.set(mIcon, nextScale);
+        } else if (mTallyKeycap.isMoving()) {
+            postInvalidateOnAnimation();
+        }
+    }
+
+    @Override
+    protected void drawableStateChanged() {
+        super.drawableStateChanged();
+        if (mTallyKeycap != null) {
+            boolean pressed = false;
+            for (int state : getDrawableState()) {
+                if (state == android.R.attr.state_pressed) {
+                    pressed = true;
+                    break;
+                }
+            }
+            if (mTallyKeycap.setPressed(pressed)) {
+                invalidate();
+            }
         }
     }
 
@@ -1414,6 +1472,10 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         if (mIcon != null) {
             mIcon.setVisible(getWindowVisibility() == VISIBLE && isShown(), false);
             mIcon.setHoverScaleEnabledForDisplay(mDisplay != DISPLAY_TASKBAR);
+            if (mTallyKeycap != null) {
+                // A keycap goes in when pressed (TallyKeycap), instead of the icon growing.
+                mIcon.setAnimationEnabled(false);
+            }
         }
     }
 
@@ -1558,6 +1620,9 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
 
     @Override
     public SafeCloseable prepareDrawDragView() {
+        if (mTallyKeycap != null) {
+            mTallyKeycap.reset();
+        }
         resetIconScale();
         setForceHideDot(true);
         return () -> {
