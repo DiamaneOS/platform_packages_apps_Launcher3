@@ -19,13 +19,17 @@ package com.android.launcher3.qsb
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.android.launcher3.Hotseat
 import com.android.launcher3.R
+import com.android.launcher3.tally.home.TallySearchSlot
 import javax.inject.Inject
 
 /** Wrapper class for qsb widget inflation to allow easier override */
 open class QsbWidgetFactory @Inject constructor() {
 
     open fun createView(container: ViewGroup): View {
+        // DiamaneOS Tally: Home's search slot under the dock, which opens All apps' search.
+        if (container is Hotseat) return TallySearchSlot(container.context)
         return View(container.context).apply { layoutParams = ViewGroup.LayoutParams(0, 0) }
     }
 }
