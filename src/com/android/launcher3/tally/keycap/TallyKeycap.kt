@@ -26,6 +26,7 @@ import android.view.animation.AnimationUtils
 import com.android.launcher3.R
 import com.android.launcher3.graphics.ShapeDelegate
 import com.android.launcher3.icons.IconNormalizer.ICON_VISIBLE_AREA_FACTOR
+import com.android.launcher3.tally.lamp.TallyLampState
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.sqrt
@@ -40,6 +41,8 @@ import kotlin.math.sqrt
  * with a tap impulse, its skirt compresses to 2 % (2 dp on the dock) and the press layer
  * (tally_press) covers its face; letting go brings it back on the same spring. With animations off
  * (Remove animations) the key jumps.
+ *
+ * Its LED ([TallyKeycapLed]) sits in the key's top-right corner and moves with the key.
  *
  * The host draws the icon itself with the icon's own press scale turned off. It calls [setPressed]
  * when its pressed state changes, and after drawing the icon it calls [draw] with the icon's bounds
@@ -59,6 +62,9 @@ class TallyKeycap(context: Context) {
     private val dockSkirtPressedPx: Float
     private val stiffness: Float
     private val impulse: Float
+
+    private val ledPainter = TallyKeycapLed(context)
+    private var led: TallyLampState? = null
 
     private val keyPath = Path()
     private var pathShape: ShapeDelegate? = null
@@ -106,6 +112,20 @@ class TallyKeycap(context: Context) {
         return true
     }
 
+    /**
+     * Sets the key's LED: live or failed, or null for none. Returns whether that changes anything,
+     * so the host draws again.
+     */
+    fun setLed(state: TallyLampState?): Boolean {
+        if (led == state) return false
+        led = state
+        return true
+    }
+
+    /** The key's LED, as last set. */
+    val ledState: TallyLampState?
+        get() = led
+
     /** Puts the key at rest at once (a recycled view, a drag starting). */
     fun reset() {
         pressed = false
@@ -121,7 +141,9 @@ class TallyKeycap(context: Context) {
 
     /**
      * Draws the key's relief (and, while pressed, its press layer) over an icon drawn in
-     * [iconBounds] at [iconScale] (about its centre). [dock] keys have the dock's deeper skirt.
+     * [iconBounds] at [iconScale] (about its centre), and its LED unless [hideLed] (the dot's
+     * forced-hidden state, for example while the key is dragged). [dock] keys have the dock's
+     * deeper skirt.
      */
     fun draw(
         canvas: Canvas,
@@ -129,6 +151,7 @@ class TallyKeycap(context: Context) {
         iconScale: Float,
         shape: ShapeDelegate,
         dock: Boolean,
+        hideLed: Boolean,
     ) {
         // The visible key: adaptive icons are drawn at the visible area factor of their bounds.
         val size = Math.round(iconBounds.width() * ICON_VISIBLE_AREA_FACTOR)
@@ -147,10 +170,13 @@ class TallyKeycap(context: Context) {
         canvas.translate(iconBounds.exactCenterX(), iconBounds.exactCenterY())
         canvas.scale(iconScale, iconScale)
         canvas.translate(-size / 2f, -size / 2f)
+        val clipCount = canvas.save()
         canvas.clipPath(keyPath)
         drawEdge(canvas, highlightPx, highlightPaint, size)
         drawEdge(canvas, -skirt, shadePaint, size)
         if (pressed) canvas.drawRect(0f, 0f, size.toFloat(), size.toFloat(), pressPaint)
+        canvas.restoreToCount(clipCount)
+        if (!hideLed) ledPainter.draw(canvas, 0f, 0f, size.toFloat(), led)
         canvas.restoreToCount(count)
     }
 

@@ -64,6 +64,7 @@ import com.android.launcher3.Workspace;
 import com.android.launcher3.allapps.ActivityAllAppsContainerView;
 import com.android.launcher3.anim.AnimatedFloat;
 import com.android.launcher3.celllayout.CellLayoutLayoutParams;
+import com.android.launcher3.dagger.LauncherComponentProvider;
 import com.android.launcher3.dot.FolderDotInfo;
 import com.android.launcher3.dragndrop.BaseItemDragListener;
 import com.android.launcher3.dragndrop.DragLayer;
@@ -85,6 +86,10 @@ import com.android.launcher3.model.data.WorkspaceItemInfo;
 import com.android.launcher3.popup.IconViewController;
 import com.android.launcher3.popup.Poppable;
 import com.android.launcher3.popup.PoppableType;
+import com.android.launcher3.tally.keycap.TallyKeycapLed;
+import com.android.launcher3.tally.lamp.TallyLampState;
+import com.android.launcher3.tally.live.TallyLiveRepository;
+import com.android.launcher3.tally.live.TallyLiveRules;
 import com.android.launcher3.touch.CustomActionsListener;
 import com.android.launcher3.touch.CustomEventsTouchHandler;
 import com.android.launcher3.touch.CustomTouchDelegate;
@@ -149,6 +154,11 @@ public class FolderIcon extends FrameLayout implements FloatingIconViewCompanion
     private float mDotScale;
     private Animator mDotScaleAnim;
 
+    // DiamaneOS Tally: the folder's LED is the most urgent of its apps' (live or failed).
+    private final TallyKeycapLed mTallyLedPainter;
+    private final TallyLiveRepository mTallyLive;
+    @Nullable private TallyLampState mTallyLed;
+
     private Rect mTouchArea = new Rect();
 
     private float mScaleForReorderBounce = 1f;
@@ -189,6 +199,8 @@ public class FolderIcon extends FrameLayout implements FloatingIconViewCompanion
         mDotParams = new DotRenderer.DrawParams();
         mDotParams.setDotColor(Themes.getAttrColor(context, R.attr.notificationDotColor));
         mDotParams.shapeInfo = ThemeManager.INSTANCE.get(context).getIconState().getIconShapeInfo();
+        mTallyLedPainter = new TallyKeycapLed(context);
+        mTallyLive = LauncherComponentProvider.get(context).getNotificationRepository().getLive();
     }
 
     public static <T extends Context & ActivityContext> FolderIcon inflateFolderAndIcon(int resId,
@@ -522,6 +534,15 @@ public class FolderIcon extends FrameLayout implements FloatingIconViewCompanion
             mDotScale = newDotScale;
             invalidate();
         }
+        TallyLampState led = null;
+        for (ItemInfo si : mInfo.getContents()) {
+            led = TallyLiveRules.moreUrgent(led, mTallyLive.ledStateFor(si));
+        }
+        if (led != mTallyLed) {
+            mTallyLed = led;
+            setContentDescription(getAccessiblityTitle(mInfo.title));
+            invalidate();
+        }
     }
 
     public ClippedFolderIconLayoutRule getLayoutRule() {
@@ -636,21 +657,13 @@ public class FolderIcon extends FrameLayout implements FloatingIconViewCompanion
     }
 
     public void drawDot(Canvas canvas) {
-        if (!mForceHideDot && ((mDotInfo != null && mDotInfo.hasDot()) || mDotScale > 0)) {
-            Rect iconBounds = mDotParams.iconBounds;
-            // FolderIcon draws the icon to be top-aligned (with padding) & horizontally-centered
+        // DiamaneOS Tally: the folder's LED takes the dot's place, on the preview's corner.
+        if (!mForceHideDot && mTallyLed != null && mBackground.getAcceptScaleProgress() <= 0) {
             int iconSize = mActivity.getDeviceProfile().getWorkspaceProfile().getIconSizePx();
-            iconBounds.left = (getWidth() - iconSize) / 2;
-            iconBounds.right = iconBounds.left + iconSize;
-            iconBounds.top = getPaddingTop();
-            iconBounds.bottom = iconBounds.top + iconSize;
-
-            float iconScale = (float) mBackground.previewSize / iconSize;
-            Utilities.scaleRectAboutCenter(iconBounds, iconScale);
-
-            // If we are animating to the accepting state, animate the dot out.
-            mDotParams.scale = Math.max(0, mDotScale - mBackground.getAcceptScaleProgress());
-            mDotRenderer.draw(canvas, mDotParams);
+            float previewSize = mBackground.previewSize;
+            float left = (getWidth() - iconSize) / 2f + (iconSize - previewSize) / 2f;
+            float top = getPaddingTop() + (iconSize - previewSize) / 2f;
+            mTallyLedPainter.draw(canvas, left, top, previewSize, mTallyLed);
         }
     }
 
@@ -803,17 +816,16 @@ public class FolderIcon extends FrameLayout implements FloatingIconViewCompanion
         String folder_type = getContext().getString(
                 HomeScreenFilesUtils.isFeatureEnabled() ? R.string.app_folder_type_name
                         : R.string.folder_type_name);
+        // DiamaneOS Tally: no "has notifications" (new ones are the shade's), and the LED's words.
+        String name;
         if (size < MAX_NUM_ITEMS_IN_PREVIEW) {
-            return getContext().getString(hasDot()
-                            ? R.string.apps_folder_name_format_exact_with_dot
-                            : R.string.apps_folder_name_format_exact,
+            name = getContext().getString(R.string.apps_folder_name_format_exact,
                     folder_type, title, size);
         } else {
-            return getContext().getString(hasDot()
-                            ? R.string.apps_folder_name_format_overflow_with_dot
-                            : R.string.apps_folder_name_format_overflow,
+            name = getContext().getString(R.string.apps_folder_name_format_overflow,
                     folder_type, title, MAX_NUM_ITEMS_IN_PREVIEW);
         }
+        return TallyKeycapLed.describe(getContext(), name, mTallyLed).toString();
     }
 
     @Override
