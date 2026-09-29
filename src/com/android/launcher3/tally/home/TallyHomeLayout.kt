@@ -17,6 +17,7 @@
 package com.android.launcher3.tally.home
 
 import android.content.res.Resources
+import com.android.launcher3.DeviceProfile
 import com.android.launcher3.InvariantDeviceProfile
 import com.android.launcher3.R
 import com.android.launcher3.deviceprofile.DeviceProperties
@@ -169,6 +170,11 @@ object TallyHomeLayout {
             !isFixedLandscape &&
             !properties.deviceConfiguration.isExternalDisplay &&
             !properties.taskbarConfiguration.isTaskbarPresent
+
+    /** [appliesTo] for [dp]: an upright phone, where All apps takes Tally's layout too. */
+    @JvmStatic
+    fun appliesTo(dp: DeviceProfile): Boolean =
+        appliesTo(dp.deviceProperties, dp.isVerticalBarLayout, dp.inv.isFixedLandscape)
 
     /**
      * The workspace's top and bottom padding (as the non-scalable workspace adds them to its edge
