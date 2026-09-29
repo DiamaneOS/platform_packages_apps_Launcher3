@@ -149,6 +149,11 @@ public class LauncherSwipeHandlerV2 extends AbsSwipeUpHandler<
         return createIconHomeAnimationFactory(workspaceView, targetTaskView);
     }
 
+    @Override
+    protected boolean canUseTallyMotion() {
+        return true;
+    }
+
     private HomeAnimationFactory createIconHomeAnimationFactory(
             View workspaceView, @Nullable TaskView targetTaskView) {
         RectF iconLocation = new RectF();

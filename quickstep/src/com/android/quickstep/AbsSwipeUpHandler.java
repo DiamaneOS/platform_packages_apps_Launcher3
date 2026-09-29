@@ -16,7 +16,9 @@
 package com.android.quickstep;
 
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_HOME;
+import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_270;
 import static android.view.Surface.ROTATION_90;
@@ -129,6 +131,7 @@ import com.android.launcher3.logging.StatsLogManager.StatsLogger;
 import com.android.launcher3.statehandlers.DesktopVisibilityController;
 import com.android.launcher3.statemanager.BaseState;
 import com.android.launcher3.statemanager.StatefulContainer;
+import com.android.launcher3.tally.home.TallyHomeLayout;
 import com.android.launcher3.taskbar.TaskbarInteractor;
 import com.android.launcher3.taskbar.TaskbarThresholdUtils;
 import com.android.launcher3.taskbar.customization.TaskbarFeatureEvaluator;
@@ -146,6 +149,8 @@ import com.android.mechanics.view.DistanceGestureContext;
 import com.android.mechanics.view.ViewMotionValue;
 import com.android.quickstep.GestureState.GestureEndTarget;
 import com.android.quickstep.RemoteTargetGluer.RemoteTargetHandle;
+import com.android.quickstep.tally.motion.TallySpring;
+import com.android.quickstep.tally.motion.TallySwipeWindow;
 import com.android.quickstep.util.ActiveGestureErrorDetector;
 import com.android.quickstep.util.ActiveGestureLog;
 import com.android.quickstep.util.ActiveGestureProtoLogProxy;
@@ -174,6 +179,7 @@ import com.android.systemui.shared.recents.model.ThumbnailData;
 import com.android.systemui.shared.system.ActivityManagerWrapper;
 import com.android.systemui.shared.system.InputConsumerController;
 import com.android.systemui.shared.system.InteractionJankMonitorWrapper;
+import com.android.systemui.shared.system.QuickStepContract;
 import com.android.systemui.shared.system.SysUiStatsLog;
 import com.android.systemui.shared.system.TaskStackChangeListener;
 import com.android.systemui.shared.system.TaskStackChangeListeners;
@@ -343,6 +349,9 @@ public abstract class AbsSwipeUpHandler<
     private boolean mHasMotionEverBeenPaused;
 
     private boolean mContinuingLastGesture;
+    // DiamaneOS Tally: the window following the finger in this gesture, or null for stock's.
+    @Nullable
+    protected TallySwipeWindow mTallySwipe;
 
     // Cache of recently-updated task snapshots, mapping task id to ThumbnailData
     private HashMap<Integer, ThumbnailData> mTaskSnapshotCache = new HashMap<>();
@@ -890,6 +899,16 @@ public abstract class AbsSwipeUpHandler<
         mAnimationFactory.setRecentsAttachedToAppWindow(
                 recentsAttachedToAppWindow, animate, updateRunningTaskAlpha);
 
+        if (mTallySwipe != null) {
+            // DiamaneOS Tally: the window settles into its card (or back to the finger) on the
+            // stone spring, reapplying its transform each frame through the attach animation.
+            mTallySwipe.setAttached(recentsAttachedToAppWindow, animate);
+            if (!animate) {
+                applyScrollAndTransform();
+            }
+            return;
+        }
+
         // Reapply window transform throughout the attach animation, as the animation affects how
         // much the window is bound by overscroll (vs moving freely).
         if (animate) {
@@ -1117,6 +1136,7 @@ public abstract class AbsSwipeUpHandler<
             dp.updateInsets(targets.homeContentInsets);
             initTransitionEndpoints(dp);
         }
+        maybeStartTallySwipe(targets, forDesktop);
 
         // Notify when the animation starts
         if (!mRecentsAnimationStartCallbacks.isEmpty()) {
@@ -1130,6 +1150,70 @@ public abstract class AbsSwipeUpHandler<
         mStateCallback.runOnceAtState(STATE_APP_CONTROLLER_RECEIVED | STATE_GESTURE_STARTED,
                 this::startInterceptingTouchesForGesture);
         mStateCallback.setStateOnUiThread(STATE_APP_CONTROLLER_RECEIVED);
+    }
+
+    /**
+     * DiamaneOS Tally: whether this handler's gestures may take Tally's motion (Launcher's own
+     * Recents; a third-party launcher's keeps stock's).
+     */
+    protected boolean canUseTallyMotion() {
+        return false;
+    }
+
+    /**
+     * DiamaneOS Tally: lets the window follow the finger as Tally's does (TallySwipeWindow), on an
+     * upright phone in gesture navigation, for one full-screen app with no rotation on the way
+     * and no picture-in-picture to enter. Everything else keeps stock's motion.
+     */
+    private void maybeStartTallySwipe(RecentsAnimationTargets targets, boolean forDesktop) {
+        if (mTallySwipe != null) {
+            mTallySwipe.cancel();
+            mTallySwipe = null;
+        }
+        if (!canUseTallyMotion() || forDesktop || mDp == null || mRemoteTargetHandles.length != 1
+                || mIsSwipeForSplit || mContinuingLastGesture
+                || !mDeviceState.isFullyGesturalNavMode() || mGestureState.isTrackpadGesture()
+                || !TallyHomeLayout.appliesTo(mDp)) {
+            return;
+        }
+        RecentsOrientedState orientation =
+                mRemoteTargetHandles[0].getTaskViewSimulator().getOrientationState();
+        if (orientation.getDisplayRotation() != ROTATION_0
+                || orientation.getTouchRotation() != ROTATION_0
+                || orientation.getRecentsActivityRotation() != ROTATION_0) {
+            return;
+        }
+        RemoteAnimationTarget running = targets.findTask(mGestureState.getTopRunningTaskId());
+        if (running == null || running.taskInfo == null || running.rotationChange != 0
+                || running.windowConfiguration.getActivityType() != ACTIVITY_TYPE_STANDARD
+                || running.windowConfiguration.getWindowingMode() != WINDOWING_MODE_FULLSCREEN
+                || (running.allowEnterPip && running.taskInfo.pictureInPictureParams != null
+                        && running.taskInfo.pictureInPictureParams.isAutoEnterEnabled())) {
+            return;
+        }
+        Resources res = mContext.getResources();
+        mTallySwipe = new TallySwipeWindow(TallySpring.stone(res), TallySpring.slab(res),
+                mDp.getDeviceProperties().getWidthPx(), mDp.getDeviceProperties().getHeightPx(),
+                res.getDisplayMetrics().density,
+                QuickStepContract.supportsRoundedCornersOnWindows(res)
+                        ? QuickStepContract.getWindowCornerRadius(mContext) : 0,
+                () -> {
+                    if (mRunningWindowAnim == null || mRunningWindowAnim.length == 0) {
+                        applyScrollAndTransform();
+                    }
+                });
+    }
+
+    @Override
+    protected boolean isTallySwipe() {
+        return mTallySwipe != null;
+    }
+
+    @Override
+    protected void overrideTallyStartRect(RectF windowRect) {
+        if (mTallySwipe != null) {
+            windowRect.set(mTallySwipe.getCurrent().getRect());
+        }
     }
 
     @Override
@@ -1722,11 +1806,21 @@ public abstract class AbsSwipeUpHandler<
                 onPageTransitionEnd.run();
             }
         }
+        final float animStartShift;
+        if (mTallySwipe != null && endTarget == LAST_TASK) {
+            // DiamaneOS Tally: back to the app on the slab spring with the finger's velocity.
+            TallySpring.Move move = mTallySwipe.returnMove(velocityPxPerMs);
+            duration = move.getMillis();
+            interpolator = TallySwipeWindow.curve(move);
+            animStartShift = currentShift;
+        } else {
+            animStartShift = startShift;
+        }
         long finalDuration = duration;
         Interpolator finalInterpolator = interpolator;
         runOnRecentsAnimationStart(() -> {
-            animateGestureEnd(
-                startShift, endShift, finalDuration, finalInterpolator, endTarget, velocityPxPerMs);
+            animateGestureEnd(animStartShift, endShift, finalDuration, finalInterpolator, endTarget,
+                    velocityPxPerMs);
         });
     }
 
@@ -2045,6 +2139,10 @@ public abstract class AbsSwipeUpHandler<
         } else {
             AnimatorSet animatorSet = new AnimatorSet();
             ValueAnimator windowAnim = mCurrentShift.animateToValue(start, end);
+            if (mTallySwipe != null && target != LAST_TASK) {
+                // DiamaneOS Tally: the window finishes settling into its card with this animation.
+                mTallySwipe.finishInCard(windowAnim);
+            }
             windowAnim.addUpdateListener(valueAnimator -> {
                 computeRecentsScrollIfInvisible();
             });
@@ -2457,6 +2555,9 @@ public abstract class AbsSwipeUpHandler<
         }
         mInputConsumerProxy.unregisterOnTouchDownCallback();
         endRunningWindowAnim(false /* cancel */);
+        if (mTallySwipe != null) {
+            mTallySwipe.cancel();
+        }
 
         if (mGestureEndCallback != null) {
             mGestureEndCallback.run();
@@ -3124,6 +3225,15 @@ public abstract class AbsSwipeUpHandler<
                 TransformParams transformParams = remoteHandle.getTransformParams();
                 if (shouldFadeOutTargetsForKeyboardQuickSwitch(
                         transformParams, taskViewSimulator, progress)) {
+                    continue;
+                }
+                if (mTallySwipe != null) {
+                    // DiamaneOS Tally: the window follows the finger (TallySwipeWindow).
+                    if (taskViewSimulator.compute(transformParams)) {
+                        mTallySwipe.setFinger(mCurrentShift.value * mTransitionDragLength,
+                                scrollOffset);
+                        mTallySwipe.apply(taskViewSimulator, transformParams);
+                    }
                     continue;
                 }
                 taskViewSimulator.apply(transformParams);

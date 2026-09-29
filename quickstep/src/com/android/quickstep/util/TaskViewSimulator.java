@@ -431,8 +431,41 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
      * surface transaction
      */
     public void apply(TransformParams params, @Nullable SurfaceTransaction surfaceTransaction) {
-        if (mDp == null || mThumbnailPosition.isEmpty()) {
+        if (!compute(params)) {
             return;
+        }
+        params.applySurfaceParams(surfaceTransaction == null
+                ? params.createSurfaceParams(this) : surfaceTransaction);
+
+        if (!DEBUG) {
+            return;
+        }
+        Log.d(TAG, "progress: " + Utilities.boundToRange(this.fullScreenProgress.value, 0, 1)
+                + " carouselScale: " + carouselScale.value
+                + " recentsViewScale: " + recentsViewScale.value
+                + " crop: " + mTmpCropRect
+                + " radius: " + getCurrentCornerRadius()
+                + " taskW: " + mTaskRect.width() + " H: " + mTaskRect.height()
+                + " taskRect: " + mTaskRect
+                + " taskPrimaryT: " + taskPrimaryTranslation.value
+                + " taskSecondaryT: " + taskSecondaryTranslation.value
+                + " taskGridTranslationX: " + taskGridTranslationX.value
+                + " taskGridTranslationY: " + taskGridTranslationY.value
+                + " recentsPrimaryT: " + recentsViewPrimaryTranslation.value
+                + " recentsSecondaryT: " + recentsViewSecondaryTranslation.value
+                + " recentsScroll: " + recentsViewScroll.value
+                + " pivot: " + mPivot
+        );
+    }
+
+    /**
+     * Computes the transform {@link #apply} applies (the current matrix, crop and radius) without
+     * applying it. Returns false when there is nothing to apply yet. DiamaneOS Tally reads the
+     * task's place from it while placing the window itself.
+     */
+    public boolean compute(TransformParams params) {
+        if (mDp == null || mThumbnailPosition.isEmpty()) {
+            return false;
         }
         if (!mLayoutValid || mOrientationStateId != mOrientationState.getStateId()) {
             mLayoutValid = true;
@@ -513,28 +546,7 @@ public class TaskViewSimulator implements TransformParams.BuilderProxy {
         }
 
         params.setProgress(1f - fullScreenProgress);
-        params.applySurfaceParams(surfaceTransaction == null
-                ? params.createSurfaceParams(this) : surfaceTransaction);
-
-        if (!DEBUG) {
-            return;
-        }
-        Log.d(TAG, "progress: " + fullScreenProgress
-                + " carouselScale: " + carouselScale.value
-                + " recentsViewScale: " + recentsViewScale.value
-                + " crop: " + mTmpCropRect
-                + " radius: " + getCurrentCornerRadius()
-                + " taskW: " + taskWidth + " H: " + taskHeight
-                + " taskRect: " + mTaskRect
-                + " taskPrimaryT: " + taskPrimaryTranslation.value
-                + " taskSecondaryT: " + taskSecondaryTranslation.value
-                + " taskGridTranslationX: " + taskGridTranslationX.value
-                + " taskGridTranslationY: " + taskGridTranslationY.value
-                + " recentsPrimaryT: " + recentsViewPrimaryTranslation.value
-                + " recentsSecondaryT: " + recentsViewSecondaryTranslation.value
-                + " recentsScroll: " + recentsViewScroll.value
-                + " pivot: " + mPivot
-        );
+        return true;
     }
 
     @Override
