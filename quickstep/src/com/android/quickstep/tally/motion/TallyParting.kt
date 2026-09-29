@@ -34,8 +34,8 @@ import kotlin.math.max
 /**
  * A key's neighbours making room (the prototype's `T.part` and `T.unpart`): as a window grows out
  * of a key, the keys whose centres are within [TallyWindowMotion.PART_REACH] units of its centre (a
- * unit is the key's width, at least [TallyWindowMotion.PART_MIN_UNIT_DP]) move
- * [TallyWindowMotion.PART_DP] straight away from it on the stone spring with a tap impulse, and
+ * unit is the key's width, at least [TallyWindowMotion.PART_MIN_UNIT_DP]) move [partPx]
+ * (`tally_grid_parting`, 8 dp) straight away from it on the stone spring with a tap impulse, and
  * settle back on stone ([TallyWindowMotion.PART_SETTLE_MS] later for a launch, as the window lands
  * for a return). Only keys move (apps, folders, app pairs), never widgets, and never the key
  * itself.
@@ -47,7 +47,14 @@ import kotlin.math.max
  * parted), since they start together on the same spring. With animations removed they never visibly
  * move.
  */
-class TallyParting(private val stone: TallySpring, private val density: Float) {
+class TallyParting(
+    private val stone: TallySpring,
+    private val density: Float,
+    private val partPx: Float = TallyWindowMotion.PART_DP * density,
+) {
+    /** At rest within 0.01 dp and 0.5 dp/s, as the prototype's nudges (in units of [partPx]). */
+    private val restDelta = 0.01 * density / partPx
+    private val restVelocity = 0.5 * density / partPx
     private val keys = ArrayList<Reorderable>()
     private var directions = FloatArray(0)
     private val coord = FloatArray(2)
@@ -80,9 +87,9 @@ class TallyParting(private val stone: TallySpring, private val density: Float) {
      * move, for the launch to run next to its window.
      */
     fun launchAnimator(settleAfterMs: Long = PART_SETTLE_MS): Animator {
-        val out = stone.Move(0.0, 1.0, stone.impulse(1.0), REST_DELTA, REST_VELOCITY)
+        val out = stone.Move(0.0, 1.0, stone.impulse(1.0), restDelta, restVelocity)
         val t1 = settleAfterMs / 1000.0
-        val back = stone.Move(out.valueAt(t1), 0.0, out.velocityAt(t1), REST_DELTA, REST_VELOCITY)
+        val back = stone.Move(out.valueAt(t1), 0.0, out.velocityAt(t1), restDelta, restVelocity)
         val total = settleAfterMs + back.millis
         return ValueAnimator.ofFloat(0f, 1f).apply {
             duration = total
@@ -116,7 +123,7 @@ class TallyParting(private val stone: TallySpring, private val density: Float) {
     fun part() {
         if (keys.isEmpty()) return
         val from = progress.toDouble()
-        run(stone.Move(from, 1.0, stone.impulse(1.0 - from), REST_DELTA, REST_VELOCITY))
+        run(stone.Move(from, 1.0, stone.impulse(1.0 - from), restDelta, restVelocity))
     }
 
     /**
@@ -127,7 +134,7 @@ class TallyParting(private val stone: TallySpring, private val density: Float) {
         if (keys.isEmpty()) return
         val velocity = currentVelocity
         animator?.cancel()
-        run(stone.Move(progress.toDouble(), 0.0, velocity, REST_DELTA, REST_VELOCITY))
+        run(stone.Move(progress.toDouble(), 0.0, velocity, restDelta, restVelocity))
     }
 
     /** Puts every key back at once and forgets them. */
@@ -180,7 +187,7 @@ class TallyParting(private val stone: TallySpring, private val density: Float) {
 
     private fun set(p: Float) {
         progress = p
-        val amount = p * PART_DP * density
+        val amount = p * partPx
         for (i in keys.indices) {
             keys[i]
                 .translateDelegate
@@ -222,14 +229,9 @@ class TallyParting(private val stone: TallySpring, private val density: Float) {
     }
 
     companion object {
-        private const val PART_DP = TallyWindowMotion.PART_DP
         private const val PART_REACH = TallyWindowMotion.PART_REACH
         private const val PART_MIN_UNIT_DP = TallyWindowMotion.PART_MIN_UNIT_DP
         private const val PART_SETTLE_MS = TallyWindowMotion.PART_SETTLE_MS
-
-        /** At rest within 0.01 dp and 0.5 dp/s, as the prototype's nudges (in units of 8 dp). */
-        private const val REST_DELTA = 0.01 / TallyWindowMotion.PART_DP
-        private const val REST_VELOCITY = 0.5 / TallyWindowMotion.PART_DP
 
         /** Keys move; widgets and anything else stay. */
         @JvmStatic
