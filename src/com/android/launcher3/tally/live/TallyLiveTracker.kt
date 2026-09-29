@@ -30,7 +30,7 @@ import com.android.launcher3.util.PackageUserKey
  * the notification itself. Each call returns the apps whose LED changed.
  *
  * @param labelOf the app's name for the tallies row (badged for a work profile)
- * @param isPrivateProfile whether a user is the private space, whose things stay off the row
+ * @param profileOf which kind of profile a user is ([Profile]), which decides what the row shows
  * @param realtime the clock the row's order and chronometers use
  * @param wallTime the clock notifications' `when` uses
  */
@@ -39,7 +39,7 @@ class TallyLiveTracker
 constructor(
     private val repository: TallyLiveRepository,
     private val labelOf: (PackageUserKey) -> CharSequence,
-    private val isPrivateProfile: (PackageUserKey) -> Boolean,
+    private val profileOf: (PackageUserKey) -> Profile,
     private val realtime: () -> Long = SystemClock::elapsedRealtime,
     private val wallTime: () -> Long = System::currentTimeMillis,
 ) {
@@ -80,14 +80,18 @@ constructor(
             ) ?: return null
         val now = realtime()
         val since = if (previous != null && previous.state == state) previous.sinceRealtime else now
+        val profile = profileOf(input.app)
+        // A work profile may be locked, and then the shade shows only its notifications' public
+        // versions: Launcher cannot tell, so the row shows no work readout.
+        val readouts = profile == Profile.PERSONAL
         val chronometerBase =
-            if (input.showsChronometer && input.whenMillis > 0L) {
+            if (readouts && input.showsChronometer && input.whenMillis > 0L) {
                 input.whenMillis - wallTime() + now
             } else {
                 TallyLiveItem.NO_CHRONOMETER
             }
         val progress =
-            if (input.progressMax > 0 && !input.progressIndeterminate) {
+            if (readouts && input.progressMax > 0 && !input.progressIndeterminate) {
                 (input.progress.coerceIn(0, input.progressMax).toLong() * 1000 / input.progressMax)
                     .toInt()
             } else {
@@ -98,13 +102,34 @@ constructor(
             app = input.app,
             state = state,
             showsLed = input.canShowBadge,
-            showsInRow = !isPrivateProfile(input.app),
+            showsInRow = profile != Profile.PRIVATE,
             label = previous?.label ?: labelOf(input.app),
             progressPermille = progress,
             chronometerBase = chronometerBase,
-            countDown = input.chronometerCountDown,
+            countDown = readouts && input.chronometerCountDown,
             sinceRealtime = since,
         )
+    }
+
+    /** What the row shows of a user's things. */
+    enum class Profile {
+        /** The main user, a clone profile or another: the name, the state and any readout. */
+        PERSONAL,
+        /** The work profile: the name and the state, never a readout (progress, chronometer). */
+        WORK,
+        /** The private space: nothing (its keys still light, inside the unlocked space). */
+        PRIVATE;
+
+        companion object {
+            /** The profile of a user of this [work] or [private] type (UserCache's user info). */
+            @JvmStatic
+            fun of(work: Boolean, private: Boolean): Profile =
+                when {
+                    private -> PRIVATE
+                    work -> WORK
+                    else -> PERSONAL
+                }
+        }
     }
 
     /**

@@ -43,6 +43,7 @@ import com.android.launcher3.tally.live.TallyLiveTracker;
 import com.android.launcher3.util.PackageUserKey;
 import com.android.launcher3.util.SafeCloseable;
 import com.android.launcher3.util.SettingsCache;
+import com.android.launcher3.util.UserIconInfo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -213,7 +214,13 @@ public class NotificationListener extends NotificationListenerService {
             mTallyLive = new TallyLiveTracker(
                     LauncherComponentProvider.get(this).getNotificationRepository().getLive(),
                     labels::labelOf,
-                    key -> key.mUser != null && userCache.getUserInfo(key.mUser).isPrivate());
+                    key -> {
+                        if (key.mUser == null) {
+                            return TallyLiveTracker.Profile.PERSONAL;
+                        }
+                        UserIconInfo info = userCache.getUserInfo(key.mUser);
+                        return TallyLiveTracker.Profile.of(info.isWork(), info.isPrivate());
+                    });
         }
         return mTallyLive;
     }
