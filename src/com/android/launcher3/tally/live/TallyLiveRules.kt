@@ -17,6 +17,7 @@
 package com.android.launcher3.tally.live
 
 import android.app.Notification
+import android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_NOTIFICATION_LIST
 import com.android.launcher3.tally.lamp.TallyLampState
 
 /**
@@ -35,8 +36,63 @@ import com.android.launcher3.tally.lamp.TallyLampState
  * Only these flags, the category and the ranking's channel are read here. For the tallies row,
  * [TallyLiveTracker] also reads the progress bar and the chronometer the system itself draws;
  * titles and texts are never read.
+ *
+ * A notification the shade does not show gives nothing at all ([shownInShade]).
  */
 object TallyLiveRules {
+    /** Notification.FLAG_USER_INITIATED_JOB, which the SDK does not publish. */
+    private const val FLAG_USER_INITIATED_JOB = 0x00008000
+
+    /**
+     * The categories Do Not Disturb's settings name, which it hides even from a foreground service
+     * or a system notification (SystemUI's NotificationEntry.isNotificationBlockedByPolicy).
+     */
+    private val DND_POLICY_CATEGORIES =
+        setOf(
+            Notification.CATEGORY_CALL,
+            Notification.CATEGORY_MESSAGE,
+            Notification.CATEGORY_ALARM,
+            Notification.CATEGORY_EVENT,
+            Notification.CATEGORY_REMINDER,
+        )
+
+    /**
+     * Whether the notification shade shows a notification while the phone is awake, as SystemUI's
+     * RankingCoordinator filters its list, and no stricter:
+     * - an app the system suspends shows nothing ([suspended], Ranking.isSuspended);
+     * - Do Not Disturb hides a notification it intercepts with SUPPRESSED_EFFECT_NOTIFICATION_LIST
+     *   in [suppressedVisualEffects] (Ranking.getSuppressedVisualEffects, set only for an
+     *   intercepted notification), unless it is exempt, as NotificationEntry's
+     *   isExemptFromDndVisualSuppression decides: a call, message, alarm, event or reminder never
+     *   is; otherwise a foreground service or a user-initiated job ([flags]), a [media]
+     *   notification with a session, or one whose channel is not [blockable] is.
+     */
+    @JvmStatic
+    fun shownInShade(
+        suspended: Boolean,
+        suppressedVisualEffects: Int,
+        flags: Int,
+        category: String?,
+        media: Boolean,
+        blockable: Boolean,
+    ): Boolean {
+        if (suspended) return false
+        if (suppressedVisualEffects and SUPPRESSED_EFFECT_NOTIFICATION_LIST == 0) return true
+        return exemptFromDnd(flags, category, media, blockable)
+    }
+
+    private fun exemptFromDnd(
+        flags: Int,
+        category: String?,
+        media: Boolean,
+        blockable: Boolean,
+    ): Boolean {
+        if (category in DND_POLICY_CATEGORIES) return false
+        if (flags and (Notification.FLAG_FOREGROUND_SERVICE or FLAG_USER_INITIATED_JOB) != 0) {
+            return true
+        }
+        return media || !blockable
+    }
 
     /** The state one notification gives its app, or null for none. */
     @JvmStatic
