@@ -83,6 +83,7 @@ class TallyLaunch(
     private val current = TallyWindowRect()
     private val content = TallyWindowContent()
     private val iconRect = RectF()
+    private val windowInDragLayer = RectF()
     private val iconBounds = RectF(launcherIconBounds)
     private val closingMatrices = Array(appSurfaces.size) { Matrix() }
     private val closingCrops = Array(appSurfaces.size) { Rect() }
@@ -227,7 +228,8 @@ class TallyLaunch(
 
     /**
      * Puts the floating icon over the window: its icon bounds grow with the window from where the
-     * key's icon is (in the drag layer), so its key matches the window's rect.
+     * key's icon is (in the drag layer), so its key matches the window's rect, and it draws only
+     * inside the window's rounded rect (the bounds' margin around the key would show as a rim).
      */
     private fun updateIcon(alpha: Float, q: Float) {
         val sx = if (from.rect.width() > 0f) iconBounds.width() / from.rect.width() else 1f
@@ -238,6 +240,9 @@ class TallyLaunch(
         val hh = current.rect.height() * sy / 2f
         iconRect.set(cx - hw, cy - hh, cx + hw, cy + hh)
         floatingView.update(alpha, iconRect, q, 0f, current.radius * sx, true)
+        windowInDragLayer.set(current.rect)
+        windowInDragLayer.offset(-dragLayerX.toFloat(), -dragLayerY.toFloat())
+        floatingView.setWindowClip(windowInDragLayer, current.radius)
     }
 
     private companion object {
