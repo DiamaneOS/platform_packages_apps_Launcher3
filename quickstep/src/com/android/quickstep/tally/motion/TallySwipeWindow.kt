@@ -53,6 +53,7 @@ class TallySwipeWindow(
     private val screenH: Float,
     private val density: Float,
     private val restRadius: Float,
+    private val rubber: Float,
     private val reapply: Runnable,
 ) {
     private val home = TallyWindowRect()
@@ -134,7 +135,16 @@ class TallySwipeWindow(
         tvs = simulator
         val finish = finishAnimation
         if (finish != null) blend = finishFrom + (1f - finishFrom) * finish.animatedFraction
-        TallyWindowMotion.homeRect(upPx, sidewaysPx, screenW, screenH, density, restRadius, home)
+        TallyWindowMotion.homeRect(
+            upPx,
+            sidewaysPx,
+            screenW,
+            screenH,
+            density,
+            restRadius,
+            home,
+            rubber,
+        )
         if (blend > 0f) {
             card.set(simulator.currentRect, simulator.scaledCornerRadius)
             current.lerp(home, card, blend)

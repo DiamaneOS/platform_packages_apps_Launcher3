@@ -1197,6 +1197,7 @@ public abstract class AbsSwipeUpHandler<
                 res.getDisplayMetrics().density,
                 QuickStepContract.supportsRoundedCornersOnWindows(res)
                         ? QuickStepContract.getWindowCornerRadius(mContext) : 0,
+                res.getFloat(R.dimen.tally_rubber_band_coefficient),
                 () -> {
                     if (mRunningWindowAnim == null || mRunningWindowAnim.length == 0) {
                         applyScrollAndTransform();
