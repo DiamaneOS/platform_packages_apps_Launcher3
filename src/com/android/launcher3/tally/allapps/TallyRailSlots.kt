@@ -19,12 +19,14 @@ package com.android.launcher3.tally.allapps
 /**
  * The slots of All apps' letter rail ([TallyLetterRail]), worked out from the list's sections.
  * Every slot is at least 48 dp tall, so when the sections don't fit, letters share a slot, as the
- * prototype's rail does (on the 372 × 828 dp canvas K shares G's slot and W shares V's). The
- * prototype names its pairs; here the pair is chosen from the list itself, one merge at a time:
- * 1. the letter whose first app is the fewest rows below the first app of the letter before it (0:
- *    the same row, so a tap on the shared slot shows both letters' first apps at once),
- * 2. then the smaller shared slot (the rarer letters),
- * 3. then the later letter.
+ * prototype's rail does (on the 372 × 828 dp canvas K shares G's slot and W shares V's: "the rarest
+ * letters share their neighbour's slot", each one app, one row after the letter it joins). The
+ * prototype names its pairs; here they are chosen from the list itself, one merge at a time:
+ * 1. the rarest letter (the fewest apps),
+ * 2. then the one whose first app is the fewest rows below the first app of the letter before it
+ *    (0: the same row, so a tap on the shared slot shows both letters' first apps at once),
+ * 3. then the smaller shared slot,
+ * 4. then the later letter.
  *
  * On the prototype's apps this gives its pairs, K with G and W with V. A letter only ever joins the
  * letter before it, and the private space and the work profile's notice keep slots of their own.
@@ -100,21 +102,30 @@ object TallyRailSlots {
     /** The slot that next joins the slot before it, or -1 when no two letters are side by side. */
     private fun nextMerge(slots: List<Slot>): Int {
         var best = -1
-        var bestRows = Int.MAX_VALUE
         var bestApps = Int.MAX_VALUE
+        var bestRows = Int.MAX_VALUE
+        var bestTotal = Int.MAX_VALUE
         for (i in 1 until slots.size) {
             val before = slots[i - 1]
             val joining = slots[i]
             if (before.kind != Kind.LETTER || joining.kind != Kind.LETTER) continue
+            val apps = joining.apps
             val rows =
                 if (before.row < 0 || joining.row < 0) Int.MAX_VALUE - 1
                 else joining.row - before.row
-            val apps = before.apps + joining.apps
-            // Fewer rows first, then fewer apps, then the later letter (<= keeps the later one).
-            if (rows < bestRows || (rows == bestRows && apps <= bestApps)) {
+            val total = before.apps + joining.apps
+            // Rarer first, then fewer rows, then the smaller slot; ties go to the later letter.
+            val better =
+                when {
+                    apps != bestApps -> apps < bestApps
+                    rows != bestRows -> rows < bestRows
+                    else -> total <= bestTotal
+                }
+            if (better) {
                 best = i
-                bestRows = rows
                 bestApps = apps
+                bestRows = rows
+                bestTotal = total
             }
         }
         return best
