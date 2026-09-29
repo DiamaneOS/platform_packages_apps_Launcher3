@@ -311,10 +311,13 @@ public class LauncherSwipeHandlerV2 extends AbsSwipeUpHandler<
                     float radius,
                     int overlayAlpha) {
                 if (mTallyClose != null) {
-                    // DiamaneOS Tally: the key comes back over the window as it narrows.
+                    // DiamaneOS Tally: the key comes back over the window as it narrows, drawn
+                    // only inside the window's rounded rect.
                     floatingIconView.update(mTallyClose.getIconAlpha(),
                             mTallyClose.icon(currentRect), progress, windowAlphaThreshold,
                             mTallyClose.getIconRadius(), false, overlayAlpha);
+                    floatingIconView.setWindowClip(currentRect,
+                            mTallyClose.getWindow().getRadius());
                     return;
                 }
                 // We want the icon alpha to be 1 once this threshold is met, so that it can be

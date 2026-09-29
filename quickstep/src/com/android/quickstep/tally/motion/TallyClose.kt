@@ -27,9 +27,10 @@ import android.graphics.RectF
  * With a key, the window's rect lands on the key's visible rect and its corners go from where they
  * were to the key's (22 % of its side); the key's icon comes back over the window's content as the
  * rect narrows from half the screen to [TallyWindowMotion.KEY_BACK_TO_DP] (the prototype's splash
- * returning): the window fades out over the floating icon, which lies under it. Without a key, the
- * window lands on a [TallyWindowMotion.DOCK_TARGET_DP] key on the dock's centre and fades out
- * ([TallyWindowMotion.fadeOut]). One per flight; nothing is allocated per frame.
+ * returning): the window fades out over the floating icon, which lies under it and is drawn only
+ * inside the window's rounded rect ([window]), as the prototype draws its splash inside the window.
+ * Without a key, the window lands on a [TallyWindowMotion.DOCK_TARGET_DP] key on the dock's centre
+ * and fades out ([TallyWindowMotion.fadeOut]). One per flight; nothing is allocated per frame.
  *
  * @param startRadius the window's corners when the flight starts, in px
  * @param endRadius the key's corners (or the dock target's), in px
@@ -83,7 +84,9 @@ class TallyClose(
 
     /**
      * The floating icon's bounds for the flight's [rect] (in the icon's coordinates): the rect
-     * grown to the icon's bounds about its centre, so the icon's key matches the window.
+     * grown to the icon's bounds about its centre, so the icon's key matches the window. The icon
+     * fills these bounds with its background, so it is clipped to [rect] with the window's corners
+     * (FloatingIconView.setWindowClip); unclipped, the margin shows around the window as a rim.
      */
     fun icon(rect: RectF): RectF {
         val hw = rect.width() * iconScale / 2f
