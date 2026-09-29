@@ -88,6 +88,7 @@ import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.repository.StringCacheRepository;
 import com.android.launcher3.pm.UserCache;
 import com.android.launcher3.recyclerview.AllAppsRecyclerViewPool;
+import com.android.launcher3.tally.allapps.TallyLetterRail;
 import com.android.launcher3.util.ItemInfoMatcher;
 import com.android.launcher3.util.Preconditions;
 import com.android.launcher3.util.Themes;
@@ -1252,10 +1253,13 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
 
     private void applyAdapterSideAndBottomPaddings(DeviceProfile grid) {
         int bottomPadding = Math.max(mInsets.bottom, mNavBarScrimHeight);
+        // DiamaneOS Tally: the A-Z lists keep the letter rail's column at their end edge.
+        int railPadding = TallyLetterRail.listEndPaddingPx(getContext(), grid);
         mAH.forEach(adapterHolder -> {
             adapterHolder.mPadding.bottom = bottomPadding;
             adapterHolder.mPadding.left = grid.getAllAppsProfile().getPadding().left;
             adapterHolder.mPadding.right = grid.getAllAppsProfile().getPadding().right;
+            adapterHolder.mRailPadding = adapterHolder.isSearch() ? 0 : railPadding;
             adapterHolder.applyPadding();
         });
     }
@@ -1588,6 +1592,9 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         final RecyclerView.LayoutManager mLayoutManager;
         final AlphabeticalAppsList mAppsList;
         final Rect mPadding = new Rect();
+        // DiamaneOS Tally: the letter rail's column, kept at the end edge only while the list can
+        // scroll (the rail shows only then). Otherwise the grid stays centred.
+        int mRailPadding;
         AllAppsRecyclerView mRecyclerView;
         private OnFocusChangeListener mOnFocusChangeListener;
 
@@ -1619,6 +1626,7 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
             mRecyclerView.addItemDecoration(focusedItemDecorator);
             mOnFocusChangeListener = focusedItemDecorator.getFocusListener();
             mAdapter.setIconFocusListener(mOnFocusChangeListener);
+            mRecyclerView.setOnCanScrollChanged(this::applyPadding);
             applyPadding();
         }
 
@@ -1640,7 +1648,16 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
                 if (isSearchBarFloating()) {
                     bottomOffset += mSearchContainer.getHeight();
                 }
-                mRecyclerView.setPadding(mPadding.left, mPadding.top, mPadding.right,
+                int left = mPadding.left;
+                int right = mPadding.right;
+                if (mRailPadding > 0 && mRecyclerView.canScroll()) {
+                    if (Utilities.isRtl(getResources())) {
+                        left = Math.max(left, mRailPadding);
+                    } else {
+                        right = Math.max(right, mRailPadding);
+                    }
+                }
+                mRecyclerView.setPadding(left, mPadding.top, right,
                         mPadding.bottom + bottomOffset);
             }
         }
