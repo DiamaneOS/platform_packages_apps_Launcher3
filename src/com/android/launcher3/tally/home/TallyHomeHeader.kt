@@ -1,0 +1,173 @@
+/*
+ * Copyright (C) 2026 The DiamaneOS Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.launcher3.tally.home
+
+import android.content.Context
+import android.content.pm.LauncherApps
+import android.graphics.Rect
+import android.os.SystemClock
+import android.text.format.DateFormat
+import android.util.AttributeSet
+import android.util.TypedValue
+import android.widget.FrameLayout
+import android.widget.TextClock
+import com.android.launcher3.DeviceProfile
+import com.android.launcher3.Insettable
+import com.android.launcher3.R
+import com.android.launcher3.dagger.LauncherComponentProvider
+import com.android.launcher3.tally.live.TallyLiveItem
+import com.android.launcher3.util.ApiWrapper
+import com.android.launcher3.util.Executors.MAIN_EXECUTOR
+import com.android.launcher3.util.SafeCloseable
+import com.android.launcher3.util.Themes
+import com.android.launcher3.views.ActivityContext
+import java.util.Locale
+import kotlin.math.min
+import kotlin.math.roundToInt
+
+/**
+ * The top of Tally Home: the date, and below it the tallies band ([TallyTalliesRow]), on the
+ * rhythm's lines ([TallyHomeLayout]: 64 and 104 dp at 100 to 130 % text, 56 and 94 dp from 150 %)
+ * above the grid. It stays put while Home's pages scroll, and comes and goes with the dock as
+ * Home's state changes (WorkspaceStateTransitionAnimation sets its alpha). On a phone held sideways
+ * or a tablet, where Home keeps stock's layout, it shows nothing.
+ *
+ * The band shows what [com.android.launcher3.tally.live.TallyLiveRepository] publishes: things live
+ * or failed now, read from the dots' notification listener. A tap on one opens its app (or the
+ * notification shade for a system service with no app on Home); "+n more" opens the shade.
+ */
+class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
+    FrameLayout(context, attrs), Insettable {
+    private val density = resources.displayMetrics.density
+    private val date =
+        TextClock(context).apply {
+            setTextAppearance(R.style.TextAppearance_Tally_Title)
+            setTextColor(Themes.getAttrColor(context, R.attr.workspaceTextColor))
+            // The date stops growing at 130 % text, as the prototype's.
+            val capPx =
+                TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, DATE_SP, displayMetrics)
+            setTextSize(
+                TypedValue.COMPLEX_UNIT_PX,
+                min(textSize, capPx * TallyHomeLayout.TEXT_SCALE_CAP),
+            )
+            setLineHeight((DATE_LINE_DP * density).roundToInt())
+            val pattern = DateFormat.getBestDateTimePattern(Locale.getDefault(), DATE_SKELETON)
+            format12Hour = pattern
+            format24Hour = pattern
+            maxLines = 1
+        }
+    private val tallies = TallyTalliesRow(context)
+    private var rowSubscription: SafeCloseable? = null
+    private var applies = true
+    private var items: List<TallyLiveItem> = emptyList()
+    private var shownOnScreen = false
+    private val tick = Runnable { onTick() }
+
+    private val displayMetrics
+        get() = resources.displayMetrics
+
+    init {
+        clipChildren = false
+        addView(date, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
+        addView(tallies, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        tallies.onTap = ::open
+    }
+
+    override fun setInsets(insets: Rect) {
+        val activity: ActivityContext = ActivityContext.lookupContext(context)
+        val dp: DeviceProfile = activity.deviceProfile
+        val properties = dp.deviceProperties
+        applies =
+            TallyHomeLayout.appliesTo(properties, dp.isVerticalBarLayout, dp.inv.isFixedLandscape)
+        date.visibility = if (applies) VISIBLE else GONE
+        show(items)
+        if (!applies) return
+        val rhythm =
+            TallyHomeLayout.rhythm(properties.heightPx / density, resources.configuration.fontScale)
+        (date.layoutParams as LayoutParams).apply {
+            topMargin = (rhythm.dateTop * density).roundToInt()
+            marginStart = (DATE_START_DP * density).roundToInt()
+            marginEnd = (DATE_START_DP * density).roundToInt()
+        }
+        (tallies.layoutParams as LayoutParams).apply {
+            topMargin = (rhythm.talliesTop * density).roundToInt()
+            marginStart = (TALLIES_SIDE_DP * density).roundToInt()
+            marginEnd = (TALLIES_SIDE_DP * density).roundToInt()
+        }
+        requestLayout()
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        val live = LauncherComponentProvider.get(context).getNotificationRepository().live
+        rowSubscription = live.row.forEach(MAIN_EXECUTOR) { items -> show(items) }
+    }
+
+    override fun onDetachedFromWindow() {
+        rowSubscription?.close()
+        rowSubscription = null
+        removeCallbacks(tick)
+        super.onDetachedFromWindow()
+    }
+
+    override fun onVisibilityAggregated(isVisible: Boolean) {
+        super.onVisibilityAggregated(isVisible)
+        shownOnScreen = isVisible
+        if (isVisible) onTick() else removeCallbacks(tick)
+    }
+
+    private fun show(newItems: List<TallyLiveItem>) {
+        items = newItems
+        tallies.setItems(if (applies) newItems else emptyList())
+        onTick()
+    }
+
+    /** Counts a chronometer on screen once a second, at the turn of the second. */
+    private fun onTick() {
+        removeCallbacks(tick)
+        if (tallies.tick() && shownOnScreen) {
+            postDelayed(tick, TICK_MS - SystemClock.elapsedRealtime() % TICK_MS)
+        }
+    }
+
+    private fun open(item: TallyLiveItem?) {
+        val user = item?.app?.mUser
+        val launcherApps = context.getSystemService(LauncherApps::class.java)
+        val activity =
+            if (user == null || launcherApps == null) null
+            else launcherApps.getActivityList(item.app.mPackageName, user).firstOrNull()
+        if (activity == null || launcherApps == null || user == null) {
+            // "+n more", or a system service with no app on Home: the shade has its words.
+            ApiWrapper.INSTANCE[context].openNotificationShade()
+            return
+        }
+        val bounds = Rect()
+        tallies.getGlobalVisibleRect(bounds)
+        launcherApps.startMainActivity(activity.componentName, user, bounds, null)
+    }
+
+    companion object {
+        /** The date: 20 sp at 100 %, on a 28 dp line, 24 dp from the start. */
+        private const val DATE_SP = 20f
+        private const val DATE_LINE_DP = 28f
+        private const val DATE_START_DP = 24f
+        private const val DATE_SKELETON = "EEEEdMMMM"
+        /** The tallies band spans the screen less 16 dp on each side. */
+        private const val TALLIES_SIDE_DP = 16f
+        private const val TICK_MS = 1000L
+    }
+}

@@ -160,6 +160,9 @@ public class WorkspaceStateTransitionAnimation {
                 workspaceFadeInterpolator);
         float hotseatIconsAlpha = (elements & HOTSEAT_ICONS) != 0 ? 1 : 0;
         propertySetter.setViewAlpha(hotseat, hotseatIconsAlpha, hotseatFadeInterpolator);
+        // DiamaneOS Tally: Home's date and tallies come and go with the dock.
+        propertySetter.setViewAlpha(mLauncher.findViewById(R.id.tally_home_header),
+                hotseatIconsAlpha, hotseatFadeInterpolator);
 
         // Update the accessibility flags for hotseat based on launcher state.
         hotseat.setImportantForAccessibility(
