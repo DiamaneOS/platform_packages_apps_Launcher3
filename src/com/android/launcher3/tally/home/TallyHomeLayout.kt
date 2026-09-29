@@ -51,8 +51,12 @@ import kotlin.math.roundToInt
  * icon's margin, so they are larger by 1 / ICON_VISIBLE_AREA_FACTOR. App names are 12 sp and stop
  * growing at 130 % text, as the prototype's labels do.
  *
- * Launcher applies this through two hooks: [applyToDisplayOption] when it picks a grid
- * (InvariantDeviceProfile), and [workspacePaddingsPx] when it lays out the workspace
+ * The tallies band and the search slot can be taken off Home ([TallyHomeItem]); the grid takes the
+ * space one leaves, all of it (see [rhythm]).
+ *
+ * Launcher applies this through three hooks: [applyToDisplayOption] when it picks a grid
+ * (InvariantDeviceProfile), [hotseatQsbHeightPx] when it sizes the dock
+ * (HotseatProfileInitialValues) and [workspacePaddingsPx] when it lays out the workspace
  * (WorkspaceProfileNonResponsiveFactory). Landscape, tablets, fixed landscape and responsive grids
  * keep stock's layout.
  */
@@ -63,6 +67,8 @@ object TallyHomeLayout {
     const val LARGE_TEXT_SCALE = 1.5f
     /** App names, the date and the search text stop growing at this text scale. */
     const val TEXT_SCALE_CAP = 1.3f
+    /** The search slot's height (dp), Launcher's qsb_widget_height. */
+    const val SEARCH_SLOT_DP = 48f
 
     /**
      * The grid a phone starts on: 4 x 4, the prototype's four rows (100 dp at 828 dp). Five rows
@@ -100,18 +106,56 @@ object TallyHomeLayout {
         val slotBottomFromBottom: Float,
         /** The space between the grid and the dock's band. */
         val gridGap: Float,
+        /** The rows' limit, for the canvas's own height. */
         val rowMax: Float,
+        /** Space removed items leave to the rows, over their limit ([rowMax]). */
+        val freedForRows: Float = 0f,
     )
 
-    /** The rhythm for a canvas [heightDp] tall at [fontScale]. */
+    /**
+     * The rhythm for a canvas [heightDp] tall at [fontScale], with the tallies band ([tallies]) and
+     * the search slot ([search]) on Home or taken off.
+     *
+     * The prototype gives a taller canvas's extra height to the grid: at 100 to 130 % text a tenth
+     * goes above it (its top line moves down), the rest to its rows up to their limit, and what the
+     * limit leaves stays between the grid and the dock; from 150 % text the grid's top stays and it
+     * all goes to the rows, up to their limit.
+     *
+     * The space a removed item leaves goes to the grid, all of it: the band's (from its line to the
+     * grid's: 80 dp, 120 dp from 150 %) at the top, so the grid's line moves up to the band's; the
+     * slot's (78 dp) at the bottom, so the dock moves down until its keys are centred where the
+     * slot was, and the grid follows it. At 100 to 130 % text a tenth of it goes above the grid, as
+     * of a taller canvas's height (the date then stands as far above the first keys as the band
+     * does); the rest goes to the rows, past their limit ([Rhythm.freedForRows]), so that nothing
+     * is left empty where the item was nor between the grid and the dock.
+     */
     @JvmStatic
-    fun rhythm(heightDp: Float, fontScale: Float): Rhythm =
-        if (fontScale >= LARGE_TEXT_SCALE) {
-            Rhythm(56f, 94f, 214f, 232f, 178f, 76f, 14f, 108f)
-        } else {
-            val extra = max(0f, heightDp - CANVAS_HEIGHT_DP)
-            Rhythm(64f, 104f, 184f + (extra * 0.1f).roundToInt(), 228f, 174f, 72f, 16f, 120f)
-        }
+    @JvmOverloads
+    fun rhythm(
+        heightDp: Float,
+        fontScale: Float,
+        tallies: Boolean = true,
+        search: Boolean = true,
+    ): Rhythm {
+        val large = fontScale >= LARGE_TEXT_SCALE
+        val base =
+            if (large) Rhythm(56f, 94f, 214f, 232f, 178f, 76f, 14f, 108f)
+            else Rhythm(64f, 104f, 184f, 228f, 174f, 72f, 16f, 120f)
+        val bandSpace = if (tallies) 0f else base.gridTop - base.talliesTop
+        val slotSpace =
+            if (search) 0f
+            else base.dockCentreFromBottom - base.slotBottomFromBottom - SEARCH_SLOT_DP / 2
+        val extra = max(0f, heightDp - CANVAS_HEIGHT_DP)
+        val freed = bandSpace + slotSpace
+        val above = if (large) 0 else ((extra + freed) * 0.1f).roundToInt()
+        val freedAbove = if (large) 0 else above - (extra * 0.1f).roundToInt()
+        return base.copy(
+            gridTop = base.gridTop - bandSpace + above,
+            keysFromBottom = base.keysFromBottom - slotSpace,
+            dockCentreFromBottom = base.dockCentreFromBottom - slotSpace,
+            freedForRows = freed - freedAbove,
+        )
+    }
 
     /**
      * The grid Launcher starts from: [gridName] once one is chosen (by the user, a restore or an
@@ -146,11 +190,14 @@ object TallyHomeLayout {
     /**
      * Sets the upright phone sizes of a grid's display option: the keys (Home and dock, All apps),
      * the names, All apps' rows, and the dock's spacing that puts its keys and the search slot on
-     * the rhythm. Called as Launcher picks the grid, before it reads the option.
+     * the rhythm, with the band and the slot as Home settings have them ([TallyHomeItem]). Called
+     * as Launcher picks the grid, before it reads the option.
      */
     @JvmStatic
     fun applyToDisplayOption(info: LauncherDisplayInfo, option: DisplayOption) {
         if (!appliesTo(info.deviceType, option)) return
+        val tallies = TallyHomeItem.TALLIES.isShown(info.context)
+        val search = TallyHomeItem.SEARCH.isShown(info.context)
         val dpi = info.densityDpi
         val density = dpi / 160f
         val fontScale = info.fontScale
@@ -170,7 +217,7 @@ object TallyHomeLayout {
         val keyDp =
             fittedKeyDp(
                 glassKeyDp(HOME_KEY_DP, dpi),
-                homeRowDp(heightDp, fontScale, option.grid.numRows),
+                homeRowDp(heightDp, fontScale, option.grid.numRows, tallies, search),
                 density,
                 nameDepthPx(info.context, labelPx),
             )
@@ -180,17 +227,24 @@ object TallyHomeLayout {
 
         val qsbPx = info.context.resources.getDimensionPixelSize(R.dimen.qsb_widget_height)
         val iconPx = (option.iconSizes[i] * density).roundToInt()
-        val dock = dockSpacesDp(iconPx, density, qsbPx, fontScale)
+        val dock = dockSpacesDp(iconPx, density, qsbPx, fontScale, search)
         option.hotseatQsbSpace[i] = dock[0]
         option.hotseatBarBottomSpace[i] = dock[1]
     }
 
     /** The height (dp) of Home's rows with [rows] rows on a canvas [heightDp] tall. */
     @JvmStatic
-    fun homeRowDp(heightDp: Float, fontScale: Float, rows: Int): Float {
-        val r = rhythm(heightDp, fontScale)
+    @JvmOverloads
+    fun homeRowDp(
+        heightDp: Float,
+        fontScale: Float,
+        rows: Int,
+        tallies: Boolean = true,
+        search: Boolean = true,
+    ): Float {
+        val r = rhythm(heightDp, fontScale, tallies, search)
         val grid = heightDp - (r.keysFromBottom + r.gridGap) - r.gridTop
-        return min(r.rowMax, grid / max(1, rows))
+        return min(r.rowMax + r.freedForRows / max(1, rows), grid / max(1, rows))
     }
 
     /**
@@ -248,13 +302,22 @@ object TallyHomeLayout {
      * The hotseat's space between its keys and the search slot, and below the slot (dp), that put
      * the dock's keys and the slot on the rhythm. The hotseat's bar is its cell (the key and the
      * reach of a folder preview), then that space, the slot and the space below it; its keys are
-     * centred in the cell at the top of the bar.
+     * centred in the cell at the top of the bar. Without the slot ([search] false; the hotseat then
+     * has no room for it, [hotseatQsbHeightPx]) the bar is the cell and the space below it.
      */
     @JvmStatic
-    fun dockSpacesDp(iconPx: Int, density: Float, qsbPx: Int, fontScale: Float): FloatArray {
-        val rhythm = rhythm(CANVAS_HEIGHT_DP, fontScale)
+    @JvmOverloads
+    fun dockSpacesDp(
+        iconPx: Int,
+        density: Float,
+        qsbPx: Int,
+        fontScale: Float,
+        search: Boolean = true,
+    ): FloatArray {
+        val rhythm = rhythm(CANVAS_HEIGHT_DP, fontScale, search = search)
         val cellPx = ceil(iconPx * ICON_OVERLAP_FACTOR)
         val barPx = rhythm.dockCentreFromBottom * density + cellPx / 2f
+        if (!search) return floatArrayOf(0f, max(0f, (barPx - iconPx) / density))
         val slotBottomPx = rhythm.slotBottomFromBottom * density
         return floatArrayOf(
             max(0f, (barPx - iconPx - qsbPx - slotBottomPx) / density),
@@ -285,24 +348,43 @@ object TallyHomeLayout {
         appliesTo(dp.deviceProperties, dp.isVerticalBarLayout, dp.inv.isFixedLandscape)
 
     /**
+     * The height (px) the hotseat keeps for the search slot: none where Tally lays Home out and the
+     * slot is taken off ([TallyHomeItem.SEARCH]), else Launcher's qsb_widget_height.
+     */
+    @JvmStatic
+    fun hotseatQsbHeightPx(
+        res: Resources,
+        properties: DeviceProperties,
+        inv: InvariantDeviceProfile,
+        isVerticalLayout: Boolean,
+    ): Int =
+        if (
+            appliesTo(properties, isVerticalLayout, inv.isFixedLandscape) &&
+                !TallyHomeItem.SEARCH.isShown(inv)
+        ) {
+            0
+        } else {
+            res.getDimensionPixelSize(R.dimen.qsb_widget_height)
+        }
+
+    /**
      * The workspace's top and bottom padding (as the non-scalable workspace adds them to its edge
      * margin and its hotseat and page indicator) that put the grid on the rhythm: its top on the
      * rhythm's line, its bottom the rhythm's gap above the dock's band, rows no taller than the
-     * rhythm allows. Null where Tally's layout does not apply (landscape, a tablet, an external
-     * display, a taskbar).
+     * rhythm allows, with the band and the slot as Home settings have them ([TallyHomeItem]). Null
+     * where Tally's layout does not apply (landscape, a tablet, an external display, a taskbar).
      */
     @JvmStatic
     fun workspacePaddingsPx(
         res: Resources,
         properties: DeviceProperties,
         isVerticalLayout: Boolean,
-        isFixedLandscape: Boolean,
-        numRows: Int,
+        inv: InvariantDeviceProfile,
         edgeMarginPx: Int,
         hotseatBarSizePx: Int,
         pageIndicatorPx: Int,
     ): IntArray? {
-        if (!appliesTo(properties, isVerticalLayout, isFixedLandscape) || numRows <= 0) {
+        if (!appliesTo(properties, isVerticalLayout, inv.isFixedLandscape) || inv.numRows <= 0) {
             return null
         }
         return gridPaddingsPx(
@@ -310,15 +392,18 @@ object TallyHomeLayout {
             density = res.displayMetrics.density,
             fontScale = res.configuration.fontScale,
             insetTopPx = properties.insets.top,
-            numRows = numRows,
+            numRows = inv.numRows,
             edgeMarginPx = edgeMarginPx,
             hotseatBarSizePx = hotseatBarSizePx,
             pageIndicatorPx = pageIndicatorPx,
+            tallies = TallyHomeItem.TALLIES.isShown(inv),
+            search = TallyHomeItem.SEARCH.isShown(inv),
         )
     }
 
     /** [workspacePaddingsPx]'s arithmetic, for a screen [heightPx] tall. */
     @JvmStatic
+    @JvmOverloads
     fun gridPaddingsPx(
         heightPx: Int,
         density: Float,
@@ -328,11 +413,14 @@ object TallyHomeLayout {
         edgeMarginPx: Int,
         hotseatBarSizePx: Int,
         pageIndicatorPx: Int,
+        tallies: Boolean = true,
+        search: Boolean = true,
     ): IntArray {
-        val rhythm = rhythm(heightPx / density, fontScale)
+        val rhythm = rhythm(heightPx / density, fontScale, tallies, search)
         val gridTopPx = rhythm.gridTop * density
         var gridBottomPx = heightPx - (rhythm.keysFromBottom + rhythm.gridGap) * density
-        gridBottomPx = min(gridBottomPx, gridTopPx + rhythm.rowMax * density * numRows)
+        gridBottomPx =
+            min(gridBottomPx, gridTopPx + (rhythm.rowMax * numRows + rhythm.freedForRows) * density)
         // The cells start at the top inset plus the top padding and the edge margin, and end at
         // the hotseat's bar, the page indicator and the bottom padding.
         val top = gridTopPx - insetTopPx - edgeMarginPx
