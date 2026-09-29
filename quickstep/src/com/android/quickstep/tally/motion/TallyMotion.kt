@@ -56,7 +56,7 @@ class TallyMotion(private val launcher: QuickstepLauncher) {
     val splashKeyPx: Float = TallyWindowMotion.SPLASH_KEYCAP_DP * density
 
     val dim = TallyHomeDim(launcher.dragLayer, fill)
-    val parting = TallyParting(stone, density)
+    val parting = TallyParting(stone, density, res.getDimension(R.dimen.tally_grid_parting))
 
     /** A flight started by a tap (a close with no finger): its length at scale 1. */
     val impulseFlightMillis: Long = TallyFlight(slab).move(RectF(), RectF(), 0f, 0f).millis
