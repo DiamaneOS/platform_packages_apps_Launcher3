@@ -417,6 +417,8 @@ android_library {
     ],
     static_libs: [
         "Launcher3ResLib",
+        // Tally's design tokens (frameworks/libs/systemui), for Recents.
+        "tallytokens",
         "lottie",
         "SystemUISharedLib",
         "SettingsLibSettingsTheme",
