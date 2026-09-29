@@ -309,7 +309,12 @@ public abstract class SwipeUpAnimationLogic implements
                 i < mRemoteTargetHandlesLength; i++) {
             RemoteTargetHandle remoteHandle = mRemoteTargetHandles[i];
             TaskViewSimulator tvs = remoteHandle.getTaskViewSimulator();
-            tvs.apply(remoteHandle.getTransformParams().setProgress(startProgress));
+            if (isTallySwipe()) {
+                // DiamaneOS Tally: the window is where the finger left it, not in its card.
+                tvs.compute(remoteHandle.getTransformParams().setProgress(startProgress));
+            } else {
+                tvs.apply(remoteHandle.getTransformParams().setProgress(startProgress));
+            }
 
             startRects[i] = new RectF(tvs.getCurrentCropRect());
             outMatrix[i] = new Matrix();
@@ -318,6 +323,20 @@ public abstract class SwipeUpAnimationLogic implements
         }
         return startRects;
     }
+
+    /**
+     * DiamaneOS Tally: whether the window follows the finger as Tally's does in this gesture
+     * (AbsSwipeUpHandler's TallySwipeWindow).
+     */
+    protected boolean isTallySwipe() {
+        return false;
+    }
+
+    /**
+     * DiamaneOS Tally: sets {@code windowRect} (in the window's space) to where the window is when
+     * it follows the finger as Tally's does; stock's start rect otherwise.
+     */
+    protected void overrideTallyStartRect(RectF windowRect) {}
 
     /** Helper to avoid writing some for-loops to iterate over {@link #mRemoteTargetHandles} */
     protected void runActionOnRemoteHandles(Consumer<RemoteTargetHandle> consumer) {
@@ -345,6 +364,10 @@ public abstract class SwipeUpAnimationLogic implements
         RectFSpringAnim[] out = new RectFSpringAnim[mRemoteTargetHandles.length];
         Matrix[] homeToWindowPositionMap = new Matrix[mRemoteTargetHandles.length];
         RectF[] startRects = updateProgressForStartRect(homeToWindowPositionMap, startProgress);
+        if (startRects.length == 1) {
+            // DiamaneOS Tally: the flight starts where the window is.
+            overrideTallyStartRect(startRects[0]);
+        }
         for (int i = 0, mRemoteTargetHandlesLength = mRemoteTargetHandles.length;
                 i < mRemoteTargetHandlesLength; i++) {
             RemoteTargetHandle remoteHandle = mRemoteTargetHandles[i];
