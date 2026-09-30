@@ -35,8 +35,16 @@ data class TallyLiveItem(
     val showsLed: Boolean,
     /** Whether it may show in the tallies row (not for the private space). */
     val showsInRow: Boolean,
-    /** The app's name for the row, badged for a work profile. */
+    /**
+     * The app's name, badged for a work profile: the row shows it unless [kindLabel] is set, and
+     * its accessibility label always says it.
+     */
     val label: CharSequence,
+    /**
+     * What the row shows in place of [label], or null: "Timer" or "Stopwatch" for the system
+     * Clock's timer and stopwatch ([TallyLiveRules.clockKindOf]), never for any other app.
+     */
+    val kindLabel: CharSequence? = null,
     /** A progress bar's fraction in thousandths, or [NO_PROGRESS]. */
     val progressPermille: Int = NO_PROGRESS,
     /**
