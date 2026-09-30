@@ -126,8 +126,9 @@ object TallyLiveRules {
      * definition of live on Home, 30 September 2026), from what the notification itself declares:
      * - it is a Live Update: the system promoted it ([Notification.FLAG_PROMOTED_ONGOING], in
      *   [flags]);
-     * - it shows the system's chronometer ([showsChronometer],
-     *   Notification.EXTRA_SHOW_CHRONOMETER): a timer, a stopwatch, a call, a recording;
+     * - it shows the system's chronometer ([showsChronometer], Notification.EXTRA_SHOW_CHRONOMETER,
+     *   or a running MetricStyle time, [TallyMetricTime]): a timer, a stopwatch, a call, a
+     *   recording;
      * - it has a progress bar: a maximum above 0 ([progressMax], Notification.EXTRA_PROGRESS_MAX)
      *   or an indeterminate one ([progressIndeterminate]): a download, an update, an install;
      * - its category is a call, navigation or a stopwatch, or it is a call ([callStyle],
