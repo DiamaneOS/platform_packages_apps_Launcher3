@@ -61,6 +61,17 @@ data class TallyLiveItem(
      */
     val pausedSeconds: Long = NO_PAUSED_TIME,
 ) {
+    /** Whether it is a live time that stands still: a paused timer or stopwatch. */
+    val isPaused: Boolean
+        get() = state == TallyLampState.LIVE && pausedSeconds != NO_PAUSED_TIME
+
+    /**
+     * Its lamp in the tallies row, which orders the row by it: [state], but off for a time that
+     * stands still ([isPaused]), as the prototype's paused media. Its app's LED follows [state].
+     */
+    val rowState: TallyLampState
+        get() = if (isPaused) TallyLampState.OFF else state
+
     companion object {
         const val NO_PROGRESS = -1
         const val NO_CHRONOMETER = Long.MIN_VALUE
