@@ -44,6 +44,11 @@ import kotlin.math.sqrt
  *
  * Its LED ([TallyKeycapLed]) sits in the key's top-right corner and moves with the key.
  *
+ * The highlight, the skirt and the press layer are filled shapes built once for each key size and
+ * icon shape ([Relief]) and shared by every key of that size, not the key's shape clipped for every
+ * key in every frame: on the GPU each clip to the keycap's curves renders a clip mask, again on
+ * every frame, which cost about 13 % of Launcher's RenderThread in All apps and the Home swipe.
+ *
  * The host draws the icon itself with the icon's own press scale turned off. It calls [setPressed]
  * when its pressed state changes, and after drawing the icon it calls [draw] with the icon's bounds
  * and the scale the icon was drawn at, then [advance] for the scale of the next frame: while that
@@ -66,9 +71,11 @@ class TallyKeycap(context: Context) {
     private val ledPainter = TallyKeycapLed(context)
     private var led: TallyLampState? = null
 
-    private val keyPath = Path()
-    private var pathShape: ShapeDelegate? = null
-    private var pathSize = -1
+    /** This key's relief, from [reliefOf]; null until it is first drawn. */
+    private var relief: Relief? = null
+    /** A skirt between rest and pressed in, built for each frame while the key moves. */
+    private val movingSkirt = Path()
+    private val movedKey = Path()
 
     /** The press, from 0 (at rest) to 1 (pressed in). */
     private var press = 0f
@@ -156,27 +163,56 @@ class TallyKeycap(context: Context) {
         // The visible key: adaptive icons are drawn at the visible area factor of their bounds.
         val size = Math.round(iconBounds.width() * ICON_VISIBLE_AREA_FACTOR)
         if (size <= 0) return
-        if (size != pathSize || shape !== pathShape) {
-            keyPath.reset()
-            keyPath.set(shape.getPath(Rect(0, 0, size, size)))
-            pathSize = size
-            pathShape = shape
-        }
-        val skirt =
-            if (dock) lerp(dockSkirtPx, dockSkirtPressedPx, press)
-            else size * lerp(skirtFraction, skirtPressedFraction, press)
+        val relief = reliefFor(shape, size, dock)
+        val skirt = skirtAt(press, size, dock)
+        // At rest or pressed in, the skirt is the relief's; moving, it is built for this frame.
+        val skirtPath =
+            when {
+                !relief.built -> null
+                skirt == relief.restSkirtPx -> relief.restSkirt
+                skirt == relief.pressedSkirtPx -> relief.pressedSkirt
+                relief.band(-skirt, movingSkirt, movedKey) -> movingSkirt
+                else -> null
+            }
 
         val count = canvas.save()
         canvas.translate(iconBounds.exactCenterX(), iconBounds.exactCenterY())
         canvas.scale(iconScale, iconScale)
         canvas.translate(-size / 2f, -size / 2f)
-        val clipCount = canvas.save()
-        canvas.clipPath(keyPath)
-        drawEdge(canvas, highlightPx, highlightPaint, size)
-        drawEdge(canvas, -skirt, shadePaint, size)
-        if (pressed) canvas.drawRect(0f, 0f, size.toFloat(), size.toFloat(), pressPaint)
-        canvas.restoreToCount(clipCount)
+        if (skirtPath != null) {
+            if (highlightPx != 0f) canvas.drawPath(relief.highlight, highlightPaint)
+            if (skirt != 0f) canvas.drawPath(skirtPath, shadePaint)
+            if (pressed) canvas.drawPath(relief.face, pressPaint)
+        } else {
+            drawClipped(canvas, relief.key, skirt, size)
+        }
         if (!hideLed) ledPainter.draw(canvas, 0f, 0f, size.toFloat(), led)
+        canvas.restoreToCount(count)
+    }
+
+    /** The relief of a key of [size] in [shape], this key's own while those stay the same. */
+    private fun reliefFor(shape: ShapeDelegate, size: Int, dock: Boolean): Relief {
+        val restSkirt = skirtAt(0f, size, dock)
+        val pressedSkirt = skirtAt(1f, size, dock)
+        relief?.let { if (it.fits(shape, size, highlightPx, restSkirt, pressedSkirt)) return it }
+        return reliefOf(shape, size, highlightPx, restSkirt, pressedSkirt).also { relief = it }
+    }
+
+    /** The skirt's height at [press] (0 at rest to 1 pressed in). */
+    private fun skirtAt(press: Float, size: Int, dock: Boolean): Float =
+        if (dock) lerp(dockSkirtPx, dockSkirtPressedPx, press)
+        else size * lerp(skirtFraction, skirtPressedFraction, press)
+
+    /**
+     * Draws the relief the clipped way, which covers what the relief's paths cover: only for a
+     * relief whose path operations failed.
+     */
+    private fun drawClipped(canvas: Canvas, key: Path, skirt: Float, size: Int) {
+        val count = canvas.save()
+        canvas.clipPath(key)
+        drawEdge(canvas, key, highlightPx, highlightPaint, size)
+        drawEdge(canvas, key, -skirt, shadePaint, size)
+        if (pressed) canvas.drawRect(0f, 0f, size.toFloat(), size.toFloat(), pressPaint)
         canvas.restoreToCount(count)
     }
 
@@ -184,11 +220,11 @@ class TallyKeycap(context: Context) {
      * Fills the part of the key that the key moved by [dy] does not cover: a band along the top
      * edge for a positive [dy], along the bottom edge for a negative one.
      */
-    private fun drawEdge(canvas: Canvas, dy: Float, paint: Paint, size: Int) {
+    private fun drawEdge(canvas: Canvas, key: Path, dy: Float, paint: Paint, size: Int) {
         if (dy == 0f) return
         val count = canvas.save()
         canvas.translate(0f, dy)
-        canvas.clipOutPath(keyPath)
+        canvas.clipOutPath(key)
         canvas.translate(0f, -dy)
         canvas.drawRect(0f, 0f, size.toFloat(), size.toFloat(), paint)
         canvas.restoreToCount(count)
@@ -228,7 +264,94 @@ class TallyKeycap(context: Context) {
         pressVelocity = 0f
     }
 
+    /**
+     * A key's relief for one icon shape (the same object), key size, highlight and skirts, as
+     * filled paths: [face], the key's visible square cut to its shape (where the press layer
+     * covers), and the bands of it that the key moved down by the highlight, or up by a skirt,
+     * leaves uncovered. It is what clipping to the key and then outside the moved key covers.
+     */
+    private class Relief(
+        val shape: ShapeDelegate,
+        val size: Int,
+        val highlightPx: Float,
+        val restSkirtPx: Float,
+        val pressedSkirtPx: Float,
+    ) {
+        val key: Path = shape.getPath(Rect(0, 0, size, size))
+        val face = Path()
+        val highlight = Path()
+        val restSkirt = Path()
+        val pressedSkirt = Path()
+        /** Whether the paths were built; if not, the key is drawn clipped. */
+        val built: Boolean
+
+        init {
+            val square = Path()
+            square.addRect(0f, 0f, size.toFloat(), size.toFloat(), Path.Direction.CW)
+            val moved = Path()
+            built =
+                face.op(key, square, Path.Op.INTERSECT) &&
+                    band(highlightPx, highlight, moved) &&
+                    band(-restSkirtPx, restSkirt, moved) &&
+                    band(-pressedSkirtPx, pressedSkirt, moved)
+        }
+
+        fun fits(
+            shape: ShapeDelegate,
+            size: Int,
+            highlightPx: Float,
+            restSkirtPx: Float,
+            pressedSkirtPx: Float,
+        ) =
+            shape === this.shape &&
+                size == this.size &&
+                highlightPx == this.highlightPx &&
+                restSkirtPx == this.restSkirtPx &&
+                pressedSkirtPx == this.pressedSkirtPx
+
+        /**
+         * Sets [out] to the band of [face] that the key moved down by [dy] (up for a negative one)
+         * does not cover, using [moved]; returns whether that worked.
+         */
+        fun band(dy: Float, out: Path, moved: Path): Boolean {
+            if (dy == 0f) {
+                out.reset()
+                return true
+            }
+            key.offset(0f, dy, moved)
+            return out.op(face, moved, Path.Op.DIFFERENCE)
+        }
+    }
+
     private companion object {
+        /**
+         * The reliefs last drawn, the most recent last: a handful of key sizes (Home, the dock,
+         * folders, All apps), and a few more while the grid or icon shape changes.
+         */
+        const val MAX_RELIEFS = 8
+        private val reliefs = ArrayList<Relief>(MAX_RELIEFS)
+
+        /** The relief for these, shared by every key of that size and shape. */
+        fun reliefOf(
+            shape: ShapeDelegate,
+            size: Int,
+            highlightPx: Float,
+            restSkirtPx: Float,
+            pressedSkirtPx: Float,
+        ): Relief =
+            synchronized(reliefs) {
+                val i =
+                    reliefs.indexOfFirst {
+                        it.fits(shape, size, highlightPx, restSkirtPx, pressedSkirtPx)
+                    }
+                val relief =
+                    if (i >= 0) reliefs.removeAt(i)
+                    else Relief(shape, size, highlightPx, restSkirtPx, pressedSkirtPx)
+                if (reliefs.size == MAX_RELIEFS) reliefs.removeAt(0)
+                reliefs.add(relief)
+                relief
+            }
+
         /** A pressed key draws at 97 %. */
         const val PRESS_DEPTH = 0.03f
         /** At rest within these, in press units (0 to 1) and press units per second. */
