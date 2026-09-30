@@ -26,6 +26,7 @@ import com.android.launcher3.deviceprofile.parser.DeviceTypedMap.INDEX_TWO_PANEL
 import com.android.launcher3.deviceprofile.parser.DeviceTypedMap.INDEX_TWO_PANEL_PORTRAIT
 import com.android.launcher3.responsive.CalculatedCellSpec
 import com.android.launcher3.responsive.CalculatedHotseatSpec
+import com.android.launcher3.tally.home.TallyHomeLayout
 import com.android.launcher3.testing.shared.ResourceUtils.pxFromDp
 import kotlin.math.max
 
@@ -286,7 +287,9 @@ data class HotseatProfileInitialValues(
                 }
             val hotseatBarWorkspaceSpacePx =
                 res.getDimensionPixelSize(R.dimen.dynamic_grid_hotseat_side_padding)
-            val hotseatQsbHeight = res.getDimensionPixelSize(R.dimen.qsb_widget_height)
+            // DiamaneOS Tally: no room for Home's search slot once it is taken off Home.
+            val hotseatQsbHeight =
+                TallyHomeLayout.hotseatQsbHeightPx(res, deviceProperties, inv, isVerticalBarLayout)
             val hotseatQsbShadowHeight = res.getDimensionPixelSize(R.dimen.qsb_shadow_height)
 
             var hotseatQsbSpace = pxFromDp(inv.hotseatQsbSpace[typeIndex], metrics)

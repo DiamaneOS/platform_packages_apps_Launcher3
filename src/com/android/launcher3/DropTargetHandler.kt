@@ -14,6 +14,7 @@ import com.android.launcher3.homescreenfiles.isFileSystemItem
 import com.android.launcher3.logging.StatsLogManager.LauncherEvent
 import com.android.launcher3.model.data.ItemInfo
 import com.android.launcher3.model.data.LauncherAppWidgetInfo
+import com.android.launcher3.tally.home.TallyHomeRemoval
 import com.android.launcher3.util.IntSet
 import com.android.launcher3.util.PendingRequestArgs
 import com.android.launcher3.views.Snackbar
@@ -67,6 +68,8 @@ class DropTargetHandler(
     }
 
     fun prepareToUndoDelete(item: ItemInfo) {
+        // DiamaneOS Tally: Home's tallies band and search slot are Home settings, not model items.
+        if (TallyHomeRemoval.handles(item)) return
         if (item.isFileSystemItem() && HomeScreenFilesUtils.isTrashingEnabled()) {
             // Home screen file items rely on their own unidirectional data flow
             // (`HomeScreenFilesProvider` -> `HomeScreenFilesUpdateTask`), so there is no need
@@ -77,6 +80,8 @@ class DropTargetHandler(
     }
 
     fun onDeleteComplete(item: ItemInfo, view: View?) {
+        // DiamaneOS Tally: removing Home's tallies band or search slot turns its setting off.
+        if (TallyHomeRemoval.remove(launcher, item)) return
         if (item.isFileSystemItem() && HomeScreenFilesUtils.isTrashingEnabled()) {
             onDeleteCompleteForHomeScreenFile(item)
             return

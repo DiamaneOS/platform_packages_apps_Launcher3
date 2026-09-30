@@ -64,6 +64,7 @@ import com.android.launcher3.display.LauncherDisplayInfo;
 import com.android.launcher3.graphics.ThemeManager;
 import com.android.launcher3.logging.FileLog;
 import com.android.launcher3.model.DeviceGridState;
+import com.android.launcher3.tally.home.TallyHomeItem;
 import com.android.launcher3.tally.home.TallyHomeLayout;
 import com.android.launcher3.testing.shared.ResourceUtils;
 import com.android.launcher3.util.DaggerSingletonObject;
@@ -184,6 +185,14 @@ public class InvariantDeviceProfile {
     public float[] hotseatQsbSpace;
 
     /**
+     * DiamaneOS Tally: whether Home's tallies band and search slot are on Home (Home settings),
+     * read through this profile's own prefs as it picks the grid. Home's layout reads these, never
+     * the prefs of a display's context (locked before the first unlock).
+     */
+    public boolean tallyBandShown = true;
+    public boolean tallySearchShown = true;
+
+    /**
      * Number of columns in the all apps list.
      */
     public int numAllAppsColumns;
@@ -301,6 +310,10 @@ public class InvariantDeviceProfile {
             } else if (WORKSPACE_ITEMS_LABEL_HIDDEN.getSharedPrefKey().equals(key)
                     && com.android.systemui.shared.Flags.workspaceItemsLabelHidden()) {
                 onConfigChanged();
+            } else if (TallyHomeItem.forKey(key) != null) {
+                // DiamaneOS Tally: Home's tallies band or search slot came off or back (a setting
+                // in the same file as the ones above), and Home's layout follows.
+                onConfigChanged();
             }
         };
         prefs.addListener(prefListener, FIXED_LANDSCAPE_MODE, ENABLE_TWOLINE_ALLAPPS_TOGGLE);
@@ -314,6 +327,9 @@ public class InvariantDeviceProfile {
     }
 
     private void initGrid(String gridName) {
+        // DiamaneOS Tally: Home's tallies band and search slot, as Home settings have them.
+        tallyBandShown = mPrefs.get(TallyHomeItem.TALLIES.shown);
+        tallySearchShown = mPrefs.get(TallyHomeItem.SEARCH.shown);
         LauncherDisplayInfo displayInfo = mDisplayController.getInfo();
         List<DisplayOption> allOptions = getPredefinedDeviceProfiles(
                 displayInfo,
@@ -373,7 +389,8 @@ public class InvariantDeviceProfile {
     private void initGridForDisplayOption(
             LauncherDisplayInfo displayInfo, DisplayOption displayOption) {
         // DiamaneOS Tally: Home's keys, names and dock spacing on an upright phone.
-        TallyHomeLayout.applyToDisplayOption(displayInfo, displayOption);
+        TallyHomeLayout.applyToDisplayOption(
+                displayInfo, displayOption, tallyBandShown, tallySearchShown);
         Context context = displayInfo.context;
         enableTwoLinesInAllApps = Flags.enableTwolineToggle()
                 && Utilities.isEnglishLanguage(context)
