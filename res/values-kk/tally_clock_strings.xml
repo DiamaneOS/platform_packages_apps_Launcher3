@@ -3,11 +3,13 @@
   Copyright (C) 2026 The DiamaneOS Project
   SPDX-License-Identifier: Apache-2.0
 
-  Translations of tally_clock_timer and tally_clock_stopwatch, copied from the Clock app's own
-  "menu_timer" and "menu_stopwatch" (platform_packages_apps_DeskClock, Apache-2.0).
+  Translations of tally_clock_timer, tally_clock_stopwatch and tally_state_paused, copied from the
+  Clock app's own "menu_timer", "menu_stopwatch" and "swn_paused" (platform_packages_apps_DeskClock,
+  Apache-2.0).
 -->
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="tally_clock_timer">"Таймер"</string>
     <string name="tally_clock_stopwatch">"Секундомер"</string>
+    <string name="tally_state_paused">"Кідіртілген"</string>
 </resources>
