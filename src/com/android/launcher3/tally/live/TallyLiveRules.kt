@@ -43,9 +43,9 @@ import com.android.launcher3.tally.lamp.TallyLampState
  *
  * Only the flags, the category, the posting package, the ranking's channel and importance, and
  * whether the notification has a chronometer, a progress bar, a call template or a media session
- * are read here. For the tallies band, [TallyLiveTracker] also reads the progress bar's value and
- * the chronometer's time, which the system itself draws; titles, texts and custom views are never
- * read.
+ * are read here. For the tallies band, [TallyLiveTracker] also reads the progress bar's value, the
+ * chronometer's time and a MetricStyle's time ([TallyMetricTime]), which the system itself draws;
+ * titles, texts and custom views are never read.
  *
  * A notification the shade does not show gives nothing at all ([shownInShade]).
  */
