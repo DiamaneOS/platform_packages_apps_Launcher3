@@ -152,16 +152,28 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
         if (isVisible) onTick() else removeCallbacks(tick)
     }
 
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        super.onWindowFocusChanged(hasWindowFocus)
+        // Home's window has the focus back when the shade closes: the readouts catch up at once.
+        if (hasWindowFocus) onTick()
+    }
+
     private fun show(newItems: List<TallyLiveItem>) {
         items = newItems
         tallies.setItems(if (bandOn) newItems else emptyList())
         onTick()
     }
 
-    /** Counts a chronometer on screen once a second, at the turn of the second. */
+    /**
+     * Counts a chronometer on screen once a second, at the turn of the second. While the shade is
+     * open over Home the readouts stand still, so Home draws no frame for them, and catch up when
+     * it closes (at the latest on the next second).
+     */
     private fun onTick() {
         removeCallbacks(tick)
-        if (tallies.tick() && shownOnScreen) {
+        val covered = ApiWrapper.INSTANCE[context].isNotificationShadeExpanded()
+        val counting = if (covered) tallies.isCounting() else tallies.tick()
+        if (counting && shownOnScreen) {
             postDelayed(tick, TICK_MS - SystemClock.elapsedRealtime() % TICK_MS)
         }
     }
