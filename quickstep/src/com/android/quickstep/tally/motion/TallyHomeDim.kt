@@ -20,30 +20,42 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.view.View
+import android.view.ViewGroup
 import com.android.app.animation.Interpolators
 import kotlin.math.roundToInt
 
 /**
  * Home's dim (the prototype's `.hm-dim`): black over everything Launcher draws, wallpaper included,
  * at up to [TallyWindowMotion.HOME_DIM] while an app's window is in front and fading on the fill
- * spring as the window comes and goes. It lies in the overlay of Launcher's drag layer, so it is
- * above Home, the dock and All apps and below the floating icon and the app's window. With no dim
- * it is not drawn at all.
+ * spring as the window comes and goes. It is a black view of its own in the overlay of Launcher's
+ * drag layer, so it is above Home, the dock and All apps and below the floating icon and the app's
+ * window. A new dim sets only that view's alpha, a property of its render node, so nothing of
+ * Launcher is recorded again for it (a drawable's alpha recorded the drag layer again in every
+ * frame of a gesture). With no dim it is not drawn at all.
  *
  * One thing drives it at a time: the Animator that started last ([claim]), or a gesture setting it
  * directly ([set] with no owner). An older Animator still running (a return's fade when an app is
  * launched at once) is then ignored, so two never write it in turn.
  */
-class TallyHomeDim(private val host: View, private val fill: TallySpring) {
-    private val drawable = ColorDrawable(Color.BLACK).apply { alpha = 0 }
+class TallyHomeDim(private val host: ViewGroup, private val fill: TallySpring) {
+    private val scrim =
+        object : View(host.context) {
+            // One colour: the alpha applies to it as it draws, with no offscreen layer.
+            override fun hasOverlappingRendering() = false
+        }
     private var added = false
     private var owner: Any? = null
 
     /** The dim now, from 0 to 1. */
     var value = 0f
         private set
+
+    init {
+        scrim.setBackgroundColor(Color.BLACK)
+        scrim.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        scrim.alpha = 0f
+    }
 
     /** Makes [who] (a running Animator) the one that drives the dim from now on. */
     fun claim(who: Any) {
@@ -61,20 +73,21 @@ class TallyHomeDim(private val host: View, private val fill: TallySpring) {
         val alpha = (value * 255f).roundToInt()
         if (alpha == 0) {
             if (added) {
-                host.overlay.remove(drawable)
+                host.overlay.remove(scrim)
                 added = false
             }
-            drawable.alpha = 0
+            scrim.alpha = 0f
             return
         }
         if (!added) {
-            drawable.setBounds(0, 0, host.width, host.height)
-            host.overlay.add(drawable)
+            host.overlay.add(scrim)
             added = true
-        } else if (drawable.bounds.right != host.width || drawable.bounds.bottom != host.height) {
-            drawable.setBounds(0, 0, host.width, host.height)
         }
-        drawable.alpha = alpha
+        if (scrim.width != host.width || scrim.height != host.height) {
+            scrim.layout(0, 0, host.width, host.height)
+        }
+        // In steps of 1/255, as a drawable's alpha.
+        scrim.alpha = alpha / 255f
     }
 
     /**
