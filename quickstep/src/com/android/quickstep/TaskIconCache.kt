@@ -118,7 +118,7 @@ constructor(
             val entry =
                 getBitmapInfoCacheEntry(task)
                     .apply {
-                        task.icon = bitmapInfo.newIcon(context)
+                        task.icon = bitmapInfo.newTaskIcon(context)
                         task.titleDescription = contentDescription
                         task.title = title
                     }
@@ -151,7 +151,7 @@ constructor(
             bitmapInfo,
             title,
             contentDescription ->
-            val icon = bitmapInfo.newIcon(context)
+            val icon = bitmapInfo.newTaskIcon(context)
             task.icon = icon
             callback.onTaskIconReceived(icon, title, contentDescription)
         }
@@ -305,7 +305,7 @@ constructor(
         val title: String = "",
     ) {
         fun toTaskCacheEntry(context: Context): TaskCacheEntry {
-            return TaskCacheEntry(bitmapInfo.newIcon(context), contentDescription, title)
+            return TaskCacheEntry(bitmapInfo.newTaskIcon(context), contentDescription, title)
         }
     }
 
@@ -340,3 +340,11 @@ constructor(
             )
     }
 }
+
+/**
+ * DiamaneOS Tally: a task's icon follows the icon style as the app's key does on Home and in All
+ * apps, so Recents' app chip shows the Minimal style's themed icon while it is chosen (the plain
+ * icon where the style gives it none).
+ */
+private fun BitmapInfo.newTaskIcon(context: Context): Drawable =
+    newIcon(context, BitmapInfo.FLAG_THEMED)
