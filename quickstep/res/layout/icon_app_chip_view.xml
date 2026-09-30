@@ -29,8 +29,8 @@
     android:autoMirrored="true"
     android:elevation="@dimen/task_thumbnail_icon_menu_elevation"
     android:foreground="@drawable/app_chip_fg"
-    android:background="@color/materialColorSurfaceBright"
-    launcher:focusBorderColor="@color/materialColorSecondary">
+    android:background="@color/tally_surface"
+    launcher:focusBorderColor="@color/tally_accent">
 
     <!-- ignoring warning because the user of the anchor is a Rect where RTL is not needed -->
     <!-- This anchor's bounds is in the expected location after rotations and translations are
@@ -72,7 +72,7 @@
         android:id="@+id/icon_arrow"
         android:layout_width="@dimen/task_thumbnail_icon_menu_arrow_size"
         android:layout_height="@dimen/task_thumbnail_icon_menu_arrow_size"
-        android:background="@drawable/icon_menu_arrow_background"
+        android:background="@drawable/tally_recents_chip_arrow_bg"
         android:src="@drawable/ic_chevron_down"
         android:importantForAccessibility="no" />
 
