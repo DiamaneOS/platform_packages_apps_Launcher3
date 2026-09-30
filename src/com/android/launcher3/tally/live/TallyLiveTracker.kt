@@ -96,6 +96,15 @@ constructor(
                 input.category,
                 input.onDefaultChannel,
                 input.minimized,
+                TallyLiveRules.showsLiveActivity(
+                    input.flags,
+                    input.category,
+                    input.showsChronometer,
+                    input.progressMax,
+                    input.progressIndeterminate,
+                    input.callStyle,
+                    input.media,
+                ),
             ) ?: return null
         val now = realtime()
         val since = if (previous != null && previous.state == state) previous.sinceRealtime else now
@@ -153,8 +162,9 @@ constructor(
 
     /**
      * What the tracker reads from one notification and its ranking: flags, category, channel and
-     * importance, whether the shade shows it, and the progress bar and chronometer the system
-     * draws. Nothing else.
+     * importance, whether the shade shows it, whether it is a call or media with a session (its
+     * template), and the progress bar and chronometer the system draws. Nothing else: no title,
+     * text or custom view.
      */
     data class Input(
         val key: String,
@@ -178,6 +188,8 @@ constructor(
         val media: Boolean = false,
         /** Whether its channel is blockable, as SystemUI's NotificationEntry decides. */
         val blockable: Boolean = true,
+        /** A call (Notification.CallStyle), incoming, ongoing or screening. */
+        val callStyle: Boolean = false,
     ) {
         companion object {
             private val MEDIA_TEMPLATES =
@@ -199,6 +211,7 @@ constructor(
             ): Input {
                 val n = sbn.notification
                 val extras = n.extras
+                val template = extras.getString(Notification.EXTRA_TEMPLATE)
                 val channel = ranking?.channel
                 // A notification posted for every user (UserHandle.ALL, a system notification) is
                 // shown to this user, and belongs to this user here: user -1 is no profile, and
@@ -215,7 +228,7 @@ constructor(
                     suspended = ranking?.isSuspended ?: false,
                     suppressedVisualEffects = ranking?.suppressedVisualEffects ?: 0,
                     media =
-                        extras.getString(Notification.EXTRA_TEMPLATE) in MEDIA_TEMPLATES &&
+                        template in MEDIA_TEMPLATES &&
                             extras.getParcelable(
                                 Notification.EXTRA_MEDIA_SESSION,
                                 MediaSession.Token::class.java,
@@ -233,6 +246,7 @@ constructor(
                     whenMillis = n.`when`,
                     chronometerCountDown =
                         extras.getBoolean(Notification.EXTRA_CHRONOMETER_COUNT_DOWN),
+                    callStyle = template == Notification.CallStyle::class.java.name,
                 )
             }
         }
