@@ -153,6 +153,11 @@ import com.android.quickstep.LauncherBackAnimationController;
 import com.android.quickstep.SplitRecentsAnimUtils;
 import com.android.quickstep.SystemUiProxy;
 import com.android.quickstep.TaskViewUtils;
+import com.android.quickstep.tally.motion.TallyClose;
+import com.android.quickstep.tally.motion.TallyHomeEntrance;
+import com.android.quickstep.tally.motion.TallyLaunch;
+import com.android.quickstep.tally.motion.TallyMotion;
+import com.android.quickstep.tally.motion.TallyWindowMotion;
 import com.android.quickstep.util.AlreadyStartedBackAnimState;
 import com.android.quickstep.util.AnimatorBackState;
 import com.android.quickstep.util.BackAnimState;
@@ -160,6 +165,7 @@ import com.android.quickstep.util.CrossDisplayMoveTransition;
 import com.android.quickstep.util.MultiValueUpdateListener;
 import com.android.quickstep.util.RectFSpringAnim;
 import com.android.quickstep.util.RectFSpringAnim.DefaultSpringConfig;
+import com.android.quickstep.util.RectFSpringAnim.TallySpringConfig;
 import com.android.quickstep.util.RectFSpringAnim.WidgetSpringConfig;
 import com.android.quickstep.util.ScalingWorkspaceRevealAnim;
 import com.android.quickstep.util.SurfaceTransaction;
@@ -285,6 +291,8 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
     private boolean mIsLauncherAnimating = false;
 
     private LauncherBackAnimationController mBackAnimationController;
+    // DiamaneOS Tally: launch, return and Back to Home motion on an upright phone.
+    private final TallyMotion mTallyMotion;
     private final AnimatorListenerAdapter mForceInvisibleListener = new AnimatorListenerAdapter() {
         @Override
         public void onAnimationStart(Animator animation) {
@@ -310,6 +318,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
         mDragLayer = mLauncher.getDragLayer();
         mHandler = new Handler(Looper.getMainLooper());
         mDeviceProfile = mLauncher.getDeviceProfile();
+        mTallyMotion = new TallyMotion(launcher);
         mBackAnimationController = new LauncherBackAnimationController(mLauncher, this);
 
         Resources res = mLauncher.getResources();
@@ -375,6 +384,11 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
     @Override
     public void onDeviceProfileChanged(DeviceProfile dp) {
         mDeviceProfile = dp;
+    }
+
+    /** DiamaneOS Tally's motion for this Launcher. */
+    public TallyMotion getTallyMotion() {
+        return mTallyMotion;
     }
 
     private void startCrossDisplayMoveAnimation(TransitionInfo info, SurfaceControl.Transaction t,
@@ -629,7 +643,8 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                 v, appSurfaces, wallpaperSurfaces, nonAppSurfaces, launcherClosing);
         windowAnimator.setStartDelay(startDelay);
         anim.play(windowAnimator);
-        if (launcherClosing) {
+        // DiamaneOS Tally: Home stays in place and dims (TallyLaunch) instead of scaling down.
+        if (launcherClosing && !mTallyMotion.appliesToLaunch(appSurfaces)) {
             // Delay animation by a frame to avoid jank.
             Pair<AnimatorSet, Runnable> launcherContentAnimator =
                     getLauncherContentAnimator(true /* isAppOpening */, startDelay, false);
@@ -898,6 +913,21 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                 && mStartingWindowListener.consumeTaskLaunchInfo(
                         openingSurfaces.getFirstSurfaceTaskId()).windowType
                             == STARTING_WINDOW_TYPE_SPLASH_SCREEN;
+
+        if (mTallyMotion.appliesToLaunch(appSurfaces)) {
+            // DiamaneOS Tally: the window grows out of its key on the slab spring.
+            Animator tallyLaunch = new TallyLaunch(mTallyMotion, mLauncher, v, appSurfaces,
+                    openingSurfaces, windowTargetBounds, launcherIconBounds, dragLayerBounds[0],
+                    dragLayerBounds[1], hasSplashScreen, floatingView, surfaceApplier,
+                    navBarSurface, launcherClosing,
+                    appTargetsAreTranslucent ? 0 : mMaxShadowRadius).animator();
+            if (v instanceof BubbleTextView btv) {
+                // The key stops showing pressed once its window is open, as in stock's launch.
+                tallyLaunch.addListener(
+                        AnimatorListeners.forEndCallback(() -> btv.setStayPressed(false)));
+            }
+            return tallyLaunch;
+        }
 
         AnimOpenProperties prop = new AnimOpenProperties(mLauncher.getResources(),
                 windowTargetBounds, launcherIconBounds, v, dragLayerBounds[0], dragLayerBounds[1],
@@ -1713,6 +1743,10 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
             }
         }
 
+        // DiamaneOS Tally: the window flies into its key (or to the dock) on the slab spring.
+        final boolean tally = mTallyMotion.appliesToReturn(targets)
+                && !(launcherView instanceof LauncherAppWidgetHostView);
+
         // Get floating view and target rect.
         if (launcherView instanceof LauncherAppWidgetHostView) {
             Size windowSize = new Size(mDeviceProfile.getDeviceProperties().getWidthPx(),
@@ -1730,12 +1764,17 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                             ? null
                             : mLauncher.getTaskbarInteractor().findMatchingAsyncView(launcherView),
                     true /* hideOriginal */, targetRect, false /* isOpening */);
+        } else if (tally) {
+            mTallyMotion.dockTarget(targetRect);
         } else {
             targetRect.set(getDefaultWindowTargetRect());
         }
 
-        RectFSpringAnim anim = new RectFSpringAnim(floatingWidget != null
-                && Flags.widgetReturnAnimationMinorFixes()
+        RectFSpringAnim anim = new RectFSpringAnim(tally
+                ? new TallySpringConfig(mLauncher, closingWindowStartRectF, targetRect,
+                        mTallyMotion.getSlab(), floatingIconView != null
+                                ? mTallyMotion.visibleFactor(launcherView) : 1f)
+                : floatingWidget != null && Flags.widgetReturnAnimationMinorFixes()
                 ? new WidgetSpringConfig(
                         mLauncher, mDeviceProfile, closingWindowStartRectF, targetRect)
                 : new DefaultSpringConfig(
@@ -1753,10 +1792,21 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
             // FloatingIconView can be seen morphing into the icon shape.
             final float windowAlphaThreshold = 1f - SHAPE_PROGRESS_DURATION;
 
-            RectFSpringAnim.OnUpdateListener runner = new SpringAnimRunner(targets, targetRect,
+            SpringAnimRunner runner = new SpringAnimRunner(targets, targetRect,
                     closingWindowStartRectF, mLauncher, startWindowCornerRadius) {
                 @Override
                 public void onUpdate(RectF currentRectF, float progress) {
+                    TallyClose tallyClose = getTally();
+                    if (tallyClose != null) {
+                        super.onUpdate(currentRectF, progress);
+                        finalFloatingIconView.update(tallyClose.getIconAlpha(),
+                                tallyClose.icon(currentRectF), progress, windowAlphaThreshold,
+                                tallyClose.getIconRadius(), false);
+                        // DiamaneOS Tally: the key shows only inside the window's rounded rect.
+                        finalFloatingIconView.setWindowClip(currentRectF,
+                                tallyClose.getWindow().getRadius());
+                        return;
+                    }
                     // We want the icon alpha to be 1 once this threshold is met, so that it can be
                     // seen morphing into the icon shape. But before the threshold, we want to limit
                     // the alpha to reduce the blur effect behind the window.
@@ -1768,6 +1818,10 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                     super.onUpdate(currentRectF, progress);
                 }
             };
+            if (tally) {
+                runner.setTally(mTallyMotion.close(launcherView, targetRect,
+                        startWindowCornerRadius));
+            }
             anim.addOnUpdateListener(runner);
         } else if (floatingWidget != null) {
             anim.addAnimatorListener(floatingWidget);
@@ -1827,10 +1881,14 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
         } else {
             // If no floating icon or widget is present, animate the to the default window
             // target rect.
-            anim.addOnUpdateListener(new SpringAnimRunner(
+            SpringAnimRunner runner = new SpringAnimRunner(
                     targets, targetRect, closingWindowStartRectF,
                     mLauncher,
-                    startWindowCornerRadius));
+                    startWindowCornerRadius);
+            if (tally) {
+                runner.setTally(mTallyMotion.close(null, targetRect, startWindowCornerRadius));
+            }
+            anim.addOnUpdateListener(runner);
         }
 
         // Use a fixed velocity to start the animation.
@@ -2023,8 +2081,10 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                 || launcherIsASurfaceWithMode(AnimatedSurfaceUtils.mapFromTargets(appTargets),
                 AnimatedSurface.Mode.OPENING);
 
+        // DiamaneOS Tally: with no key on Home the window still flies, to the dock's centre.
+        final boolean tally = mTallyMotion.appliesToReturn(appTargets);
         boolean playFallBackAnimation = (launcherView == null
-                && launcherIsForceInvisibleOrOpening)
+                && launcherIsForceInvisibleOrOpening && !tally)
                 || mLauncher.getWorkspace().isOverlayShown()
                 || shouldPlayFallbackClosingAnimation(appTargets);
 
@@ -2049,6 +2109,19 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                 // Skip scaling all apps, otherwise FloatingIconView will get wrong
                 // layout bounds.
                 skipAllAppsScale = true;
+                if (tally) {
+                    // DiamaneOS Tally: the transition lasts until the window lands.
+                    anim.play(ValueAnimator.ofFloat(0, 1)
+                            .setDuration(mTallyMotion.getImpulseFlightMillis()));
+                }
+            } else if (tally) {
+                // DiamaneOS Tally: Home is at rest. The key's neighbours make room and settle as
+                // the window lands, and Home's dim clears (TallyHomeEntrance).
+                anim.play(new TallyHomeEntrance(mLauncher, mTallyMotion, launcherView,
+                        rectFSpringAnim, fromPredictiveBack
+                                ? mTallyMotion.getDim().getValue() : TallyWindowMotion.HOME_DIM,
+                        false /* fadeIn */, mTallyMotion.getImpulseFlightMillis()).animators());
+                playWorkspaceReveal = false;
             } else {
                 anim.play(
                         new ScalingWorkspaceRevealAnim(mLauncher, rectFSpringAnim,
