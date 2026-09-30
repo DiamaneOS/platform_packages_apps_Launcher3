@@ -89,6 +89,8 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
     private var bandOn = true
     private var items: List<TallyLiveItem> = emptyList()
     private var shownOnScreen = false
+    /** A preview's header: the date only, never the live tallies. */
+    private var dateOnly = false
     private val tick = Runnable { onTick() }
 
     private val displayMetrics
@@ -109,7 +111,7 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
         val properties = dp.deviceProperties
         applies =
             TallyHomeLayout.appliesTo(properties, dp.isVerticalBarLayout, dp.inv.isFixedLandscape)
-        bandOn = applies && dp.inv.tallyBandShown
+        bandOn = applies && !dateOnly && dp.inv.tallyBandShown
         date.visibility = if (applies) VISIBLE else GONE
         // Home was laid out again (the band came off or back, among others): nothing is lifted.
         tallies.setLifted(false)
@@ -132,8 +134,20 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
         requestLayout()
     }
 
+    /**
+     * Makes this a preview's header (LauncherPreviewRenderer): it shows the date, where Home shows
+     * it, and never the live tallies, which are not part of a preview. Call it before it is
+     * attached.
+     */
+    fun showDateOnly() {
+        dateOnly = true
+        bandOn = false
+        show(emptyList())
+    }
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        if (dateOnly) return
         val live = LauncherComponentProvider.get(context).getNotificationRepository().live
         rowSubscription = live.row.forEach(MAIN_EXECUTOR) { items -> show(items) }
     }
@@ -171,6 +185,7 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
      */
     private fun onTick() {
         removeCallbacks(tick)
+        if (dateOnly) return
         val covered = ApiWrapper.INSTANCE[context].isNotificationShadeExpanded()
         val counting = if (covered) tallies.isCounting() else tallies.tick()
         if (counting && shownOnScreen) postDelayed(tick, tallies.nextTickDelay())
