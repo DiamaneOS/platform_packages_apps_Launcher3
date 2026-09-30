@@ -390,7 +390,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
 
         /**
          * A thing's readout: its chronometer ("4:12", counting down or up, as the system draws it),
-         * else its progress ("34%"), else nothing.
+         * else its paused time ("4:12", still), else its progress ("34%"), else nothing.
          */
         @JvmStatic
         fun readoutOf(item: TallyLiveItem, now: Long = SystemClock.elapsedRealtime()): String {
@@ -402,6 +402,9 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
                     if (item.countDown) ceil(max(0L, millis) / 1000.0).toLong()
                     else max(0L, millis) / 1000
                 return DateUtils.formatElapsedTime(seconds)
+            }
+            if (item.pausedSeconds != TallyLiveItem.NO_PAUSED_TIME) {
+                return DateUtils.formatElapsedTime(item.pausedSeconds)
             }
             if (item.progressPermille != TallyLiveItem.NO_PROGRESS) {
                 return NumberFormat.getPercentInstance().format(item.progressPermille / 1000.0)

@@ -19,6 +19,7 @@ package com.android.launcher3.tally.live
 import android.app.Notification
 import android.app.NotificationChannel
 import android.media.session.MediaSession
+import android.os.Bundle
 import android.os.Process
 import android.os.SystemClock
 import android.os.UserHandle
@@ -99,7 +100,8 @@ constructor(
                 TallyLiveRules.showsLiveActivity(
                     input.flags,
                     input.category,
-                    input.showsChronometer,
+                    // A running MetricStyle time is the system's chronometer too.
+                    input.showsChronometer || input.metricTime?.running == true,
                     input.progressMax,
                     input.progressIndeterminate,
                     input.callStyle,
@@ -125,6 +127,15 @@ constructor(
             } else {
                 TallyLiveItem.NO_PROGRESS
             }
+        // A MetricStyle's time (Clock's timers and stopwatch) comes before the chronometer, as in
+        // the status bar chip (Notification.resolveCompactContent): running, the row counts it;
+        // paused, the row shows it still.
+        val metric = if (readouts) input.metricTime else null
+        val metricBase = metric?.chronometerBase(now, wallTime()) ?: TallyLiveItem.NO_CHRONOMETER
+        val pausedSeconds = metric?.pausedSeconds ?: TallyLiveItem.NO_PAUSED_TIME
+        val metricShown =
+            metricBase != TallyLiveItem.NO_CHRONOMETER ||
+                pausedSeconds != TallyLiveItem.NO_PAUSED_TIME
         return TallyLiveItem(
             key = input.key,
             app = input.app,
@@ -133,9 +144,12 @@ constructor(
             showsInRow = profile != Profile.PRIVATE,
             label = previous?.label ?: labelOf(input.app),
             progressPermille = progress,
-            chronometerBase = chronometerBase,
-            countDown = readouts && input.chronometerCountDown,
+            chronometerBase = if (metricShown) metricBase else chronometerBase,
+            countDown =
+                if (metricShown) metric?.countDown == true
+                else readouts && input.chronometerCountDown,
             sinceRealtime = since,
+            pausedSeconds = pausedSeconds,
         )
     }
 
@@ -163,8 +177,8 @@ constructor(
     /**
      * What the tracker reads from one notification and its ranking: flags, category, channel and
      * importance, whether the shade shows it, whether it is a call or media with a session (its
-     * template), and the progress bar and chronometer the system draws. Nothing else: no title,
-     * text or custom view.
+     * template), and the progress bar, chronometer and MetricStyle time the system draws. Nothing
+     * else: no title, text or custom view.
      */
     data class Input(
         val key: String,
@@ -190,6 +204,8 @@ constructor(
         val blockable: Boolean = true,
         /** A call (Notification.CallStyle), incoming, ongoing or screening. */
         val callStyle: Boolean = false,
+        /** A Notification.MetricStyle's time: a timer or a stopwatch, running or paused. */
+        val metricTime: TallyMetricTime? = null,
     ) {
         companion object {
             private val MEDIA_TEMPLATES =
@@ -197,6 +213,21 @@ constructor(
                     Notification.MediaStyle::class.java.name,
                     Notification.DecoratedMediaCustomViewStyle::class.java.name,
                 )
+
+            /**
+             * Whether [extras] carry a media session. The app writes this value: one of another
+             * type, or one this process cannot unparcel, throws in an app process (only the system
+             * server defuses bundles), so it counts as none rather than crashing Home.
+             */
+            private fun hasMediaSession(extras: Bundle): Boolean =
+                try {
+                    extras.getParcelable(
+                        Notification.EXTRA_MEDIA_SESSION,
+                        MediaSession.Token::class.java,
+                    ) != null
+                } catch (e: RuntimeException) {
+                    false
+                }
 
             /**
              * Reads [sbn] with its [ranking] (null when the ranking has no entry for it).
@@ -227,12 +258,7 @@ constructor(
                     canShowBadge = ranking?.canShowBadge() ?: false,
                     suspended = ranking?.isSuspended ?: false,
                     suppressedVisualEffects = ranking?.suppressedVisualEffects ?: 0,
-                    media =
-                        template in MEDIA_TEMPLATES &&
-                            extras.getParcelable(
-                                Notification.EXTRA_MEDIA_SESSION,
-                                MediaSession.Token::class.java,
-                            ) != null,
+                    media = template in MEDIA_TEMPLATES && hasMediaSession(extras),
                     // As SystemUI: no channel, or one locked for a critical device function that
                     // is not always blockable, is not blockable.
                     blockable =
@@ -247,6 +273,9 @@ constructor(
                     chronometerCountDown =
                         extras.getBoolean(Notification.EXTRA_CHRONOMETER_COUNT_DOWN),
                     callStyle = template == Notification.CallStyle::class.java.name,
+                    metricTime =
+                        if (template == TallyMetricTime.TEMPLATE) TallyMetricTime.from(extras)
+                        else null,
                 )
             }
         }

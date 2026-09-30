@@ -43,9 +43,9 @@ import com.android.launcher3.tally.lamp.TallyLampState
  *
  * Only the flags, the category, the posting package, the ranking's channel and importance, and
  * whether the notification has a chronometer, a progress bar, a call template or a media session
- * are read here. For the tallies band, [TallyLiveTracker] also reads the progress bar's value and
- * the chronometer's time, which the system itself draws; titles, texts and custom views are never
- * read.
+ * are read here. For the tallies band, [TallyLiveTracker] also reads the progress bar's value, the
+ * chronometer's time and a MetricStyle's time ([TallyMetricTime]), which the system itself draws;
+ * titles, texts and custom views are never read.
  *
  * A notification the shade does not show gives nothing at all ([shownInShade]).
  */
@@ -126,8 +126,9 @@ object TallyLiveRules {
      * definition of live on Home, 30 September 2026), from what the notification itself declares:
      * - it is a Live Update: the system promoted it ([Notification.FLAG_PROMOTED_ONGOING], in
      *   [flags]);
-     * - it shows the system's chronometer ([showsChronometer],
-     *   Notification.EXTRA_SHOW_CHRONOMETER): a timer, a stopwatch, a call, a recording;
+     * - it shows the system's chronometer ([showsChronometer], Notification.EXTRA_SHOW_CHRONOMETER,
+     *   or a running MetricStyle time, [TallyMetricTime]): a timer, a stopwatch, a call, a
+     *   recording;
      * - it has a progress bar: a maximum above 0 ([progressMax], Notification.EXTRA_PROGRESS_MAX)
      *   or an indeterminate one ([progressIndeterminate]): a download, an update, an install;
      * - its category is a call, navigation or a stopwatch, or it is a call ([callStyle],
