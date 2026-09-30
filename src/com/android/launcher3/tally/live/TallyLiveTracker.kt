@@ -99,7 +99,8 @@ constructor(
                 TallyLiveRules.showsLiveActivity(
                     input.flags,
                     input.category,
-                    input.showsChronometer,
+                    // A running MetricStyle time is the system's chronometer too.
+                    input.showsChronometer || input.metricTime?.running == true,
                     input.progressMax,
                     input.progressIndeterminate,
                     input.callStyle,
