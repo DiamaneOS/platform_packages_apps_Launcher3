@@ -31,6 +31,12 @@ private const val SEARCH_PREF_KEY = "pref_tally_home_search"
  * Home setting, on by default, kept and backed up as Launcher keeps its other Home settings (in the
  * same preferences file, which InvariantDeviceProfile listens to, so Home's layout follows it).
  *
+ * Home reads the settings only through InvariantDeviceProfile, which reads them with its own prefs
+ * as it picks the grid (tallyBandShown, tallySearchShown), and Home's views through their device
+ * profile. Nothing here resolves prefs from a context to read: a display's or window's context
+ * resolves to the real app's credential-encrypted prefs, which throw before the first unlock (the
+ * taskbar's boot sandbox builds a device profile then).
+ *
  * Removing one only hides it: the notifications behind the band, the notification shade and All
  * apps' search (a swipe up) stay as they are.
  */
@@ -43,14 +49,10 @@ enum class TallyHomeItem(@JvmField val prefKey: String) {
     /** The setting: whether the item is on Home. */
     @JvmField val shown: ConstantItem<Boolean> = LauncherPrefs.backedUpItem(prefKey, true)
 
-    /** Whether the item is on Home, as [context]'s Launcher keeps it. */
-    fun isShown(context: Context): Boolean = LauncherPrefs.get(context).get(shown)
-
-    /** [isShown] for the Launcher [inv] lays Home out for (on until it has a display). */
-    fun isShown(inv: InvariantDeviceProfile): Boolean =
-        inv.displayInfo?.context?.let { isShown(it) } ?: true
-
-    /** Puts the item on Home ([on]) or takes it off, in [context]'s Launcher. */
+    /**
+     * Puts the item on Home ([on]) or takes it off, in [context]'s Launcher: Home's own activity,
+     * which runs only once the user is unlocked.
+     */
     fun setShown(context: Context, on: Boolean) {
         LauncherPrefs.get(context).put(shown.to(on))
     }

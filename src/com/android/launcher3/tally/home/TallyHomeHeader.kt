@@ -114,7 +114,7 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
         val properties = dp.deviceProperties
         applies =
             TallyHomeLayout.appliesTo(properties, dp.isVerticalBarLayout, dp.inv.isFixedLandscape)
-        bandOn = applies && TallyHomeItem.TALLIES.isShown(context)
+        bandOn = applies && dp.inv.tallyBandShown
         date.visibility = if (applies) VISIBLE else GONE
         // Home was laid out again (the band came off or back, among others): nothing is lifted.
         tallies.setLifted(false)
