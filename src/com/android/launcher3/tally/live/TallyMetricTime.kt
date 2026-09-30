@@ -28,9 +28,8 @@ import android.os.Bundle
  * bundle. Anything unexpected (a missing key, a wrong type, an impossible value, a value that fails
  * to unparcel) gives no time, never a crash. Only numbers are read, never a metric's label or text.
  *
- * On Home the time reads as the system's chronometer shows it, in the notification
- * (android.widget.Chronometer) and in the status bar chip (SystemUI's ChronometerState, which
- * matches it): a count-down's whole seconds rounded down, a count-up's rounded to the nearest.
+ * On Home the time reads as the status bar chip shows it (SystemUI's ChronometerState, and the
+ * notification's android.widget.Chronometer between its ticks): whole seconds, truncated.
  *
  * @property kind which clock [millis] is on
  * @property countDown a timer (it counts down to zero), not a stopwatch (it counts up from zero)
@@ -51,29 +50,26 @@ data class TallyMetricTime(val kind: Kind, val millis: Long, val countDown: Bool
         get() = kind != Kind.PAUSED
 
     /**
-     * A paused time's whole seconds, as the system's chronometer shows it paused
-     * (Chronometer.setPausedDuration), or [TallyLiveItem.NO_PAUSED_TIME] when it is running or
-     * longer than [MAX_MILLIS].
+     * A paused time's whole seconds, as the running time read just before it stopped, or
+     * [TallyLiveItem.NO_PAUSED_TIME] when it is running or longer than [MAX_MILLIS]: a count-down's
+     * as the chip counts it down (Math.round((millis - 499) / 1000f), in whole milliseconds), a
+     * count-up's truncated, as the chip shows it paused. The notification's paused chronometer
+     * rounds a count-up to the nearest second instead (Chronometer.setPausedDuration).
      */
     val pausedSeconds: Long
         get() =
             when {
                 kind != Kind.PAUSED || millis !in 0L..MAX_MILLIS -> TallyLiveItem.NO_PAUSED_TIME
-                // Chronometer.updateText's Math.round((millis - 499) / 1000f) and
-                // Math.round(millis / 1000f), in whole milliseconds.
                 countDown -> (millis + 1) / 1000
-                else -> (millis + 500) / 1000
+                else -> millis / 1000
             }
 
     /**
      * A running time's chronometer base for the tallies row ([TallyLiveItem.chronometerBase]) at
-     * [realtime] (SystemClock.elapsedRealtime) and [wallTime] (System.currentTimeMillis) now, or
-     * [TallyLiveItem.NO_CHRONOMETER] when it is paused or its zero is more than [MAX_MILLIS] away.
-     *
-     * The row rounds a count-down's seconds up and a count-up's down
-     * (com.android.launcher3.tally.home.TallyTalliesRow.readoutOf), from the base on: so the base
-     * is where the system's chronometer starts to read 0:00, 998 ms before a count-down's zero
-     * (Math.round((zero - now - 499) / 1000f) is 0 from then) and 500 ms before a count-up's.
+     * [realtime] (SystemClock.elapsedRealtime) and [wallTime] (System.currentTimeMillis) now: its
+     * zero, which the row counts down to or up from as the chip does
+     * (com.android.launcher3.tally.home.TallyTalliesRow.readoutOf). [TallyLiveItem.NO_CHRONOMETER]
+     * when it is paused or its zero is more than [MAX_MILLIS] away.
      */
     fun chronometerBase(realtime: Long, wallTime: Long): Long {
         val zeroFromNow =
@@ -84,7 +80,7 @@ data class TallyMetricTime(val kind: Kind, val millis: Long, val countDown: Bool
             }
         // Both terms are 0 or more, so the difference does not overflow.
         if (zeroFromNow !in -MAX_MILLIS..MAX_MILLIS) return NONE
-        return realtime + zeroFromNow - if (countDown) COUNT_DOWN_LEAD_MS else COUNT_UP_LEAD_MS
+        return realtime + zeroFromNow
     }
 
     companion object {
@@ -98,8 +94,6 @@ data class TallyMetricTime(val kind: Kind, val millis: Long, val countDown: Bool
         const val MAX_MILLIS = 1000L * 60 * 60 * 1000
 
         private const val NONE = TallyLiveItem.NO_CHRONOMETER
-        private const val COUNT_DOWN_LEAD_MS = 998L
-        private const val COUNT_UP_LEAD_MS = 500L
 
         // Notification.MetricStyle's extras (Notification.EXTRA_METRICS and
         // EXTRA_METRICS_CRITICAL_INDEX) and, in each metric's Bundle, Notification.Metric's value
