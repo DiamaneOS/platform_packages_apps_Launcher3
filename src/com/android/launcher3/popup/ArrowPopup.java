@@ -372,7 +372,8 @@ public abstract class ArrowPopup<T extends ActivityContext> extends AbstractFloa
                     mOutlineRadius, getMeasuredWidth(), getMeasuredHeight(),
                     mArrowOffsetHorizontal, -mArrowOffsetVertical,
                     !mIsAboveIcon, mIsLeftAligned,
-                    mArrowColor));
+                    mArrowColor, getArrowEdgeWidth(),
+                    getContext().getColor(R.color.tally_outline_variant)));
             setElevation(mElevation);
             mArrow.setElevation(mElevation);
         }
@@ -383,6 +384,13 @@ public abstract class ArrowPopup<T extends ActivityContext> extends AbstractFloa
      */
     protected boolean shouldAddArrow() {
         return true;
+    }
+
+    /**
+     * DiamaneOS Tally: the width of the popup's edge that its arrow carries on, or 0 for none.
+     */
+    protected float getArrowEdgeWidth() {
+        return 0;
     }
 
     /**

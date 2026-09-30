@@ -316,6 +316,10 @@ open class PopupContainer<T : ActivityContext>(
         return (type and AbstractFloatingView.TYPE_ACTION_POPUP) != 0
     }
 
+    // DiamaneOS Tally: the arrow carries on the hairline edge of the menu's groups
+    // (popup_background).
+    override fun getArrowEdgeWidth(): Float = resources.getDimension(R.dimen.tally_stroke_hairline)
+
     @CallSuper
     override fun onDragStart(dragObject: DragObject, options: DragOptions) {
         // Either the original item or one of the shortcuts was dragged.
