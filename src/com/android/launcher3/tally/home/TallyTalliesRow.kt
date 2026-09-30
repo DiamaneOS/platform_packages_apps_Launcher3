@@ -29,6 +29,8 @@ import android.icu.util.Measure
 import android.icu.util.MeasureUnit
 import android.os.Bundle
 import android.os.SystemClock
+import android.text.BoringLayout
+import android.text.Layout
 import android.text.TextUtils
 import android.text.format.DateUtils
 import android.view.Gravity
@@ -36,6 +38,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewOutlineProvider
+import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -88,6 +91,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             strokeWidth = divider.toFloat()
             color = context.getColor(R.color.tally_outline_variant)
         }
+    private val accessibility = context.getSystemService(AccessibilityManager::class.java)
     private val cells = arrayOf(Cell(context), Cell(context))
     private var shown = 0
     private var stacked = false
@@ -148,6 +152,12 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         var counting = false
         for (i in 0 until shown) counting = cells[i].refreshReadout() or counting
         return counting
+    }
+
+    /** Whether a readout is counting, as [tick] returns, without updating them. */
+    fun isCounting(): Boolean {
+        for (i in 0 until shown) if (cells[i].isCounting) return true
+        return false
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -296,6 +306,13 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
                 maxLines = 1
             }
         private var item: TallyLiveItem? = null
+        /** The readout's pattern (its digits as zeros) and text size its width is fixed for. */
+        private var fittedPattern: String? = null
+        private var fittedTextSize = 0f
+
+        /** Whether the readout is a counting chronometer. */
+        val isCounting: Boolean
+            get() = item.let { it != null && it.chronometerBase != TallyLiveItem.NO_CHRONOMETER }
 
         init {
             orientation = HORIZONTAL
@@ -336,7 +353,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             giveWay(readout = false)
             lamp.setState(newItem.state)
             label.text = newItem.kindLabel ?: newItem.label
-            refreshReadout()
+            refreshReadout(describe = true)
         }
 
         fun bindMore(hidden: List<TallyLiveItem>) {
@@ -369,19 +386,69 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             valueParams.weight = if (readout) 1f else 0f
             value.gravity = (if (readout) Gravity.END else Gravity.START) or Gravity.CENTER_VERTICAL
             value.ellipsize = if (readout) TextUtils.TruncateAt.END else null
+            if (readout) {
+                // "Show" takes the space the name leaves: no fixed width.
+                value.minWidth = 0
+                value.maxWidth = Int.MAX_VALUE
+                fittedPattern = null
+            }
             label.layoutParams = labelParams
             value.layoutParams = valueParams
         }
 
-        /** Updates the readout; returns whether it is a counting chronometer. */
-        fun refreshReadout(): Boolean {
+        /**
+         * Updates the readout, and its words for screen readers if [describe]: by default only
+         * while an accessibility service is on, as they change every second (a service that asks
+         * for them gets them current, [onInitializeAccessibilityNodeInfo]). Returns whether it is a
+         * counting chronometer.
+         */
+        fun refreshReadout(describe: Boolean = accessibility?.isEnabled == true): Boolean {
             val current = item ?: return false
             val now = SystemClock.elapsedRealtime()
             val readout = readoutOf(current, now)
+            fitReadout(readout)
             if (!TextUtils.equals(value.text, readout)) value.text = readout
-            val spoken = spokenReadoutOf(current, now, resources.configuration.locales[0])
-            contentDescription = describe(context, current, readout, spoken)
+            if (describe) contentDescription = describeNow(current, now, readout)
             return current.chronometerBase != TallyLiveItem.NO_CHRONOMETER
+        }
+
+        private fun describeNow(
+            current: TallyLiveItem,
+            now: Long,
+            readout: String = readoutOf(current, now),
+        ): CharSequence {
+            val spoken = spokenReadoutOf(current, now, resources.configuration.locales[0])
+            return describe(context, current, readout, spoken)
+        }
+
+        /**
+         * Fixes the readout's width at the widest text of [readout]'s pattern (the same text with
+         * any digits): a new time then only redraws the readout, where a text view as wide as its
+         * text lays Home out again for every new text. Sofia Sans's tabular digits (the Readout
+         * style's tnum) are all as wide, so the time never moves within it.
+         */
+        private fun fitReadout(readout: String) {
+            val pattern = buildString { for (c in readout) append(digitAs(c, 0)) }
+            val textSize = value.textSize
+            if (pattern == fittedPattern && textSize == fittedTextSize) return
+            fittedPattern = pattern
+            fittedTextSize = textSize
+            val paint = value.paint
+            var widest = 0f
+            for (digit in 0..9) {
+                val text = buildString { for (c in pattern) append(digitAs(c, digit)) }
+                val boring = BoringLayout.isBoring(text, paint)?.width?.toFloat() ?: 0f
+                widest = max(widest, max(boring, Layout.getDesiredWidth(text, paint)))
+            }
+            value.setWidth(
+                ceil(widest).toInt() + value.compoundPaddingLeft + value.compoundPaddingRight
+            )
+        }
+
+        override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
+            super.onInitializeAccessibilityNodeInfo(info)
+            // The words as of now, whether or not the description has followed the count.
+            item?.let { info.contentDescription = describeNow(it, SystemClock.elapsedRealtime()) }
         }
     }
 
@@ -389,6 +456,15 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         private const val GAP_DP = 10f
         private const val PADDING_START_DP = 13f
         private const val PADDING_END_DP = 14f
+
+        /** The last time format made, with its locale: making one takes milliseconds. */
+        @Volatile private var spokenFormat: SpokenFormat? = null
+
+        private class SpokenFormat(val locale: Locale, val format: MeasureFormat)
+
+        /** [c] as [digit] in its own digits when it is a decimal digit, else [c]. */
+        private fun digitAs(c: Char, digit: Int): Char =
+            if (Character.isDigit(c)) c - Character.digit(c, 10) + digit else c
 
         /**
          * A thing's readout: its chronometer ("4:12", counting down or up, as the system draws it),
@@ -437,14 +513,21 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             if (seconds % 60 > 0 || measures.isEmpty()) {
                 measures.add(Measure(seconds % 60, MeasureUnit.SECOND))
             }
-            return MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.WIDE)
-                .formatMeasures(*measures.toTypedArray())
+            val cached = spokenFormat
+            val format =
+                if (cached != null && cached.locale == locale) cached.format
+                else
+                    MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.WIDE).also {
+                        spokenFormat = SpokenFormat(locale, it)
+                    }
+            return format.formatMeasures(*measures.toTypedArray())
         }
 
         /**
          * A thing's words for screen readers: its name, with its app's after a kind the row shows
-         * in its place ("Timer, Clock"), then its lamp's state and its readout as [spoken]:
-         * "Timer, Clock, Active, 9 minutes, 57 seconds" or "Files, Active, 34%".
+         * in its place ("Timer, Clock"), then its lamp's state (Paused for a live time that stands
+         * still) and its readout as [spoken]: "Timer, Clock, Active, 9 minutes, 57 seconds",
+         * "Timer, Clock, Paused, 6 minutes, 58 seconds" or "Files, Active, 34%".
          */
         @JvmStatic
         fun describe(
@@ -457,7 +540,19 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             val name =
                 if (kind == null) item.label
                 else context.getString(R.string.tally_kind_of_app, kind, item.label)
-            val description = TallyKeycapLed.describe(context, name, item.state)
+            val description =
+                if (
+                    item.state == TallyLampState.LIVE &&
+                        item.pausedSeconds != TallyLiveItem.NO_PAUSED_TIME
+                ) {
+                    context.getString(
+                        R.string.tally_key_with_state,
+                        name,
+                        context.getString(R.string.tally_state_paused),
+                    )
+                } else {
+                    TallyKeycapLed.describe(context, name, item.state)
+                }
             return if (spoken.isEmpty()) description
             else context.getString(R.string.tally_key_with_state, description, spoken)
         }

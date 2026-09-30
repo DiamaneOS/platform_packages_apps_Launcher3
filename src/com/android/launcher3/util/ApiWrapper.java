@@ -187,6 +187,15 @@ public class ApiWrapper {
     public void openNotificationShade() { }
 
     /**
+     * Whether the notification shade or Quick Settings is fully open, covering the app under it
+     * (DiamaneOS Tally: Home's tallies stop counting under it). Overridden in Quickstep, which
+     * has SystemUI's state; false here.
+     */
+    public boolean isNotificationShadeExpanded() {
+        return false;
+    }
+
+    /**
      * Whether the system locks a notification channel's importance for a critical device function
      * (the default dialer or emergency app), which, for a channel that is not always blockable,
      * keeps its notifications in the shade under Do Not Disturb (DiamaneOS Tally: Home's LEDs and
