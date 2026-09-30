@@ -20,6 +20,7 @@
     android:layout_height="wrap_content"
     android:animateLayoutChanges="true"
     android:background="@drawable/task_menu_bg"
+    android:foreground="@drawable/tally_recents_menu_edge"
     android:orientation="vertical"
     android:visibility="invisible">
 

@@ -13,12 +13,23 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
+<!-- Tally: a Recents key (tally_recents_keys.xml): the surface with a hairline edge, 8 dp
+     corners, and the press layer as its ripple. -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
-    android:color="?android:attr/colorControlHighlight">
+    android:color="@color/tally_press">
+    <item android:id="@android:id/mask">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/overview_actions_button_radius" />
+            <solid android:color="@android:color/white" />
+        </shape>
+    </item>
     <item>
         <shape android:shape="rectangle">
             <corners android:radius="@dimen/overview_actions_button_radius" />
-            <solid android:color="@color/materialColorSurfaceBright"/>
+            <solid android:color="@color/tally_surface" />
+            <stroke
+                android:width="@dimen/tally_stroke_hairline"
+                android:color="@color/tally_outline_variant" />
         </shape>
     </item>
 </ripple>
