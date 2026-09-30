@@ -43,6 +43,16 @@
         <item quantity="other"><xliff:g id="count" example="2">%1$d</xliff:g> more: <xliff:g id="names" example="Files and Recorder">%2$s</xliff:g>. Show in the notification shade</item>
     </plurals>
 
+    <!-- Home's tallies band, the row under the date that shows what is live now (a timer, a
+         recording, a download): its switch in Home settings, and its name for screen readers. A
+         long press takes it off Home, as it takes off a widget. [CHAR LIMIT=30] -->
+    <string name="tally_home_tallies">Tallies</string>
+    <!-- Home settings: the summary of the tallies band's switch. -->
+    <string name="tally_home_tallies_summary">What\'s live now, under the date</string>
+    <!-- Home settings: the summary of the switch for Home's search slot (the switch's title is
+         Launcher's all_apps_search_bar_hint, "Search apps"). -->
+    <string name="tally_home_search_summary">Under the dock</string>
+
     <!-- All apps' letter rail: a screen reader's label for one slot, which jumps to the apps whose
          names start with its letters. The letters are joined as "G or K" (or "T, V, or W") in the
          language's own way. -->

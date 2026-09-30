@@ -33,6 +33,7 @@ import com.android.launcher3.DropTarget;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.R;
 import com.android.launcher3.model.data.ItemInfo;
+import com.android.launcher3.tally.home.TallyHomeLift;
 import com.android.launcher3.widget.util.WidgetDragScaleUtils;
 
 import java.util.function.Consumer;
@@ -157,6 +158,10 @@ public class LauncherDragController extends DragController {
 
     @Override
     protected DropTarget getDefaultDropTarget(int[] dropCoordinates) {
+        // DiamaneOS Tally: Home's tallies band and search slot have one place on Home, and go
+        // back to it when dropped anywhere but a drop target.
+        DropTarget tallyPlace = TallyHomeLift.placeOf(mDragObject);
+        if (tallyPlace != null) return tallyPlace;
         mLauncher.getDragLayer().mapCoordInSelfToDescendant(mLauncher.getWorkspace(),
                 dropCoordinates);
         return mLauncher.getWorkspace();

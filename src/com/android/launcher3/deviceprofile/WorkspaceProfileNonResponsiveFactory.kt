@@ -216,8 +216,7 @@ object WorkspaceProfileNonResponsiveFactory {
                 res = res,
                 properties = deviceProperties,
                 isVerticalLayout = isVerticalLayout,
-                isFixedLandscape = inv.isFixedLandscape,
-                numRows = inv.numRows,
+                inv = inv,
                 edgeMarginPx = edgeMarginPx,
                 hotseatBarSizePx = hotseatProfile.barSizePx,
                 pageIndicatorPx =
