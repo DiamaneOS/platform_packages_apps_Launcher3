@@ -16,6 +16,7 @@
 package com.android.launcher3.uioverrides
 
 import android.app.ActivityOptions
+import android.app.NotificationChannel
 import android.app.PendingIntent
 import android.app.role.RoleManager
 import android.content.Context
@@ -49,6 +50,7 @@ import com.android.launcher3.uioverrides.touchcontrollers.StatusBarTouchControll
 import com.android.launcher3.util.ApiWrapper
 import com.android.launcher3.util.Executors
 import com.android.launcher3.util.StartActivityParams
+import com.android.quickstep.SystemUiProxy
 import com.android.quickstep.util.FadeOutRemoteTransition
 import java.util.function.Supplier
 import javax.inject.Inject
@@ -172,6 +174,14 @@ open class SystemApiWrapper @Inject constructor(@ApplicationContext context: Con
     ): StatusBarTouchController? {
         return StatusBarTouchController(launcher, isEnabledCheck)
     }
+
+    // DiamaneOS Tally: Home's "+n more" tally opens the shade, as a pull down on Home does.
+    override fun openNotificationShade() =
+        SystemUiProxy.INSTANCE[mContext].expandNotificationPanel()
+
+    // DiamaneOS Tally: Home's LEDs and tallies follow what the shade shows under Do Not Disturb.
+    override fun isImportanceLockedByCriticalDeviceFunction(channel: NotificationChannel) =
+        channel.isImportanceLockedByCriticalDeviceFunction
 
     override fun captureSnapshot(host: SurfaceControlViewHost, width: Int, height: Int): Bitmap =
         ScreenCaptureInternal.captureLayers(

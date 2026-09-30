@@ -40,9 +40,11 @@ import com.android.launcher3.dot.DotInfo;
 import com.android.launcher3.pm.UserCache;
 import com.android.launcher3.tally.live.TallyAppLabels;
 import com.android.launcher3.tally.live.TallyLiveTracker;
+import com.android.launcher3.util.ApiWrapper;
 import com.android.launcher3.util.PackageUserKey;
 import com.android.launcher3.util.SafeCloseable;
 import com.android.launcher3.util.SettingsCache;
+import com.android.launcher3.util.UserIconInfo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -213,7 +215,21 @@ public class NotificationListener extends NotificationListenerService {
             mTallyLive = new TallyLiveTracker(
                     LauncherComponentProvider.get(this).getNotificationRepository().getLive(),
                     labels::labelOf,
-                    key -> key.mUser != null && userCache.getUserInfo(key.mUser).isPrivate());
+                    key -> {
+                        if (key.mUser == null) {
+                            return TallyLiveTracker.Profile.PERSONAL;
+                        }
+                        // A user the cache does not know yet (a profile being added, or a failed
+                        // read) shows nothing, as the private space, rather than falling back to
+                        // the main user's name and readout.
+                        UserCache.CachedUserInfo cached =
+                                userCache.getUserManagerState().getCachedInfoOrNull(key.mUser);
+                        if (cached == null) {
+                            return TallyLiveTracker.Profile.PRIVATE;
+                        }
+                        UserIconInfo info = cached.getIconInfo();
+                        return TallyLiveTracker.Profile.of(info.isWork(), info.isPrivate());
+                    });
         }
         return mTallyLive;
     }
@@ -221,7 +237,9 @@ public class NotificationListener extends NotificationListenerService {
     private TallyLiveTracker.Input tallyInput(StatusBarNotification sbn) {
         RankingMap rankings = getCurrentRanking();
         boolean ranked = rankings != null && rankings.getRanking(sbn.getKey(), mTallyRanking);
-        return TallyLiveTracker.Input.from(sbn, ranked ? mTallyRanking : null);
+        ApiWrapper apiWrapper = ApiWrapper.INSTANCE.get(this);
+        return TallyLiveTracker.Input.from(sbn, ranked ? mTallyRanking : null,
+                apiWrapper::isImportanceLockedByCriticalDeviceFunction);
     }
 
     private List<TallyLiveTracker.Input> tallyInputs(StatusBarNotification[] notifications) {
