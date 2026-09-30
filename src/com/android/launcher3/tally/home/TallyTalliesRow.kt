@@ -525,8 +525,9 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
 
         /**
          * A thing's words for screen readers: its name, with its app's after a kind the row shows
-         * in its place ("Timer, Clock"), then its lamp's state and its readout as [spoken]:
-         * "Timer, Clock, Active, 9 minutes, 57 seconds" or "Files, Active, 34%".
+         * in its place ("Timer, Clock"), then its lamp's state (Paused for a live time that stands
+         * still) and its readout as [spoken]: "Timer, Clock, Active, 9 minutes, 57 seconds",
+         * "Timer, Clock, Paused, 6 minutes, 58 seconds" or "Files, Active, 34%".
          */
         @JvmStatic
         fun describe(
@@ -539,7 +540,19 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             val name =
                 if (kind == null) item.label
                 else context.getString(R.string.tally_kind_of_app, kind, item.label)
-            val description = TallyKeycapLed.describe(context, name, item.state)
+            val description =
+                if (
+                    item.state == TallyLampState.LIVE &&
+                        item.pausedSeconds != TallyLiveItem.NO_PAUSED_TIME
+                ) {
+                    context.getString(
+                        R.string.tally_key_with_state,
+                        name,
+                        context.getString(R.string.tally_state_paused),
+                    )
+                } else {
+                    TallyKeycapLed.describe(context, name, item.state)
+                }
             return if (spoken.isEmpty()) description
             else context.getString(R.string.tally_key_with_state, description, spoken)
         }
