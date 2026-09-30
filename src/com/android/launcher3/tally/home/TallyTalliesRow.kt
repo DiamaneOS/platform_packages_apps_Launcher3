@@ -387,12 +387,15 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             lamp.setState(state ?: TallyLampState.OFF)
             label.text = resources.getQuantityString(R.plurals.tally_more, hidden.size, hidden.size)
             value.setText(R.string.tally_more_show)
+            // The things by the names the band gives them (Timer and Stopwatch, not Clock and
+            // Clock), each once, as the prototype's label names its tallies.
+            val names = hidden.map { (it.kindLabel ?: it.label).toString() }.distinct()
             contentDescription =
                 resources.getQuantityString(
                     R.plurals.tally_more_description,
                     hidden.size,
                     hidden.size,
-                    ListFormatter.getInstance().format(hidden.map { it.label.toString() }),
+                    ListFormatter.getInstance().format(names),
                 )
         }
 
