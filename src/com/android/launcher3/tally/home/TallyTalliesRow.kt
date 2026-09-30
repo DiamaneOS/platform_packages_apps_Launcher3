@@ -56,6 +56,7 @@ import com.android.launcher3.util.SafeCloseable
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Home's tallies band, the prototype's `.tallies`: one row of 48 dp keys, a lamp, a name and a
@@ -158,6 +159,18 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
     fun isCounting(): Boolean {
         for (i in 0 until shown) if (cells[i].isCounting) return true
         return false
+    }
+
+    /**
+     * How long from [now] (SystemClock.elapsedRealtime) the next [tick] should wait: until a
+     * counting readout turns to its next second, and a few milliseconds more, as the system's
+     * chronometer and the status bar chip wait, so the band and the chip turn together; at most a
+     * second.
+     */
+    fun nextTickDelay(now: Long = SystemClock.elapsedRealtime()): Long {
+        var delay = TICK_MS
+        for (i in 0 until shown) cells[i].turnIn(now)?.let { delay = min(delay, it) }
+        return delay + TURN_MARGIN_MS
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -314,6 +327,9 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         val isCounting: Boolean
             get() = item.let { it != null && it.chronometerBase != TallyLiveItem.NO_CHRONOMETER }
 
+        /** How long from [now] until the readout turns to its next second, or null. */
+        fun turnIn(now: Long): Long? = item?.let { turnOf(it, now) }
+
         init {
             orientation = HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -456,6 +472,9 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         private const val GAP_DP = 10f
         private const val PADDING_START_DP = 13f
         private const val PADDING_END_DP = 14f
+        private const val TICK_MS = 1000L
+        /** How long past a readout's turn a tick waits, as android.widget.Chronometer's 3 ms. */
+        private const val TURN_MARGIN_MS = 3L
 
         /** The last time format made, with its locale: making one takes milliseconds. */
         @Volatile private var spokenFormat: SpokenFormat? = null
@@ -481,17 +500,36 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             return ""
         }
 
-        /** A thing's time in whole seconds (a chronometer's or a paused one), or null. */
+        /**
+         * A thing's time in whole seconds (a chronometer's or a paused one), or null. A counting
+         * time reads as the status bar chip reads it (SystemUI's ChronometerState, and the
+         * notification's chronometer between its ticks): a count-up truncated, a count-down as
+         * `Math.round((left - 499) / 1000f)` in whole milliseconds.
+         */
         private fun readoutSecondsOf(item: TallyLiveItem, now: Long): Long? {
             if (item.chronometerBase != TallyLiveItem.NO_CHRONOMETER) {
-                val millis =
-                    if (item.countDown) item.chronometerBase - now else now - item.chronometerBase
-                // A count-down shows the seconds it has started, as a timer's display does.
-                return if (item.countDown) ceil(max(0L, millis) / 1000.0).toLong()
-                else max(0L, millis) / 1000
+                return if (item.countDown) (max(0L, item.chronometerBase - now) + 1) / 1000
+                else max(0L, now - item.chronometerBase) / 1000
             }
             if (item.pausedSeconds != TallyLiveItem.NO_PAUSED_TIME) return item.pausedSeconds
             return null
+        }
+
+        /**
+         * How long from [now] until [item]'s counting time ([readoutSecondsOf]) turns to its next
+         * second, or null when it does not count or has stopped at zero.
+         */
+        @JvmStatic
+        fun turnOf(item: TallyLiveItem, now: Long): Long? {
+            val base = item.chronometerBase
+            if (base == TallyLiveItem.NO_CHRONOMETER) return null
+            if (item.countDown) {
+                // (left + 1) / 1000 drops as left + 1 goes below a whole second.
+                val left = base - now
+                return if (left < 0) null else (left + 1) % 1000 + 1
+            }
+            val elapsed = now - base
+            return if (elapsed < 0) TICK_MS - elapsed else TICK_MS - elapsed % TICK_MS
         }
 
         /**
