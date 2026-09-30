@@ -55,7 +55,7 @@
         android:layout_gravity="end|center_vertical"
         android:visibility="gone"
         android:contentDescription="@string/action_add_to_workspace"
-        android:src="@drawable/ic_add_circle_filled"
+        android:src="@drawable/tally_popup_add_key"
         android:scaleType="center"/>
 
 </com.android.launcher3.shortcuts.DeepShortcutView>
