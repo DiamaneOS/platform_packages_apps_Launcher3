@@ -125,6 +125,15 @@ constructor(
             } else {
                 TallyLiveItem.NO_PROGRESS
             }
+        // A MetricStyle's time (Clock's timers and stopwatch) comes before the chronometer, as in
+        // the status bar chip (Notification.resolveCompactContent): running, the row counts it;
+        // paused, the row shows it still.
+        val metric = if (readouts) input.metricTime else null
+        val metricBase = metric?.chronometerBase(now, wallTime()) ?: TallyLiveItem.NO_CHRONOMETER
+        val pausedSeconds = metric?.pausedSeconds ?: TallyLiveItem.NO_PAUSED_TIME
+        val metricShown =
+            metricBase != TallyLiveItem.NO_CHRONOMETER ||
+                pausedSeconds != TallyLiveItem.NO_PAUSED_TIME
         return TallyLiveItem(
             key = input.key,
             app = input.app,
@@ -133,9 +142,12 @@ constructor(
             showsInRow = profile != Profile.PRIVATE,
             label = previous?.label ?: labelOf(input.app),
             progressPermille = progress,
-            chronometerBase = chronometerBase,
-            countDown = readouts && input.chronometerCountDown,
+            chronometerBase = if (metricShown) metricBase else chronometerBase,
+            countDown =
+                if (metricShown) metric?.countDown == true
+                else readouts && input.chronometerCountDown,
             sinceRealtime = since,
+            pausedSeconds = pausedSeconds,
         )
     }
 
@@ -163,8 +175,8 @@ constructor(
     /**
      * What the tracker reads from one notification and its ranking: flags, category, channel and
      * importance, whether the shade shows it, whether it is a call or media with a session (its
-     * template), and the progress bar and chronometer the system draws. Nothing else: no title,
-     * text or custom view.
+     * template), and the progress bar, chronometer and MetricStyle time the system draws. Nothing
+     * else: no title, text or custom view.
      */
     data class Input(
         val key: String,
@@ -190,6 +202,8 @@ constructor(
         val blockable: Boolean = true,
         /** A call (Notification.CallStyle), incoming, ongoing or screening. */
         val callStyle: Boolean = false,
+        /** A Notification.MetricStyle's time: a timer or a stopwatch, running or paused. */
+        val metricTime: TallyMetricTime? = null,
     ) {
         companion object {
             private val MEDIA_TEMPLATES =
@@ -247,6 +261,9 @@ constructor(
                     chronometerCountDown =
                         extras.getBoolean(Notification.EXTRA_CHRONOMETER_COUNT_DOWN),
                     callStyle = template == Notification.CallStyle::class.java.name,
+                    metricTime =
+                        if (template == TallyMetricTime.TEMPLATE) TallyMetricTime.from(extras)
+                        else null,
                 )
             }
         }

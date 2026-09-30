@@ -47,9 +47,15 @@ data class TallyLiveItem(
     val countDown: Boolean = false,
     /** When this became live or failed (elapsed realtime): the row shows newer things first. */
     val sinceRealtime: Long = 0L,
+    /**
+     * A paused timer's or stopwatch's time in whole seconds, which the row shows still, or
+     * [NO_PAUSED_TIME].
+     */
+    val pausedSeconds: Long = NO_PAUSED_TIME,
 ) {
     companion object {
         const val NO_PROGRESS = -1
         const val NO_CHRONOMETER = Long.MIN_VALUE
+        const val NO_PAUSED_TIME = -1L
     }
 }
