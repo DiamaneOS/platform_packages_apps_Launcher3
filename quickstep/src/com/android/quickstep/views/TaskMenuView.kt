@@ -45,7 +45,6 @@ import com.android.launcher3.util.SplitConfigurationOptions
 import com.android.launcher3.util.safeSetDuration
 import com.android.launcher3.views.BaseDragLayer
 import com.android.quickstep.orientation.RecentsPagedOrientationHandler
-import com.android.quickstep.util.TaskCornerRadius
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -112,7 +111,8 @@ constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int = 0) :
                     0,
                     view.width,
                     view.height,
-                    TaskCornerRadius.get(view.context),
+                    // Tally: the menu's own corners (12 dp), not the card's.
+                    view.resources.getDimension(R.dimen.task_menu_corner_radius),
                 )
             }
         }
@@ -312,7 +312,8 @@ constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int = 0) :
     }
 
     private fun createOpenCloseOutlineProvider(): RoundedRectRevealOutlineProvider {
-        val radius = TaskCornerRadius.get(mContext)
+        // Tally: the menu's own corners (12 dp), not the card's.
+        val radius = resources.getDimension(R.dimen.task_menu_corner_radius)
 
         val fromRect =
             Rect(

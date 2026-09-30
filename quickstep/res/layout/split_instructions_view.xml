@@ -15,7 +15,6 @@
 -->
 <com.android.quickstep.views.SplitInstructionsView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:androidprv="http://schemas.android.com/apk/prv/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:background="@drawable/split_instructions_background"
@@ -25,11 +24,13 @@
     android:paddingBottom="@dimen/split_instructions_vertical_padding"
     android:elevation="@dimen/split_instructions_elevation"
     android:visibility="gone">
+    <!-- Tally: the words in Tally's body type and ink, the Cancel key in its label type. -->
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/split_instructions_text"
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:textColor="?androidprv:attr/textColorOnAccent"
+        android:textAppearance="@style/TextAppearance.Tally.Body"
+        android:textColor="@color/tally_ink"
         android:text="@string/toast_split_select_app"
         android:layout_weight="1" />
 
@@ -38,9 +39,9 @@
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:layout_gravity="center_vertical"
-        android:textColor="?androidprv:attr/textColorOnAccent"
+        android:textAppearance="@style/TextAppearance.Tally.Label"
+        android:textColor="@color/tally_ink"
         android:layout_marginStart="@dimen/split_instructions_start_margin_cancel"
         android:text="@string/toast_split_select_app_cancel"
-        android:textStyle="bold"
         android:visibility="gone"/>
 </com.android.quickstep.views.SplitInstructionsView>
