@@ -37,6 +37,8 @@ import com.android.launcher3.util.PackageUserKey
  * LED nor a place in the row.
  *
  * @param labelOf the app's name for the tallies row (badged for a work profile)
+ * @param kindLabelOf the row's name for the system Clock's timer or stopwatch, badged as the app's
+ *   name, or null when the app is not the system Clock ([TallyAppLabels.kindLabelOf])
  * @param profileOf which kind of profile a user is ([Profile]), which decides what the row shows
  * @param realtime the clock the row's order and chronometers use
  * @param wallTime the clock notifications' `when` uses
@@ -46,6 +48,7 @@ class TallyLiveTracker
 constructor(
     private val repository: TallyLiveRepository,
     private val labelOf: (PackageUserKey) -> CharSequence,
+    private val kindLabelOf: (PackageUserKey, TallyLiveRules.ClockKind) -> CharSequence?,
     private val profileOf: (PackageUserKey) -> Profile,
     private val realtime: () -> Long = SystemClock::elapsedRealtime,
     private val wallTime: () -> Long = System::currentTimeMillis,
@@ -136,6 +139,22 @@ constructor(
         val metricShown =
             metricBase != TallyLiveItem.NO_CHRONOMETER ||
                 pausedSeconds != TallyLiveItem.NO_PAUSED_TIME
+        val base = if (metricShown) metricBase else chronometerBase
+        val countDown =
+            if (metricShown) metric?.countDown == true else readouts && input.chronometerCountDown
+        // The system Clock's timer and stopwatch go by those names, from the notification's
+        // structure; not in a work profile, whose tallies show only the app's name and state.
+        val kind =
+            if (readouts) {
+                TallyLiveRules.clockKindOf(
+                    input.app.mPackageName,
+                    input.category,
+                    timeShown = metricShown || base != TallyLiveItem.NO_CHRONOMETER,
+                    countDown = countDown,
+                )
+            } else {
+                null
+            }
         return TallyLiveItem(
             key = input.key,
             app = input.app,
@@ -143,11 +162,10 @@ constructor(
             showsLed = input.canShowBadge,
             showsInRow = profile != Profile.PRIVATE,
             label = previous?.label ?: labelOf(input.app),
+            kindLabel = kind?.let { kindLabelOf(input.app, it) },
             progressPermille = progress,
-            chronometerBase = if (metricShown) metricBase else chronometerBase,
-            countDown =
-                if (metricShown) metric?.countDown == true
-                else readouts && input.chronometerCountDown,
+            chronometerBase = base,
+            countDown = countDown,
             sinceRealtime = since,
             pausedSeconds = pausedSeconds,
         )
