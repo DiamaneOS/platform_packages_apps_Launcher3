@@ -22,23 +22,30 @@ import com.android.launcher3.tally.lamp.TallyLampState
 
 /**
  * What makes an app live or failed on Home, read from the notifications Launcher's listener already
- * receives for its dots, and nothing else: no permission, no binding, no stored content.
+ * receives for its dots, and nothing else: no permission, no binding, no stored content. The same
+ * state lights the app's key (its LED) and gives it a place in the tallies band.
  * - Failed: a notification in the error category ([Notification.CATEGORY_ERROR], "error in a
  *   background operation or authentication status"). It stays failed until the notification goes.
- * - Live (running now): a notification of a foreground service
- *   ([Notification.FLAG_FOREGROUND_SERVICE]), or an ongoing one ([Notification.FLAG_ONGOING_EVENT])
- *   outside the legacy default channel (the same exception the dots make for old apps), unless it
- *   is a system status notice ([Notification.CATEGORY_SYSTEM]) or minimized (a channel of minimum
- *   importance, out of the way by the app's or the user's choice).
+ * - Live: a running notification that shows a live readout or an activity in progress
+ *   ([showsLiveActivity]): a timer, stopwatch, call or recording, a download, update or install,
+ *   navigation, or media playing. Running means a foreground service
+ *   ([Notification.FLAG_FOREGROUND_SERVICE]), a Live Update ([Notification.FLAG_PROMOTED_ONGOING])
+ *   or an ongoing notification ([Notification.FLAG_ONGOING_EVENT]) outside the legacy default
+ *   channel (the same exception the dots make for old apps). A permanent background service gives
+ *   nothing, however it runs: sandboxed Google Play's "running" notice, a VPN's "Connected", a sync
+ *   service. Neither does a system status notice ([Notification.CATEGORY_SYSTEM]) or a minimized
+ *   one (a channel of minimum importance, out of the way by the app's or the user's choice).
  * - A group summary gives nothing: its children do.
  * - A notice the OS posts itself gives nothing ([postedByOs]): the system's own ("android", for
  *   example "USB debugging connected" and "Serial console enabled", which carry no category) and
  *   SystemUI's (for example screen recording, battery and storage notices). They have their own
  *   status bar icons, and no app on Home.
  *
- * Only these flags, the category, the posting package and the ranking's channel are read here. For
- * the tallies row, [TallyLiveTracker] also reads the progress bar and the chronometer the system
- * itself draws; titles and texts are never read.
+ * Only the flags, the category, the posting package, the ranking's channel and importance, and
+ * whether the notification has a chronometer, a progress bar, a call template or a media session
+ * are read here. For the tallies band, [TallyLiveTracker] also reads the progress bar's value and
+ * the chronometer's time, which the system itself draws; titles, texts and custom views are never
+ * read.
  *
  * A notification the shade does not show gives nothing at all ([shownInShade]).
  */
@@ -106,7 +113,51 @@ object TallyLiveRules {
     /** Whether a notification from [packageName] is one of the OS's own notices. */
     @JvmStatic fun postedByOs(packageName: String?): Boolean = packageName in OS_PACKAGES
 
-    /** The state one notification from [packageName] gives its app, or null for none. */
+    /** The categories of an activity in progress: a call, navigation and a stopwatch. */
+    private val ACTIVITY_CATEGORIES =
+        setOf(
+            Notification.CATEGORY_CALL,
+            Notification.CATEGORY_NAVIGATION,
+            Notification.CATEGORY_STOPWATCH,
+        )
+
+    /**
+     * Whether a notification shows a live readout or an activity in progress (the owner's
+     * definition of live on Home, 30 September 2026), from what the notification itself declares:
+     * - it is a Live Update: the system promoted it ([Notification.FLAG_PROMOTED_ONGOING], in
+     *   [flags]);
+     * - it shows the system's chronometer ([showsChronometer],
+     *   Notification.EXTRA_SHOW_CHRONOMETER): a timer, a stopwatch, a call, a recording;
+     * - it has a progress bar: a maximum above 0 ([progressMax], Notification.EXTRA_PROGRESS_MAX)
+     *   or an indeterminate one ([progressIndeterminate]): a download, an update, an install;
+     * - its category is a call, navigation or a stopwatch, or it is a call ([callStyle],
+     *   Notification.CallStyle);
+     * - it is [media] with a session (Notification.MediaStyle with
+     *   Notification.EXTRA_MEDIA_SESSION), which [stateOf] counts only while it runs, as it does
+     *   while playing.
+     */
+    @JvmStatic
+    fun showsLiveActivity(
+        flags: Int,
+        category: String?,
+        showsChronometer: Boolean,
+        progressMax: Int,
+        progressIndeterminate: Boolean,
+        callStyle: Boolean,
+        media: Boolean,
+    ): Boolean =
+        flags and Notification.FLAG_PROMOTED_ONGOING != 0 ||
+            showsChronometer ||
+            progressMax > 0 ||
+            progressIndeterminate ||
+            category in ACTIVITY_CATEGORIES ||
+            callStyle ||
+            media
+
+    /**
+     * The state one notification from [packageName] gives its app, or null for none. [liveActivity]
+     * is [showsLiveActivity] for it.
+     */
     @JvmStatic
     fun stateOf(
         packageName: String?,
@@ -114,15 +165,20 @@ object TallyLiveRules {
         category: String?,
         onDefaultChannel: Boolean,
         minimized: Boolean,
+        liveActivity: Boolean,
     ): TallyLampState? {
         if (postedByOs(packageName)) return null
         if (flags and Notification.FLAG_GROUP_SUMMARY != 0) return null
         if (category == Notification.CATEGORY_ERROR) return TallyLampState.FAILED
-        if (category == Notification.CATEGORY_SYSTEM || minimized) return null
+        if (category == Notification.CATEGORY_SYSTEM || minimized || !liveActivity) return null
         val foregroundService = flags and Notification.FLAG_FOREGROUND_SERVICE != 0
+        val liveUpdate = flags and Notification.FLAG_PROMOTED_ONGOING != 0
         val ongoing = flags and Notification.FLAG_ONGOING_EVENT != 0
-        return if (foregroundService || (ongoing && !onDefaultChannel)) TallyLampState.LIVE
-        else null
+        return if (foregroundService || liveUpdate || (ongoing && !onDefaultChannel)) {
+            TallyLampState.LIVE
+        } else {
+            null
+        }
     }
 
     /** How urgent a state is on Home: failed, then live, then requested, then on (lower first). */
