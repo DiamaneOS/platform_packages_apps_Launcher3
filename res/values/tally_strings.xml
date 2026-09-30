@@ -35,6 +35,18 @@
         <item quantity="one">+<xliff:g id="count" example="1">%d</xliff:g> more</item>
         <item quantity="other">+<xliff:g id="count" example="3">%d</xliff:g> more</item>
     </plurals>
+    <!-- Home's tallies band: the name a tally of the system's Clock app shows in place of "Clock"
+         while it shows a timer's time (counting down), as Clock's own Timer tab is named. Only the
+         Clock built into the system gets it. [CHAR LIMIT=20] -->
+    <string name="tally_clock_timer">Timer</string>
+    <!-- Home's tallies band: the name a tally of the system's Clock app shows in place of "Clock"
+         for its stopwatch, as Clock's own Stopwatch tab is named. [CHAR LIMIT=20] -->
+    <string name="tally_clock_stopwatch">Stopwatch</string>
+    <!-- Screen readers' name of a tally that shows what it is (tally_clock_timer) in place of its
+         app's name: that, then the app's name, so the app is always said. Its state and readout
+         follow, for example "Timer, Clock, Active, 09:57". -->
+    <string name="tally_kind_of_app"><xliff:g id="kind" example="Timer">%1$s</xliff:g>, <xliff:g id="app_name" example="Clock">%2$s</xliff:g></string>
+
     <!-- The readout of the "+n more" key: what a tap does. [CHAR LIMIT=12] -->
     <string name="tally_more_show">Show</string>
     <!-- Screen readers' label of the "+n more" key: how many, their names, and what a tap does. -->

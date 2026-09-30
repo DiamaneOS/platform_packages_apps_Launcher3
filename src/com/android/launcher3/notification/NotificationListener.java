@@ -215,6 +215,7 @@ public class NotificationListener extends NotificationListenerService {
             mTallyLive = new TallyLiveTracker(
                     LauncherComponentProvider.get(this).getNotificationRepository().getLive(),
                     labels::labelOf,
+                    labels::kindLabelOf,
                     key -> {
                         if (key.mUser == null) {
                             return TallyLiveTracker.Profile.PERSONAL;

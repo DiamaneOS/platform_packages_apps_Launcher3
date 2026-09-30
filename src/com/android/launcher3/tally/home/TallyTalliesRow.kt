@@ -331,7 +331,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             item = newItem
             giveWay(readout = false)
             lamp.setState(newItem.state)
-            label.text = newItem.label
+            label.text = newItem.kindLabel ?: newItem.label
             refreshReadout()
         }
 
@@ -374,11 +374,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             val current = item ?: return false
             val readout = readoutOf(current)
             if (!TextUtils.equals(value.text, readout)) value.text = readout
-            var description = TallyKeycapLed.describe(context, current.label, current.state)
-            if (readout.isNotEmpty()) {
-                description = context.getString(R.string.tally_key_with_state, description, readout)
-            }
-            contentDescription = description
+            contentDescription = describe(context, current, readout)
             return current.chronometerBase != TallyLiveItem.NO_CHRONOMETER
         }
     }
@@ -410,6 +406,22 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
                 return NumberFormat.getPercentInstance().format(item.progressPermille / 1000.0)
             }
             return ""
+        }
+
+        /**
+         * A thing's words for screen readers: its name, with its app's after a kind the row shows
+         * in its place ("Timer, Clock"), then its lamp's state and its [readout]: "Timer, Clock,
+         * Active, 09:57" or "Files, Active, 34%".
+         */
+        @JvmStatic
+        fun describe(context: Context, item: TallyLiveItem, readout: String): CharSequence {
+            val kind = item.kindLabel
+            val name =
+                if (kind == null) item.label
+                else context.getString(R.string.tally_kind_of_app, kind, item.label)
+            val description = TallyKeycapLed.describe(context, name, item.state)
+            return if (readout.isEmpty()) description
+            else context.getString(R.string.tally_key_with_state, description, readout)
         }
     }
 }
