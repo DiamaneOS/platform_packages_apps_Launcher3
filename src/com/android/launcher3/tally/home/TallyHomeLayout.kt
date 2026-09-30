@@ -190,14 +190,18 @@ object TallyHomeLayout {
     /**
      * Sets the upright phone sizes of a grid's display option: the keys (Home and dock, All apps),
      * the names, All apps' rows, and the dock's spacing that puts its keys and the search slot on
-     * the rhythm, with the band and the slot as Home settings have them ([TallyHomeItem]). Called
-     * as Launcher picks the grid, before it reads the option.
+     * the rhythm, with the band ([tallies]) and the slot ([search]) on Home or off, as
+     * InvariantDeviceProfile read them. Called as Launcher picks the grid, before it reads the
+     * option.
      */
     @JvmStatic
-    fun applyToDisplayOption(info: LauncherDisplayInfo, option: DisplayOption) {
+    fun applyToDisplayOption(
+        info: LauncherDisplayInfo,
+        option: DisplayOption,
+        tallies: Boolean,
+        search: Boolean,
+    ) {
         if (!appliesTo(info.deviceType, option)) return
-        val tallies = TallyHomeItem.TALLIES.isShown(info.context)
-        val search = TallyHomeItem.SEARCH.isShown(info.context)
         val dpi = info.densityDpi
         val density = dpi / 160f
         val fontScale = info.fontScale
@@ -349,7 +353,8 @@ object TallyHomeLayout {
 
     /**
      * The height (px) the hotseat keeps for the search slot: none where Tally lays Home out and the
-     * slot is taken off ([TallyHomeItem.SEARCH]), else Launcher's qsb_widget_height.
+     * slot is taken off ([InvariantDeviceProfile.tallySearchShown]), else Launcher's
+     * qsb_widget_height.
      */
     @JvmStatic
     fun hotseatQsbHeightPx(
@@ -359,8 +364,7 @@ object TallyHomeLayout {
         isVerticalLayout: Boolean,
     ): Int =
         if (
-            appliesTo(properties, isVerticalLayout, inv.isFixedLandscape) &&
-                !TallyHomeItem.SEARCH.isShown(inv)
+            appliesTo(properties, isVerticalLayout, inv.isFixedLandscape) && !inv.tallySearchShown
         ) {
             0
         } else {
@@ -371,8 +375,8 @@ object TallyHomeLayout {
      * The workspace's top and bottom padding (as the non-scalable workspace adds them to its edge
      * margin and its hotseat and page indicator) that put the grid on the rhythm: its top on the
      * rhythm's line, its bottom the rhythm's gap above the dock's band, rows no taller than the
-     * rhythm allows, with the band and the slot as Home settings have them ([TallyHomeItem]). Null
-     * where Tally's layout does not apply (landscape, a tablet, an external display, a taskbar).
+     * rhythm allows, with the band and the slot as [inv] read them from Home settings. Null where
+     * Tally's layout does not apply (landscape, a tablet, an external display, a taskbar).
      */
     @JvmStatic
     fun workspacePaddingsPx(
@@ -396,8 +400,8 @@ object TallyHomeLayout {
             edgeMarginPx = edgeMarginPx,
             hotseatBarSizePx = hotseatBarSizePx,
             pageIndicatorPx = pageIndicatorPx,
-            tallies = TallyHomeItem.TALLIES.isShown(inv),
-            search = TallyHomeItem.SEARCH.isShown(inv),
+            tallies = inv.tallyBandShown,
+            search = inv.tallySearchShown,
         )
     }
 
