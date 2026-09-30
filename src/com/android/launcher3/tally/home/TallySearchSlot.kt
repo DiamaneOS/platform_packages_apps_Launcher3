@@ -134,8 +134,8 @@ class TallySearchSlot(context: Context) :
     private fun refresh() {
         val activity: ActivityContext? = ActivityContext.lookupContextNoThrow(context)
         val dp = activity?.deviceProfile
-        removed =
-            dp != null && TallyHomeLayout.appliesTo(dp) && !TallyHomeItem.SEARCH.isShown(context)
+        // As the hotseat keeps room for it (TallyHomeLayout.hotseatQsbHeightPx).
+        removed = dp != null && TallyHomeLayout.appliesTo(dp) && !dp.inv.tallySearchShown
         lifted = false
         isClickable = !removed
         isFocusable = !removed
