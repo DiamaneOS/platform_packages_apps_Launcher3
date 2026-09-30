@@ -23,7 +23,10 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
 import android.icu.text.ListFormatter
+import android.icu.text.MeasureFormat
 import android.icu.text.NumberFormat
+import android.icu.util.Measure
+import android.icu.util.MeasureUnit
 import android.os.Bundle
 import android.os.SystemClock
 import android.text.TextUtils
@@ -47,6 +50,7 @@ import com.android.launcher3.tally.lamp.TallyLampView
 import com.android.launcher3.tally.live.TallyLiveItem
 import com.android.launcher3.tally.live.TallyLiveRules
 import com.android.launcher3.util.SafeCloseable
+import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.max
 
@@ -372,9 +376,11 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         /** Updates the readout; returns whether it is a counting chronometer. */
         fun refreshReadout(): Boolean {
             val current = item ?: return false
-            val readout = readoutOf(current)
+            val now = SystemClock.elapsedRealtime()
+            val readout = readoutOf(current, now)
             if (!TextUtils.equals(value.text, readout)) value.text = readout
-            contentDescription = describe(context, current, readout)
+            val spoken = spokenReadoutOf(current, now, resources.configuration.locales[0])
+            contentDescription = describe(context, current, readout, spoken)
             return current.chronometerBase != TallyLiveItem.NO_CHRONOMETER
         }
     }
@@ -390,17 +396,8 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
          */
         @JvmStatic
         fun readoutOf(item: TallyLiveItem, now: Long = SystemClock.elapsedRealtime()): String {
-            if (item.chronometerBase != TallyLiveItem.NO_CHRONOMETER) {
-                val millis =
-                    if (item.countDown) item.chronometerBase - now else now - item.chronometerBase
-                // A count-down shows the seconds it has started, as a timer's display does.
-                val seconds =
-                    if (item.countDown) ceil(max(0L, millis) / 1000.0).toLong()
-                    else max(0L, millis) / 1000
-                return DateUtils.formatElapsedTime(seconds)
-            }
-            if (item.pausedSeconds != TallyLiveItem.NO_PAUSED_TIME) {
-                return DateUtils.formatElapsedTime(item.pausedSeconds)
+            readoutSecondsOf(item, now)?.let {
+                return DateUtils.formatElapsedTime(it)
             }
             if (item.progressPermille != TallyLiveItem.NO_PROGRESS) {
                 return NumberFormat.getPercentInstance().format(item.progressPermille / 1000.0)
@@ -408,20 +405,61 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             return ""
         }
 
+        /** A thing's time in whole seconds (a chronometer's or a paused one), or null. */
+        private fun readoutSecondsOf(item: TallyLiveItem, now: Long): Long? {
+            if (item.chronometerBase != TallyLiveItem.NO_CHRONOMETER) {
+                val millis =
+                    if (item.countDown) item.chronometerBase - now else now - item.chronometerBase
+                // A count-down shows the seconds it has started, as a timer's display does.
+                return if (item.countDown) ceil(max(0L, millis) / 1000.0).toLong()
+                else max(0L, millis) / 1000
+            }
+            if (item.pausedSeconds != TallyLiveItem.NO_PAUSED_TIME) return item.pausedSeconds
+            return null
+        }
+
         /**
-         * A thing's words for screen readers: its name, with its app's after a kind the row shows
-         * in its place ("Timer, Clock"), then its lamp's state and its [readout]: "Timer, Clock,
-         * Active, 09:57" or "Files, Active, 34%".
+         * A thing's readout as screen readers say it: a time in the user's language, each unit only
+         * when it is not zero ("9 minutes, 57 seconds", "1 minute", "0 seconds"), as the system's
+         * chronometer reads its time; else [readoutOf] (a percentage), or nothing.
          */
         @JvmStatic
-        fun describe(context: Context, item: TallyLiveItem, readout: String): CharSequence {
+        fun spokenReadoutOf(
+            item: TallyLiveItem,
+            now: Long = SystemClock.elapsedRealtime(),
+            locale: Locale = Locale.getDefault(),
+        ): String {
+            val seconds = readoutSecondsOf(item, now) ?: return readoutOf(item, now)
+            val measures = ArrayList<Measure>(3)
+            if (seconds >= 3600) measures.add(Measure(seconds / 3600, MeasureUnit.HOUR))
+            if (seconds % 3600 >= 60) measures.add(Measure(seconds % 3600 / 60, MeasureUnit.MINUTE))
+            // Seconds when not zero or when there is nothing larger: never "1 minute, 0 seconds".
+            if (seconds % 60 > 0 || measures.isEmpty()) {
+                measures.add(Measure(seconds % 60, MeasureUnit.SECOND))
+            }
+            return MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.WIDE)
+                .formatMeasures(*measures.toTypedArray())
+        }
+
+        /**
+         * A thing's words for screen readers: its name, with its app's after a kind the row shows
+         * in its place ("Timer, Clock"), then its lamp's state and its readout as [spoken]:
+         * "Timer, Clock, Active, 9 minutes, 57 seconds" or "Files, Active, 34%".
+         */
+        @JvmStatic
+        fun describe(
+            context: Context,
+            item: TallyLiveItem,
+            readout: String,
+            spoken: String = readout,
+        ): CharSequence {
             val kind = item.kindLabel
             val name =
                 if (kind == null) item.label
                 else context.getString(R.string.tally_kind_of_app, kind, item.label)
             val description = TallyKeycapLed.describe(context, name, item.state)
-            return if (readout.isEmpty()) description
-            else context.getString(R.string.tally_key_with_state, description, readout)
+            return if (spoken.isEmpty()) description
+            else context.getString(R.string.tally_key_with_state, description, spoken)
         }
     }
 }
