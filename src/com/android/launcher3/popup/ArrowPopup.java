@@ -394,6 +394,14 @@ public abstract class ArrowPopup<T extends ActivityContext> extends AbstractFloa
     }
 
     /**
+     * DiamaneOS Tally: whether the popup may open above its target when there is room; if not, it
+     * opens below it.
+     */
+    protected boolean canOpenAboveTarget() {
+        return true;
+    }
+
+    /**
      * Provide the location of the target object relative to the dragLayer.
      */
     protected abstract void getTargetObjectLocation(Rect outPos);
@@ -479,7 +487,7 @@ public abstract class ArrowPopup<T extends ActivityContext> extends AbstractFloa
         // Open above icon if there is room.
         int iconHeight = mTempRect.height();
         int y = mTempRect.top - height;
-        mIsAboveIcon = (maxHeightPx == 0 ? y
+        mIsAboveIcon = canOpenAboveTarget() && (maxHeightPx == 0 ? y
                 : (mTempRect.top - maxHeightPx)) > dragLayer.getTop() + insets.top;
         if (!mIsAboveIcon) {
             y = mTempRect.top + iconHeight + extraVerticalSpace;
