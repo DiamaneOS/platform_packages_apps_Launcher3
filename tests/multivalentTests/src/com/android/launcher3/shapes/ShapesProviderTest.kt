@@ -26,10 +26,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.android.launcher3.Flags.FLAG_ENABLE_LAUNCHER_ICON_SHAPES
 import com.android.launcher3.graphics.ShapeDelegate.GenericPathShape
+import com.android.launcher3.graphics.ThemeManager
 import com.android.launcher3.shapes.ShapesProvider.ARCH_KEY
 import com.android.launcher3.shapes.ShapesProvider.CIRCLE_KEY
 import com.android.launcher3.shapes.ShapesProvider.FOUR_SIDED_COOKIE_KEY
+import com.android.launcher3.shapes.ShapesProvider.KEYCAP_KEY
 import com.android.launcher3.shapes.ShapesProvider.SEVEN_SIDED_COOKIE_KEY
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -83,6 +86,24 @@ class ShapesProviderTest {
                 GenericPathShape(pathString)
                 PathParser.createPathFromPathData(pathString).verifyInBounds()
             }
+    }
+
+    @Test
+    @EnableFlags(FLAG_ENABLE_LAUNCHER_ICON_SHAPES)
+    fun `verify valid path keycap`() {
+        ShapesProvider.iconShapes
+            .find { it.key == KEYCAP_KEY }!!
+            .run {
+                GenericPathShape(pathString)
+                PathParser.createPathFromPathData(pathString).verifyInBounds()
+            }
+    }
+
+    @Test
+    @EnableFlags(FLAG_ENABLE_LAUNCHER_ICON_SHAPES)
+    fun `verify keycap is the first and default shape`() {
+        assertEquals(KEYCAP_KEY, ShapesProvider.iconShapes.first().key)
+        assertEquals(KEYCAP_KEY, ThemeManager.PREF_ICON_SHAPE.defaultValue)
     }
 
     @Test
