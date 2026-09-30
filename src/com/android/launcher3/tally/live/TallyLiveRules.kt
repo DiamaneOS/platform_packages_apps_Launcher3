@@ -182,6 +182,44 @@ object TallyLiveRules {
         }
     }
 
+    /** The system Clock's package (DeskClock, on the system image). */
+    const val SYSTEM_CLOCK_PACKAGE = "com.android.deskclock"
+
+    /** What the system Clock's tally is: the tallies band names it so, in place of Clock. */
+    enum class ClockKind {
+        /** A timer: a time counting down, running, paused or past zero. */
+        TIMER,
+        /** A stopwatch: a time counting up. */
+        STOPWATCH,
+    }
+
+    /**
+     * What a tally from [packageName] is when that is the system Clock's package, decided from the
+     * notification's structure alone (never its text), or null:
+     * - [ClockKind.TIMER] while the tally shows a count-down time ([timeShown] with [countDown]): a
+     *   MetricStyle time counting down ([TallyMetricTime.countDown]), running or paused, or the
+     *   system's chronometer counting down;
+     * - [ClockKind.STOPWATCH] for a stopwatch ([Notification.CATEGORY_STOPWATCH]) or a count-up
+     *   time;
+     * - null for anything else (a ringing alarm, which has no readout) and for any other package.
+     *
+     * A package name proves nothing on its own: an app can take any name the system does not have.
+     * The band names the kind only for a system app ([TallyAppLabels.kindLabelOf]).
+     */
+    @JvmStatic
+    fun clockKindOf(
+        packageName: String?,
+        category: String?,
+        timeShown: Boolean,
+        countDown: Boolean,
+    ): ClockKind? =
+        when {
+            packageName != SYSTEM_CLOCK_PACKAGE -> null
+            timeShown && countDown -> ClockKind.TIMER
+            timeShown || category == Notification.CATEGORY_STOPWATCH -> ClockKind.STOPWATCH
+            else -> null
+        }
+
     /** How urgent a state is on Home: failed, then live, then requested, then on (lower first). */
     @JvmStatic
     fun urgency(state: TallyLampState): Int =
