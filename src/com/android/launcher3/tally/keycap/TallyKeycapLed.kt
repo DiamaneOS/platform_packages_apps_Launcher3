@@ -26,11 +26,12 @@ import com.android.launcher3.tally.lamp.TallyLampState
 /**
  * A keycap's LED, as the prototype's `T.badgeGlyph`: a lamp form set into a dark housing (onLamp)
  * in the key's top-right corner, 8 % in from the top and the right, where the notification dot was.
- * It takes the dot's place, but lights only while its app is live (running now: a disc in a ring of
- * light) or failed (an error ring broken at one to two o'clock), never for new notifications, which
- * stay the shade's. The housing keeps every form at 3:1 or better on any key colour: the lamp
- * colour on it, and the error ring in the dark theme's error colour (in light theme the light-theme
- * error would be 2.6:1 on the housing).
+ * It takes the dot's place, but lights only while its app is live (a live readout or an activity in
+ * progress, as TallyLiveRules decides, never a background service: a disc in a ring of light) or
+ * failed (an error ring broken at one to two o'clock), never for new notifications, which stay the
+ * shade's. The housing keeps every form at 3:1 or better on any key colour: the lamp colour on it,
+ * and the error ring in the dark theme's error colour (in light theme the light-theme error would
+ * be 2.6:1 on the housing).
  *
  * The LED's words go in its key's accessibility label ([describe]).
  */
