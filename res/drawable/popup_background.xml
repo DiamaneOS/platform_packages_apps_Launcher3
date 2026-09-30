@@ -13,8 +13,14 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
+<!-- DiamaneOS Tally: a long-press menu's group has a hairline edge in the outline variant, as the
+     prototype's menus (.mc-menu), so it stands off a wallpaper in the same tone; its arrow carries
+     the edge on (ArrowPopup). -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
     <solid android:color="@color/materialColorSurfaceContainer"/>
     <corners android:radius="@dimen/dialogCornerRadius"/>
+    <stroke
+        android:width="@dimen/tally_stroke_hairline"
+        android:color="@color/tally_outline_variant"/>
 </shape>

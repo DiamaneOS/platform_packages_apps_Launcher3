@@ -372,7 +372,8 @@ public abstract class ArrowPopup<T extends ActivityContext> extends AbstractFloa
                     mOutlineRadius, getMeasuredWidth(), getMeasuredHeight(),
                     mArrowOffsetHorizontal, -mArrowOffsetVertical,
                     !mIsAboveIcon, mIsLeftAligned,
-                    mArrowColor));
+                    mArrowColor, getArrowEdgeWidth(),
+                    getContext().getColor(R.color.tally_outline_variant)));
             setElevation(mElevation);
             mArrow.setElevation(mElevation);
         }
@@ -382,6 +383,21 @@ public abstract class ArrowPopup<T extends ActivityContext> extends AbstractFloa
      * Returns whether or not we should add the arrow.
      */
     protected boolean shouldAddArrow() {
+        return true;
+    }
+
+    /**
+     * DiamaneOS Tally: the width of the popup's edge that its arrow carries on, or 0 for none.
+     */
+    protected float getArrowEdgeWidth() {
+        return 0;
+    }
+
+    /**
+     * DiamaneOS Tally: whether the popup may open above its target when there is room; if not, it
+     * opens below it.
+     */
+    protected boolean canOpenAboveTarget() {
         return true;
     }
 
@@ -471,7 +487,7 @@ public abstract class ArrowPopup<T extends ActivityContext> extends AbstractFloa
         // Open above icon if there is room.
         int iconHeight = mTempRect.height();
         int y = mTempRect.top - height;
-        mIsAboveIcon = (maxHeightPx == 0 ? y
+        mIsAboveIcon = canOpenAboveTarget() && (maxHeightPx == 0 ? y
                 : (mTempRect.top - maxHeightPx)) > dragLayer.getTop() + insets.top;
         if (!mIsAboveIcon) {
             y = mTempRect.top + iconHeight + extraVerticalSpace;

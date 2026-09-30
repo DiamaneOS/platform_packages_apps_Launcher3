@@ -22,6 +22,7 @@ import static android.view.accessibility.AccessibilityNodeInfo.ACTION_ACCESSIBIL
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.TypedValue;
@@ -137,7 +138,8 @@ public class Snackbar extends AbstractFloatingView {
         snackbar.setElevation(res.getDimension(R.dimen.snackbar_elevation));
         int padding = res.getDimensionPixelSize(R.dimen.snackbar_padding);
         snackbar.setPadding(padding, padding, padding, padding);
-        snackbar.setBackgroundResource(R.drawable.round_rect_primary);
+        // DiamaneOS Tally: the shell's toast surface, not a pill (tally_snackbar_background).
+        snackbar.setBackgroundResource(R.drawable.tally_snackbar_background);
 
         snackbar.mIsOpen = true;
         BaseDragLayer dragLayer = activity.getDragLayer();
@@ -168,6 +170,9 @@ public class Snackbar extends AbstractFloatingView {
         labelView.setText(labelString);
 
         Button actionView = snackbar.findViewById(R.id.action);
+        // DiamaneOS Tally: the action is a key without a fill on the bar, underlined, as the
+        // prototype's Undo.
+        actionView.setPaintFlags(actionView.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
         float actionWidth;
 
         // When the user hovers over the snackbar, we want to pause the dismiss timeout so that it

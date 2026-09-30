@@ -19,7 +19,6 @@ import static android.view.View.MeasureSpec.EXACTLY;
 import static android.view.View.MeasureSpec.getSize;
 import static android.view.View.MeasureSpec.makeMeasureSpec;
 
-import static com.android.launcher3.Utilities.prefixTextWithIcon;
 import static com.android.launcher3.icons.IconNormalizer.ICON_VISIBLE_AREA_FACTOR;
 
 import android.content.Context;
@@ -45,6 +44,7 @@ import com.android.launcher3.allapps.AllAppsStore;
 import com.android.launcher3.allapps.BaseAllAppsAdapter.AdapterItem;
 import com.android.launcher3.allapps.SearchUiManager;
 import com.android.launcher3.search.SearchCallback;
+import com.android.launcher3.tally.allapps.TallySearchField;
 import com.android.launcher3.tally.home.TallyHomeLayout;
 import com.android.launcher3.views.ActivityContext;
 
@@ -85,7 +85,10 @@ public class AppsSearchContainerLayout extends ExtendedEditText
 
         mSearchQueryBuilder = new SpannableStringBuilder();
         Selection.setSelection(mSearchQueryBuilder, 0);
-        setHint(prefixTextWithIcon(getContext(), R.drawable.ic_allapps_search, getHint()));
+        // DiamaneOS Tally: the prototype's search field, as Home's search slot draws it: a 24 dp
+        // icon 10 dp before the words, which stop growing at 130 % text.
+        setHint(TallySearchField.hintWithIcon(getContext(), getHint()));
+        TallySearchField.capTextSize(this);
 
         addTextChangedListener(new TextWatcher() {
             @Override

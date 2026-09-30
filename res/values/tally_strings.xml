@@ -32,6 +32,10 @@
     <!-- An app key's accessibility label with its LED's state word: the app's name, then the state.
          For example "Files, Error" or "Clock, Active". -->
     <string name="tally_key_with_state"><xliff:g id="app_name" example="Clock">%1$s</xliff:g>, <xliff:g id="state" example="Active">%2$s</xliff:g></string>
+    <!-- Home's tallies band: the readout of a paused timer or stopwatch, its state word
+         (tally_state_paused) before its time, for example "Paused · 04:12". Only punctuation, so
+         it has no translations. -->
+    <string name="tally_readout_with_state" translatable="false"><xliff:g id="state" example="Paused">%1$s</xliff:g> · <xliff:g id="readout" example="04:12">%2$s</xliff:g></string>
 
     <!-- Home's tallies band: the key that stands for the live or failed things not shown, which
          opens the notification shade. -->

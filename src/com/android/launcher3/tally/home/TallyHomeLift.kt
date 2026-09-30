@@ -219,4 +219,23 @@ class TallyHomeItemInfo(@JvmField val item: TallyHomeItem, columns: Int) : ItemI
         spanY = 1
         minSpanY = 1
     }
+
+    /**
+     * Whether its long-press menu opens below it: the band's does, clear of the date and the status
+     * bar above it; the slot's opens above it, as there is no room below.
+     */
+    val menuOpensBelow: Boolean
+        get() = item == TallyHomeItem.TALLIES
+
+    /**
+     * Narrows [bounds], [view]'s in the drag layer, to where its long-press menu points: a square
+     * as tall as the item at its start, by the band's lamp or the slot's search icon. The item
+     * spans the screen, too wide for the menu's arrow to point at its middle as it does at a
+     * widget's, so without this the menu was centred with no arrow.
+     */
+    fun menuAnchor(view: View, bounds: Rect) {
+        val side = bounds.height()
+        if (view.layoutDirection == View.LAYOUT_DIRECTION_RTL) bounds.left = bounds.right - side
+        else bounds.right = bounds.left + side
+    }
 }
