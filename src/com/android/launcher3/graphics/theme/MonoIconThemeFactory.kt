@@ -17,9 +17,9 @@
 package com.android.launcher3.graphics.theme
 
 import com.android.launcher3.icons.IconThemeController
-import com.android.launcher3.icons.mono.MonoIconThemeController
 import com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCHER_THEMED_ICON_ENABLED
 import com.android.launcher3.logging.StatsLogManager.StatsLogger
+import com.android.launcher3.tally.keycap.TallyMonoIconThemeController
 
 /**
  * A factory for creating [IconThemeController] instances. Each factory is associated with a
@@ -45,7 +45,9 @@ object MonoIconThemeFactory : IconThemeFactory {
     const val MONO_FACTORY_ID = "mono-icons"
 
     // Use a constant to allow equality check in verifyIconState
-    val MONO_THEME_CONTROLLER = MonoIconThemeController(shouldForceThemeIcon = true)
+    // DiamaneOS Tally: stock's forced monochrome controller, with a legacy icon's glyph the right
+    // way round (TallyMonoIconThemeController).
+    val MONO_THEME_CONTROLLER: IconThemeController = TallyMonoIconThemeController()
 
     override fun logThemeEvent(themeId: String, logger: StatsLogger) {
         logger.log(LAUNCHER_THEMED_ICON_ENABLED)
