@@ -28,9 +28,11 @@
         android:lines="1"
         android:ellipsize="end"
         android:textSize="@dimen/snackbar_max_text_size"
-        android:textColor="@color/materialColorOnSurface"
+        android:textColor="@color/tally_on_inverse"
         android:accessibilityLiveRegion="polite"
-        style="@style/TextTitle"/>
+        style="@style/TextTitle"
+        android:fontFamily="@string/tally_font_family"
+        android:textFontWeight="400"/>
     <Button
         android:id="@+id/action"
         android:layout_height="@dimen/snackbar_content_height"
@@ -39,10 +41,11 @@
         android:gravity="center"
         android:paddingLeft="8dp"
         android:paddingRight="8dp"
-        android:background="?android:attr/selectableItemBackground"
+        android:background="@drawable/tally_snackbar_action_background"
         android:longClickable="false"
-        android:textStyle="bold"
         android:textSize="@dimen/snackbar_max_text_size"
-        android:textColor="?android:attr/colorAccent"
-        style="@style/TextTitle"/>
+        android:textColor="@color/tally_on_inverse"
+        style="@style/TextTitle"
+        android:fontFamily="@string/tally_font_family"
+        android:textFontWeight="600"/>
 </merge>

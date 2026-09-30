@@ -50,6 +50,7 @@ import com.android.launcher3.popup.ui.PopupItem
 import com.android.launcher3.popup.ui.PopupViewModel
 import com.android.launcher3.popup.ui.SystemShortcutClickEvent
 import com.android.launcher3.shortcuts.DeepShortcutView
+import com.android.launcher3.tally.home.TallyHomeItemInfo
 import com.android.launcher3.util.ShortcutUtil
 import com.android.launcher3.views.ActivityContext
 import com.android.launcher3.views.BaseDragLayer
@@ -303,6 +304,11 @@ open class PopupContainer<T : ActivityContext>(
             return
         }
         popupContainer.getDescendantRectRelativeToSelf(originalView, outPos)
+        // DiamaneOS Tally: Home's tallies band and search slot point their menu at their start.
+        (itemInfo as? TallyHomeItemInfo)?.let {
+            it.menuAnchor(originalView, outPos)
+            return
+        }
         outPos.top += originalView.paddingTop
         outPos.left += originalView.paddingLeft
         outPos.right -= originalView.paddingRight
@@ -315,6 +321,14 @@ open class PopupContainer<T : ActivityContext>(
     override fun isOfType(type: Int): Boolean {
         return (type and AbstractFloatingView.TYPE_ACTION_POPUP) != 0
     }
+
+    // DiamaneOS Tally: the arrow carries on the hairline edge of the menu's groups
+    // (popup_background).
+    override fun getArrowEdgeWidth(): Float = resources.getDimension(R.dimen.tally_stroke_hairline)
+
+    // DiamaneOS Tally: Home's tallies band opens its menu below it (TallyHomeItemInfo).
+    override fun canOpenAboveTarget(): Boolean =
+        (itemInfo as? TallyHomeItemInfo)?.menuOpensBelow != true
 
     @CallSuper
     override fun onDragStart(dragObject: DragObject, options: DragOptions) {

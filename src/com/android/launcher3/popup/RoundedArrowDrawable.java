@@ -27,8 +27,11 @@ import android.graphics.Matrix;
 import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PathMeasure;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
+
+import androidx.annotation.Nullable;
 
 /**
  * A drawable for a very specific purpose. Used for the caret arrow on a rounded rectangle popup
@@ -40,6 +43,9 @@ public class RoundedArrowDrawable extends Drawable {
 
     private final Path mPath;
     private final Paint mPaint;
+    // DiamaneOS Tally: the popup's edge along the arrow's sides, or null for none.
+    @Nullable private final Path mEdgePath;
+    @Nullable private final Paint mEdgePaint;
 
     /**
      * Default constructor.
@@ -60,6 +66,19 @@ public class RoundedArrowDrawable extends Drawable {
             float popupWidth, float popupHeight,
             float arrowOffsetX, float arrowOffsetY, boolean isPointingUp, boolean leftAligned,
             int color) {
+        this(width, height, radius, popupRadius, popupWidth, popupHeight, arrowOffsetX,
+                arrowOffsetY, isPointingUp, leftAligned, color, 0, 0);
+    }
+
+    /**
+     * As the default constructor, for a popup with an edge [edgeWidth] wide in [edgeColor] (none
+     * if 0): the arrow draws the edge along its sides and covers the popup's edge where the two
+     * meet, so the edge runs round the arrow (DiamaneOS Tally).
+     */
+    public RoundedArrowDrawable(float width, float height, float radius, float popupRadius,
+            float popupWidth, float popupHeight,
+            float arrowOffsetX, float arrowOffsetY, boolean isPointingUp, boolean leftAligned,
+            int color, float edgeWidth, int edgeColor) {
         mPath = new Path();
         mPaint = new Paint();
         mPaint.setColor(color);
@@ -68,14 +87,30 @@ public class RoundedArrowDrawable extends Drawable {
 
         // Make the drawable with the triangle pointing down and positioned on the left..
         addDownPointingRoundedTriangleToPath(width, height, radius, mPath);
-        clipPopupBodyFromPath(popupRadius, popupWidth, popupHeight, arrowOffsetX, arrowOffsetY,
-                mPath);
+        // With an edge, the arrow reaches over the popup's edge where they meet.
+        clipPopupBodyFromPath(popupRadius, popupWidth, popupHeight, arrowOffsetX,
+                arrowOffsetY - edgeWidth, mPath);
 
         // ... then flip it horizontal or vertical based on where it will be used.
         Matrix pathTransform = new Matrix();
         pathTransform.setScale(
                 leftAligned ? 1 : -1, isPointingUp ? -1 : 1, width * 0.5f, height * 0.5f);
         mPath.transform(pathTransform);
+
+        if (edgeWidth > 0) {
+            // The sides and the tip, drawn twice as wide and clipped to the arrow: the edge is
+            // inside it, as the popup's edge is inside the popup.
+            mEdgePath = new Path();
+            addDownPointingRoundedTriangleSidesToPath(width, height, radius, mEdgePath);
+            mEdgePath.transform(pathTransform);
+            mEdgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            mEdgePaint.setStyle(Paint.Style.STROKE);
+            mEdgePaint.setStrokeWidth(2 * edgeWidth);
+            mEdgePaint.setColor(edgeColor);
+        } else {
+            mEdgePath = null;
+            mEdgePaint = null;
+        }
     }
 
     /**
@@ -90,6 +125,8 @@ public class RoundedArrowDrawable extends Drawable {
      */
     private RoundedArrowDrawable(float width, float height, float radius, boolean isHorizontal,
             boolean isLeftOrTop, int color) {
+        mEdgePath = null;
+        mEdgePaint = null;
         mPath = new Path();
         mPaint = new Paint();
         mPaint.setColor(color);
@@ -145,6 +182,12 @@ public class RoundedArrowDrawable extends Drawable {
     @Override
     public void draw(Canvas canvas) {
         canvas.drawPath(mPath, mPaint);
+        if (mEdgePath != null) {
+            int count = canvas.save();
+            canvas.clipPath(mPath);
+            canvas.drawPath(mEdgePath, mEdgePaint);
+            canvas.restoreToCount(count);
+        }
     }
 
     @Override
@@ -160,11 +203,17 @@ public class RoundedArrowDrawable extends Drawable {
     @Override
     public void setAlpha(int i) {
         mPaint.setAlpha(i);
+        if (mEdgePaint != null) {
+            mEdgePaint.setAlpha(i);
+        }
     }
 
     @Override
     public void setColorFilter(ColorFilter colorFilter) {
         mPaint.setColorFilter(colorFilter);
+        if (mEdgePaint != null) {
+            mEdgePaint.setColorFilter(colorFilter);
+        }
     }
 
     /**
@@ -217,6 +266,20 @@ public class RoundedArrowDrawable extends Drawable {
         // Draw the left edge to close
         path.lineTo(0, 0);
         path.close();
+    }
+
+    /**
+     * Adds the sides and the rounded tip of [addDownPointingRoundedTriangleToPath]'s triangle to
+     * [path], from its top right corner round to its top left one, without its top (DiamaneOS
+     * Tally).
+     */
+    private static void addDownPointingRoundedTriangleSidesToPath(float width, float height,
+            float radius, Path path) {
+        Path triangle = new Path();
+        addDownPointingRoundedTriangleToPath(width, height, radius, triangle);
+        // The triangle starts along its top from (0, 0): skip that line.
+        PathMeasure measure = new PathMeasure(triangle, /* forceClosed= */ false);
+        measure.getSegment(width, measure.getLength(), path, /* startWithMoveTo= */ true);
     }
 
     private static void clipPopupBodyFromPath(float popupRadius, float popupWidth,
