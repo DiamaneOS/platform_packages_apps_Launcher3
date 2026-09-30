@@ -31,6 +31,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.text.BoringLayout
 import android.text.Layout
+import android.text.TextPaint
 import android.text.TextUtils
 import android.text.format.DateUtils
 import android.view.Gravity
@@ -322,6 +323,11 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         /** The readout's pattern (its digits as zeros) and text size its width is fixed for. */
         private var fittedPattern: String? = null
         private var fittedTextSize = 0f
+        /**
+         * For a time that stands still ([TallyLiveItem.isPaused]): whether the key has room for the
+         * time after "Paused" beside the whole name ([onMeasure]).
+         */
+        private var pausedTimeFits = true
 
         /** Whether the readout is a counting chronometer. */
         val isCounting: Boolean
@@ -367,7 +373,8 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         fun bindItem(newItem: TallyLiveItem) {
             item = newItem
             giveWay(readout = false)
-            lamp.setState(newItem.state)
+            // A time that stands still is not live: its lamp is out, and its readout says Paused.
+            lamp.setState(newItem.rowState)
             label.text = newItem.kindLabel ?: newItem.label
             refreshReadout(describe = true)
         }
@@ -376,7 +383,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             item = null
             giveWay(readout = true)
             var state: TallyLampState? = null
-            for (h in hidden) state = TallyLiveRules.moreUrgent(state, h.state)
+            for (h in hidden) state = TallyLiveRules.moreUrgent(state, h.rowState)
             lamp.setState(state ?: TallyLampState.OFF)
             label.text = resources.getQuantityString(R.plurals.tally_more, hidden.size, hidden.size)
             value.setText(R.string.tally_more_show)
@@ -422,11 +429,75 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             val current = item ?: return false
             val now = SystemClock.elapsedRealtime()
             val readout = readoutOf(current, now)
-            fitReadout(readout)
-            if (!TextUtils.equals(value.text, readout)) value.text = readout
+            val shown = shownReadout(current, readout)
+            fitReadout(shown)
+            if (!TextUtils.equals(value.text, shown)) value.text = shown
             if (describe) contentDescription = describeNow(current, now, readout)
             return current.chronometerBase != TallyLiveItem.NO_CHRONOMETER
         }
+
+        /**
+         * What the key shows for [current]'s [readout]: the readout, or for a time that stands
+         * still "Paused · 04:12", or "Paused" alone where the key has no room for the time
+         * ([pausedTimeFits]; its words for screen readers always have it).
+         */
+        private fun shownReadout(current: TallyLiveItem, readout: String): String =
+            when {
+                !current.isPaused -> readout
+                pausedTimeFits && readout.isNotEmpty() -> pausedWithTime(readout)
+                else -> context.getString(R.string.tally_state_paused)
+            }
+
+        private fun pausedWithTime(readout: String): String =
+            context.getString(
+                R.string.tally_readout_with_state,
+                context.getString(R.string.tally_state_paused),
+                readout,
+            )
+
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+            val current = item
+            if (
+                current != null &&
+                    current.isPaused &&
+                    MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.UNSPECIFIED
+            ) {
+                val fits = pausedTimeFitsIn(MeasureSpec.getSize(widthMeasureSpec), current)
+                if (fits != pausedTimeFits) {
+                    pausedTimeFits = fits
+                    refreshReadout(describe = false)
+                }
+            }
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        }
+
+        /**
+         * Whether a key [width] wide has room for "Paused · 04:12" beside [current]'s whole name:
+         * what the lamp and the gaps leave, as this layout shares it out.
+         */
+        private fun pausedTimeFitsIn(width: Int, current: TallyLiveItem): Boolean {
+            lamp.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED)
+            val lampParams = lamp.layoutParams as LayoutParams
+            val room =
+                width -
+                    paddingStart -
+                    paddingEnd -
+                    lamp.measuredWidth -
+                    lampParams.marginStart -
+                    lampParams.marginEnd -
+                    (value.layoutParams as LayoutParams).marginStart
+            val name =
+                ceil(Layout.getDesiredWidth(label.text, label.paint)).toInt() +
+                    label.compoundPaddingLeft +
+                    label.compoundPaddingRight
+            return name + readoutWidth(pausedWithTime(readoutOf(current))) <= room
+        }
+
+        /** The readout's width for [text] (the widest of its pattern). */
+        private fun readoutWidth(text: String): Int =
+            ceil(widestOf(text, value.paint)).toInt() +
+                value.compoundPaddingLeft +
+                value.compoundPaddingRight
 
         private fun describeNow(
             current: TallyLiveItem,
@@ -444,21 +515,12 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
          * style's tnum) are all as wide, so the time never moves within it.
          */
         private fun fitReadout(readout: String) {
-            val pattern = buildString { for (c in readout) append(digitAs(c, 0)) }
+            val pattern = patternOf(readout)
             val textSize = value.textSize
             if (pattern == fittedPattern && textSize == fittedTextSize) return
             fittedPattern = pattern
             fittedTextSize = textSize
-            val paint = value.paint
-            var widest = 0f
-            for (digit in 0..9) {
-                val text = buildString { for (c in pattern) append(digitAs(c, digit)) }
-                val boring = BoringLayout.isBoring(text, paint)?.width?.toFloat() ?: 0f
-                widest = max(widest, max(boring, Layout.getDesiredWidth(text, paint)))
-            }
-            value.setWidth(
-                ceil(widest).toInt() + value.compoundPaddingLeft + value.compoundPaddingRight
-            )
+            value.setWidth(readoutWidth(pattern))
         }
 
         override fun onInitializeAccessibilityNodeInfo(info: AccessibilityNodeInfo) {
@@ -484,6 +546,25 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         /** [c] as [digit] in its own digits when it is a decimal digit, else [c]. */
         private fun digitAs(c: Char, digit: Int): Char =
             if (Character.isDigit(c)) c - Character.digit(c, 10) + digit else c
+
+        /** [text] with its digits as zeros: the pattern of every text as wide in tabular digits. */
+        private fun patternOf(text: String): String = buildString {
+            for (c in text) append(digitAs(c, 0))
+        }
+
+        /**
+         * The width in [paint] of the widest text of [text]'s pattern (the same with any digit).
+         */
+        private fun widestOf(text: String, paint: TextPaint): Float {
+            val pattern = patternOf(text)
+            var widest = 0f
+            for (digit in 0..9) {
+                val any = buildString { for (c in pattern) append(digitAs(c, digit)) }
+                val boring = BoringLayout.isBoring(any, paint)?.width?.toFloat() ?: 0f
+                widest = max(widest, max(boring, Layout.getDesiredWidth(any, paint)))
+            }
+            return widest
+        }
 
         /**
          * A thing's readout: its chronometer ("4:12", counting down or up, as the system draws it),
@@ -579,10 +660,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
                 if (kind == null) item.label
                 else context.getString(R.string.tally_kind_of_app, kind, item.label)
             val description =
-                if (
-                    item.state == TallyLampState.LIVE &&
-                        item.pausedSeconds != TallyLiveItem.NO_PAUSED_TIME
-                ) {
+                if (item.isPaused) {
                     context.getString(
                         R.string.tally_key_with_state,
                         name,
