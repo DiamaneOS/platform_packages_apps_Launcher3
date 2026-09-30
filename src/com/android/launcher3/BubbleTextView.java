@@ -149,6 +149,8 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     public static final int DISPLAY_SEARCH_RESULT_SMALL = 7;
     public static final int DISPLAY_PREDICTION_ROW = 8;
     public static final int DISPLAY_SEARCH_RESULT_APP_ROW = 9;
+    /** DiamaneOS Tally: a shortcut in an app's long-press menu (attrs' shortcut_popup). */
+    private static final int TALLY_DISPLAY_SHORTCUT_POPUP = 4;
 
     private static final float MIN_LETTER_SPACING = -0.05f;
     private static final int MAX_SEARCH_LOOP_COUNT = 20;
@@ -707,13 +709,14 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
     }
 
     protected boolean shouldUseTheme() {
-        // DiamaneOS Tally: every key follows the icon style, All apps and search included, so a
-        // themed Home and All apps show the same keys (stock themes Home, folders and the taskbar
-        // only).
+        // DiamaneOS Tally: every key follows the icon style, All apps, search and an app's
+        // shortcuts in its long-press menu included, so a themed Home and All apps show the same
+        // keys (stock themes Home, folders and the taskbar only).
         return mDisplay == DISPLAY_WORKSPACE || mDisplay == DISPLAY_FOLDER
                 || mDisplay == DISPLAY_TASKBAR || mDisplay == DISPLAY_ALL_APPS
                 || mDisplay == DISPLAY_SEARCH_RESULT || mDisplay == DISPLAY_SEARCH_RESULT_SMALL
-                || mDisplay == DISPLAY_PREDICTION_ROW || mDisplay == DISPLAY_SEARCH_RESULT_APP_ROW;
+                || mDisplay == DISPLAY_PREDICTION_ROW || mDisplay == DISPLAY_SEARCH_RESULT_APP_ROW
+                || mDisplay == TALLY_DISPLAY_SHORTCUT_POPUP;
     }
 
     /**
@@ -1006,9 +1009,11 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         final int scrollX = getScrollX();
         final int scrollY = getScrollY();
         canvas.translate(scrollX, scrollY);
+        // Its LED shows its app's state wherever the key is drawn: under its long-press menu and
+        // in the drag's image too, where stock hides the dot.
         mTallyKeycap.draw(canvas, mTallyKeycapBounds, drawnScale,
                 mTallyThemeManager.getIconShape(),
-                getTag() instanceof ItemInfo info && info.isInHotseat(), mForceHideDot);
+                getTag() instanceof ItemInfo info && info.isInHotseat(), /* hideLed= */ false);
         canvas.translate(-scrollX, -scrollY);
         float nextScale = mTallyKeycap.advance();
         if (nextScale != drawnScale) {
