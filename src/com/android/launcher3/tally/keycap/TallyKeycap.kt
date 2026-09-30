@@ -18,6 +18,7 @@ package com.android.launcher3.tally.keycap
 
 import android.animation.ValueAnimator
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
@@ -28,7 +29,9 @@ import com.android.launcher3.graphics.ShapeDelegate
 import com.android.launcher3.icons.IconNormalizer.ICON_VISIBLE_AREA_FACTOR
 import com.android.launcher3.tally.lamp.TallyLampState
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.exp
+import kotlin.math.floor
 import kotlin.math.sqrt
 
 /**
@@ -47,7 +50,10 @@ import kotlin.math.sqrt
  * The highlight, the skirt and the press layer are filled shapes built once for each key size and
  * icon shape ([Relief]) and shared by every key of that size, not the key's shape clipped for every
  * key in every frame: on the GPU each clip to the keycap's curves renders a clip mask, again on
- * every frame, which cost about 13 % of Launcher's RenderThread in All apps and the Home swipe.
+ * every frame, which cost about 13 % of Launcher's RenderThread in All apps and the Home swipe. A
+ * key at rest draws its relief from a bitmap of those shapes ([RestImage]), drawn once in software
+ * and shared by every key of that size and colours: the GPU keeps it as a texture, where it would
+ * draw the shapes' curves into its path atlas again in every frame.
  *
  * The host draws the icon itself with the icon's own press scale turned off. It calls [setPressed]
  * when its pressed state changes, and after drawing the icon it calls [draw] with the icon's bounds
@@ -59,6 +65,7 @@ class TallyKeycap(context: Context) {
     private val highlightPaint = fillPaint(context.getColor(R.color.tally_keycap_highlight))
     private val shadePaint = fillPaint(context.getColor(R.color.tally_keycap_shade))
     private val pressPaint = fillPaint(context.getColorStateList(R.color.tally_press).defaultColor)
+    private val imagePaint = Paint(Paint.FILTER_BITMAP_FLAG)
 
     private val highlightPx: Float
     private val skirtFraction: Float
@@ -73,6 +80,8 @@ class TallyKeycap(context: Context) {
 
     /** This key's relief, from [reliefOf]; null until it is first drawn. */
     private var relief: Relief? = null
+    /** This key's relief at rest as a bitmap, from [restImageOf]; null until drawn at rest. */
+    private var restImage: RestImage? = null
     /** A skirt between rest and pressed in, built for each frame while the key moves. */
     private val movingSkirt = Path()
     private val movedKey = Path()
@@ -175,19 +184,84 @@ class TallyKeycap(context: Context) {
                 else -> null
             }
 
+        // At rest, unpressed and unscaled, the relief is its bitmap, put on the pixel grid where
+        // the shapes would be drawn: the same pixels.
+        val left = iconBounds.exactCenterX() - size / 2f
+        val top = iconBounds.exactCenterY() - size / 2f
+        val image =
+            if (skirtPath != null && press == 0f && !pressed && iconScale == 1f) {
+                restImageFor(relief, left, top)
+            } else {
+                null
+            }
+        if (image != null) {
+            canvas.drawBitmap(
+                image.bitmap,
+                floor(left) - IMAGE_MARGIN,
+                floor(top) - IMAGE_MARGIN,
+                imagePaint,
+            )
+        }
+
         val count = canvas.save()
         canvas.translate(iconBounds.exactCenterX(), iconBounds.exactCenterY())
         canvas.scale(iconScale, iconScale)
         canvas.translate(-size / 2f, -size / 2f)
-        if (skirtPath != null) {
-            if (highlightPx != 0f) canvas.drawPath(relief.highlight, highlightPaint)
-            if (skirt != 0f) canvas.drawPath(skirtPath, shadePaint)
-            if (pressed) canvas.drawPath(relief.face, pressPaint)
-        } else {
-            drawClipped(canvas, relief.key, skirt, size)
+        when {
+            image != null -> Unit // Drawn above, on the pixel grid.
+            skirtPath != null -> drawShapes(canvas, relief, skirtPath, skirt)
+            else -> drawClipped(canvas, relief.key, skirt, size)
         }
         if (!hideLed) ledPainter.draw(canvas, 0f, 0f, size.toFloat(), led)
         canvas.restoreToCount(count)
+    }
+
+    /** Draws the relief's shapes, in the key's own coordinates, with [skirtPath] as its skirt. */
+    private fun drawShapes(canvas: Canvas, relief: Relief, skirtPath: Path, skirt: Float) {
+        if (highlightPx != 0f) canvas.drawPath(relief.highlight, highlightPaint)
+        if (skirt != 0f) canvas.drawPath(skirtPath, shadePaint)
+        if (pressed) canvas.drawPath(relief.face, pressPaint)
+    }
+
+    /**
+     * The bitmap of [relief] at rest for a key whose visible square starts at ([left], [top]) in
+     * the view. This key's own while those and its colours stay the same.
+     */
+    private fun restImageFor(relief: Relief, left: Float, top: Float): RestImage {
+        val highlight = highlightPaint.color
+        val shade = shadePaint.color
+        restImage?.let { if (it.fits(relief, highlight, shade, left, top)) return it }
+        return restImageOf(relief, highlight, shade, left, top) { drawRestImage(relief, left, top) }
+            .also { restImage = it }
+    }
+
+    /**
+     * Draws [relief] at rest, with the shapes and paints a key at rest draws on screen, into a new
+     * bitmap in software, as it lies in the view at ([left], [top]) (Skia's anti-aliasing of a
+     * curve can depend on where it lies), with [IMAGE_MARGIN] empty pixels around it. It is drawn
+     * to be put at the whole pixel left of and above that less the margin. The bitmap is immutable,
+     * so the GPU uploads it once and keeps it as a texture.
+     */
+    private fun drawRestImage(relief: Relief, left: Float, top: Float): Bitmap {
+        // Where it lies in the view, moved by whole pixels only to leave the margin.
+        val x = if (left >= IMAGE_MARGIN) left else left - floor(left) + IMAGE_MARGIN
+        val y = if (top >= IMAGE_MARGIN) top else top - floor(top) + IMAGE_MARGIN
+        val cropX = floor(x).toInt() - IMAGE_MARGIN
+        val cropY = floor(y).toInt() - IMAGE_MARGIN
+        val width = ceil(x + relief.size).toInt() + IMAGE_MARGIN - cropX
+        val height = ceil(y + relief.size).toInt() + IMAGE_MARGIN - cropY
+        val drawn = Bitmap.createBitmap(cropX + width, cropY + height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(drawn)
+        canvas.translate(x, y)
+        drawShapes(canvas, relief, relief.restSkirt, relief.restSkirtPx)
+        val cut = Bitmap.createBitmap(drawn, cropX, cropY, width, height)
+        val image = cut.copy(Bitmap.Config.ARGB_8888, false)
+        cut.recycle()
+        drawn.recycle()
+        // Drawn pixel for pixel on any canvas, never scaled for a density.
+        image.density = Bitmap.DENSITY_NONE
+        image.prepareToDraw()
+        return image
     }
 
     /** The relief of a key of [size] in [shape], this key's own while those stay the same. */
@@ -323,6 +397,33 @@ class TallyKeycap(context: Context) {
         }
     }
 
+    /**
+     * A relief at rest as a bitmap, for its colours and its place in the view (keys of one kind all
+     * have the same). Its relief's shape, sizes and density, and the theme's colours, are all part
+     * of what it is for: a key whose shape, size, theme or configuration changes draws another one.
+     */
+    private class RestImage(
+        val relief: Relief,
+        val highlightColor: Int,
+        val shadeColor: Int,
+        val left: Float,
+        val top: Float,
+        val bitmap: Bitmap,
+    ) {
+        fun fits(relief: Relief, highlight: Int, shade: Int, left: Float, top: Float) =
+            relief.fits(
+                this.relief.shape,
+                this.relief.size,
+                this.relief.highlightPx,
+                this.relief.restSkirtPx,
+                this.relief.pressedSkirtPx,
+            ) &&
+                highlight == highlightColor &&
+                shade == shadeColor &&
+                left == this.left &&
+                top == this.top
+    }
+
     private companion object {
         /**
          * The reliefs last drawn, the most recent last: a handful of key sizes (Home, the dock,
@@ -330,6 +431,41 @@ class TallyKeycap(context: Context) {
          */
         const val MAX_RELIEFS = 8
         private val reliefs = ArrayList<Relief>(MAX_RELIEFS)
+
+        /**
+         * The bitmaps of reliefs at rest last drawn, the most recent last, at most [MAX_IMAGES] and
+         * [MAX_IMAGE_BYTES] (on the FP6 about 115 kB each for Home and the dock, 100 kB for All
+         * apps, in each theme).
+         */
+        const val MAX_IMAGES = 8
+        const val MAX_IMAGE_BYTES = 2 * 1024 * 1024
+        private val restImages = ArrayList<RestImage>(MAX_IMAGES)
+        /** The empty pixels around a bitmap's relief, for its edges' anti-aliasing. */
+        const val IMAGE_MARGIN = 1
+
+        /** The bitmap for these, drawn with [draw] when there is none: shared by every key. */
+        fun restImageOf(
+            relief: Relief,
+            highlight: Int,
+            shade: Int,
+            left: Float,
+            top: Float,
+            draw: () -> Bitmap,
+        ): RestImage =
+            synchronized(restImages) {
+                val i = restImages.indexOfFirst { it.fits(relief, highlight, shade, left, top) }
+                val image =
+                    if (i >= 0) restImages.removeAt(i)
+                    else RestImage(relief, highlight, shade, left, top, draw())
+                restImages.add(image)
+                var bytes = restImages.sumOf { it.bitmap.allocationByteCount }
+                while (
+                    restImages.size > MAX_IMAGES || (bytes > MAX_IMAGE_BYTES && restImages.size > 1)
+                ) {
+                    bytes -= restImages.removeAt(0).bitmap.allocationByteCount
+                }
+                image
+            }
 
         /** The relief for these, shared by every key of that size and shape. */
         fun reliefOf(
