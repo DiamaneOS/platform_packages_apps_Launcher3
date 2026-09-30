@@ -74,12 +74,13 @@ class TallyLiveRepository {
 
     companion object {
         /**
-         * The row's order: failed, then live, then requested, then on; among equals the one that
-         * became so most recently first, which a readout's updates do not change.
+         * The row's order, by each thing's lamp in the row ([TallyLiveItem.rowState]): failed, then
+         * live, then requested, then on, then off (a paused time); among equals the one that became
+         * so most recently first, which a readout's updates do not change.
          */
         @JvmField
         val ROW_ORDER: Comparator<TallyLiveItem> =
-            compareBy<TallyLiveItem> { TallyLiveRules.urgency(it.state) }
+            compareBy<TallyLiveItem> { TallyLiveRules.urgency(it.rowState) }
                 .thenByDescending { it.sinceRealtime }
                 .thenBy { it.key }
     }
