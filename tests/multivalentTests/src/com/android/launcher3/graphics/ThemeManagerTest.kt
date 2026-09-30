@@ -21,7 +21,7 @@ import androidx.test.filters.SmallTest
 import com.android.launcher3.FakeLauncherPrefs
 import com.android.launcher3.dagger.LauncherAppComponent
 import com.android.launcher3.dagger.LauncherAppSingleton
-import com.android.launcher3.icons.mono.MonoIconThemeController
+import com.android.launcher3.tally.keycap.TallyMonoIconThemeController
 import com.android.launcher3.util.AllModulesForTest
 import com.android.launcher3.util.Executors.MAIN_EXECUTOR
 import com.android.launcher3.util.FakePrefsModule
@@ -58,7 +58,7 @@ class ThemeManagerTest {
         TestUtil.runOnExecutorSync(MAIN_EXECUTOR) {}
         assertTrue(themeManager.isMonoThemeEnabled)
         assertThat(themeManager.iconState.themeController)
-            .isInstanceOf(MonoIconThemeController::class.java)
+            .isInstanceOf(TallyMonoIconThemeController::class.java)
 
         themeManager.isMonoThemeEnabled = false
         TestUtil.runOnExecutorSync(MAIN_EXECUTOR) {}
