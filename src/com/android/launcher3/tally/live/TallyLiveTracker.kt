@@ -19,6 +19,7 @@ package com.android.launcher3.tally.live
 import android.app.Notification
 import android.app.NotificationChannel
 import android.media.session.MediaSession
+import android.os.Bundle
 import android.os.Process
 import android.os.SystemClock
 import android.os.UserHandle
@@ -214,6 +215,21 @@ constructor(
                 )
 
             /**
+             * Whether [extras] carry a media session. The app writes this value: one of another
+             * type, or one this process cannot unparcel, throws in an app process (only the system
+             * server defuses bundles), so it counts as none rather than crashing Home.
+             */
+            private fun hasMediaSession(extras: Bundle): Boolean =
+                try {
+                    extras.getParcelable(
+                        Notification.EXTRA_MEDIA_SESSION,
+                        MediaSession.Token::class.java,
+                    ) != null
+                } catch (e: RuntimeException) {
+                    false
+                }
+
+            /**
              * Reads [sbn] with its [ranking] (null when the ranking has no entry for it).
              * [lockedByCriticalDeviceFunction] tells whether the system locks a channel's
              * importance for a critical device function (only Quickstep can read it).
@@ -242,12 +258,7 @@ constructor(
                     canShowBadge = ranking?.canShowBadge() ?: false,
                     suspended = ranking?.isSuspended ?: false,
                     suppressedVisualEffects = ranking?.suppressedVisualEffects ?: 0,
-                    media =
-                        template in MEDIA_TEMPLATES &&
-                            extras.getParcelable(
-                                Notification.EXTRA_MEDIA_SESSION,
-                                MediaSession.Token::class.java,
-                            ) != null,
+                    media = template in MEDIA_TEMPLATES && hasMediaSession(extras),
                     // As SystemUI: no channel, or one locked for a critical device function that
                     // is not always blockable, is not blockable.
                     blockable =
