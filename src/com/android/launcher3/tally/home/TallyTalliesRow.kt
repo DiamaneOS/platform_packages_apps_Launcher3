@@ -22,6 +22,7 @@ import android.graphics.Outline
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
+import android.graphics.Typeface
 import android.icu.text.ListFormatter
 import android.icu.text.MeasureFormat
 import android.icu.text.NumberFormat
@@ -31,6 +32,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.text.BoringLayout
 import android.text.Layout
+import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
 import android.text.format.DateUtils
@@ -319,6 +321,21 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
                 setTextColor(context.getColor(R.color.tally_ink))
                 maxLines = 1
             }
+        /**
+         * The name's face, and the Semi Condensed one it takes where it does not fit ([fitName]).
+         */
+        private val nameFace: Typeface = label.typeface
+        private val condensedNameFace: Typeface =
+            Typeface.create(
+                Typeface.create(
+                    context.getString(R.string.tally_font_family_condensed),
+                    Typeface.NORMAL,
+                ),
+                nameFace.weight,
+                false,
+            )
+        /** Measures the name in a face it may not have now. */
+        private val namePaint = TextPaint()
         private var item: TallyLiveItem? = null
         /** The readout's pattern (its digits as zeros) and text size its width is fixed for. */
         private var fittedPattern: String? = null
@@ -460,40 +477,106 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
 
         override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
             val current = item
-            if (
-                current != null &&
-                    current.isPaused &&
-                    MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.UNSPECIFIED
-            ) {
-                val fits = pausedTimeFitsIn(MeasureSpec.getSize(widthMeasureSpec), current)
-                if (fits != pausedTimeFits) {
-                    pausedTimeFits = fits
-                    refreshReadout(describe = false)
+            if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.UNSPECIFIED) {
+                fitName(condensed = false, lines = 1)
+            } else if (current == null) {
+                // "+n more": its count stays whole and "Show" gives way ([giveWay]).
+                fitName(condensed = false, lines = 1)
+            } else {
+                val room = roomFor(MeasureSpec.getSize(widthMeasureSpec))
+                if (current.isPaused) {
+                    val fits = pausedTimeFitsIn(room, current)
+                    if (fits != pausedTimeFits) {
+                        pausedTimeFits = fits
+                        refreshReadout(describe = false)
+                    }
                 }
+                fitName(room - readoutWidth(value.text.toString()))
             }
             super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         }
 
         /**
-         * Whether a key [width] wide has room for "Paused · 04:12" beside [current]'s whole name:
-         * what the lamp and the gaps leave, as this layout shares it out.
+         * The room for the name and the readout in a key [width] wide: what the lamp and the gaps
+         * leave, as this layout shares it out.
          */
-        private fun pausedTimeFitsIn(width: Int, current: TallyLiveItem): Boolean {
+        private fun roomFor(width: Int): Int {
             lamp.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED)
             val lampParams = lamp.layoutParams as LayoutParams
-            val room =
-                width -
-                    paddingStart -
-                    paddingEnd -
-                    lamp.measuredWidth -
-                    lampParams.marginStart -
-                    lampParams.marginEnd -
-                    (value.layoutParams as LayoutParams).marginStart
-            val name =
-                ceil(Layout.getDesiredWidth(label.text, label.paint)).toInt() +
-                    label.compoundPaddingLeft +
-                    label.compoundPaddingRight
-            return name + readoutWidth(pausedWithTime(readoutOf(current))) <= room
+            return width -
+                paddingStart -
+                paddingEnd -
+                lamp.measuredWidth -
+                lampParams.marginStart -
+                lampParams.marginEnd -
+                (value.layoutParams as LayoutParams).marginStart
+        }
+
+        /** The name's width on one line in [face]. */
+        private fun nameWidth(face: Typeface): Int {
+            namePaint.set(label.paint)
+            namePaint.typeface = face
+            return ceil(Layout.getDesiredWidth(label.text, namePaint)).toInt() +
+                label.compoundPaddingLeft +
+                label.compoundPaddingRight
+        }
+
+        /**
+         * Whether [room] has space for "Paused · 04:12" beside [current]'s whole name, in its own
+         * face.
+         */
+        private fun pausedTimeFitsIn(room: Int, current: TallyLiveItem): Boolean =
+            nameWidth(nameFace) + readoutWidth(pausedWithTime(readoutOf(current))) <= room
+
+        /**
+         * Fits the name in [room], as the prototype fits a label before it truncates one: in Semi
+         * Condensed where it does not fit, then on two lines ([showsWholeOnTwoLines]); never
+         * narrower than Semi Condensed. Only then does it end in an ellipsis.
+         */
+        private fun fitName(room: Int) {
+            when {
+                nameWidth(nameFace) <= room -> fitName(condensed = false, lines = 1)
+                nameWidth(condensedNameFace) <= room -> fitName(condensed = true, lines = 1)
+                showsWholeOnTwoLines(room) -> fitName(condensed = true, lines = 2)
+                else -> fitName(condensed = true, lines = 1)
+            }
+        }
+
+        /**
+         * Whether the name, in Semi Condensed on two lines [room] wide, shows whole within the
+         * key's height (so the band never grows), broken between its words. A word is never split:
+         * a one-word name that does not fit ends in an ellipsis.
+         */
+        private fun showsWholeOnTwoLines(room: Int): Boolean {
+            if (room <= 0) return false
+            val text = label.text
+            namePaint.set(label.paint)
+            namePaint.typeface = condensedNameFace
+            val layout =
+                StaticLayout.Builder.obtain(text, 0, text.length, namePaint, room)
+                    .setIncludePad(label.includeFontPadding)
+                    .setLineSpacing(label.lineSpacingExtra, label.lineSpacingMultiplier)
+                    .setBreakStrategy(label.breakStrategy)
+                    .setHyphenationFrequency(label.hyphenationFrequency)
+                    .setMaxLines(2)
+                    .setEllipsize(TextUtils.TruncateAt.END)
+                    .build()
+            if (layout.getEllipsisCount(layout.lineCount - 1) > 0) return false
+            if (layout.height > minimumHeight - paddingTop - paddingBottom) return false
+            for (line in 0 until layout.lineCount - 1) {
+                val end = layout.getLineEnd(line)
+                if (
+                    Character.isLetterOrDigit(text[end - 1]) && Character.isLetterOrDigit(text[end])
+                ) {
+                    return false
+                }
+            }
+            return true
+        }
+
+        private fun fitName(condensed: Boolean, lines: Int) {
+            label.typeface = if (condensed) condensedNameFace else nameFace
+            if (label.maxLines != lines) label.maxLines = lines
         }
 
         /** The readout's width for [text] (the widest of its pattern). */
