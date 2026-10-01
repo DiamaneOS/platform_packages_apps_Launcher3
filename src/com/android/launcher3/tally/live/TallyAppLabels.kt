@@ -20,50 +20,50 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
+import android.os.LocaleList
+import android.os.Process
 import android.os.UserHandle
 import androidx.annotation.WorkerThread
 import com.android.launcher3.R
 import com.android.launcher3.tally.live.TallyLiveRules.ClockKind
 import com.android.launcher3.util.PackageUserKey
-import java.util.EnumMap
 
 /**
  * The names the tallies row shows: an app's launcher name as Home shows it, or its application name
  * for a package without one (a system service's notification), badged for a work profile as the
- * system badges labels; and the system Clock's names for its timer and stopwatch ([kindLabelOf]).
- * Remembered per app; call from a worker thread.
+ * system badges labels; and whether an app is the system Clock, whose timer and stopwatch the row
+ * names in their place ([isSystemClock], [kindLabel]). Remembered per app in the language they were
+ * read in; call from a worker thread.
  */
 class TallyAppLabels(private val context: Context) {
     private val packageManager = context.packageManager
     private val launcherApps = context.getSystemService(LauncherApps::class.java)
     private val apps = HashMap<PackageUserKey, App>()
+    /** The languages [apps] were read in. */
+    private var locales: LocaleList? = null
 
     @WorkerThread fun labelOf(app: PackageUserKey): CharSequence = appOf(app).label
 
     /**
-     * The row's name for the system Clock's [kind] ("Timer", "Stopwatch"), badged as the app's name
-     * is, or null unless [app] is the system Clock ([isSystemClock]). A tally has no icon, so any
-     * other app with these names could pose as the system's timer on Home.
+     * Whether [app] is the system Clock ([Companion.isSystemClock]), whose timer and stopwatch the
+     * row names by their kind ([kindLabel]). A tally has no icon, so any other app with these names
+     * could pose as the system's timer on Home.
      */
     @WorkerThread
-    fun kindLabelOf(app: PackageUserKey, kind: ClockKind): CharSequence? {
-        val user = app.mUser ?: return null
-        val entry = appOf(app)
-        if (!entry.systemClock) return null
-        return entry.kindLabels.getOrPut(kind) {
-            val words =
-                when (kind) {
-                    ClockKind.TIMER -> R.string.tally_clock_timer
-                    ClockKind.STOPWATCH -> R.string.tally_clock_stopwatch
-                }
-            badged(context.getString(words), user)
-        }
-    }
+    fun isSystemClock(app: PackageUserKey): Boolean = app.mUser != null && appOf(app).systemClock
 
     /** Forgets every name, for example when the listener reconnects. */
     @WorkerThread fun clear() = apps.clear()
 
-    private fun appOf(app: PackageUserKey): App = apps.getOrPut(app) { load(app) }
+    private fun appOf(app: PackageUserKey): App {
+        // Names read in another language are forgotten: an app's name is translated too.
+        val now = context.resources.configuration.locales
+        if (now != locales) {
+            apps.clear()
+            locales = now
+        }
+        return apps.getOrPut(app) { load(app) }
+    }
 
     private fun load(app: PackageUserKey): App {
         val user = app.mUser ?: return App(app.mPackageName, systemClock = false)
@@ -86,19 +86,43 @@ class TallyAppLabels(private val context: Context) {
     }
 
     private fun badged(label: CharSequence, user: UserHandle): CharSequence =
-        try {
-            packageManager.getUserBadgedLabel(label, user)
-        } catch (e: SecurityException) {
-            // A user outside this profile group: its badge is not this app's to ask for.
-            label
-        }
+        badged(packageManager, label, user)
 
-    /** An app's name and, for the system Clock, the names of its kinds of tally. */
-    private class App(val label: CharSequence, val systemClock: Boolean) {
-        val kindLabels = EnumMap<ClockKind, CharSequence>(ClockKind::class.java)
-    }
+    /** An app's name, and whether it is the system Clock. */
+    private class App(val label: CharSequence, val systemClock: Boolean)
 
     companion object {
+        /**
+         * The row's name for the system Clock's [kind] ("Timer", "Stopwatch") in [context]'s
+         * language, badged for [user] as an app's name is. Only for an app [isSystemClock] found to
+         * be the system Clock. The band reads it as it binds a tally, so it follows the language.
+         */
+        @JvmStatic
+        fun kindLabel(context: Context, kind: ClockKind, user: UserHandle?): CharSequence {
+            val words =
+                context.getString(
+                    when (kind) {
+                        ClockKind.TIMER -> R.string.tally_clock_timer
+                        ClockKind.STOPWATCH -> R.string.tally_clock_stopwatch
+                    }
+                )
+            // Launcher's own user never has a badge: no need to ask the system.
+            return if (user == null || user == Process.myUserHandle()) words
+            else badged(context.packageManager, words, user)
+        }
+
+        private fun badged(
+            packageManager: PackageManager,
+            label: CharSequence,
+            user: UserHandle,
+        ): CharSequence =
+            try {
+                packageManager.getUserBadgedLabel(label, user)
+            } catch (e: SecurityException) {
+                // A user outside this profile group: its badge is not this app's to ask for.
+                label
+            }
+
         /**
          * Whether [packageName] with these ApplicationInfo [flags] is the system Clock: Clock's
          * package ([TallyLiveRules.SYSTEM_CLOCK_PACKAGE]) installed on the system image
