@@ -36,7 +36,10 @@ import com.android.launcher3.util.PackageUserKey
  * A notification the shade does not show ([TallyLiveRules.shownInShade]) gives nothing, neither an
  * LED nor a place in the row.
  *
- * @param labelOf the app's name for the tallies row (badged for a work profile)
+ * @param labelOf the app's name for the tallies row (badged for a work profile), in the current
+ *   language ([TallyAppLabels.labelOf])
+ * @param isSystemClock whether the app is the system Clock, whose timer and stopwatch the row names
+ *   by their kind ([TallyAppLabels.isSystemClock])
  * @param profileOf which kind of profile a user is ([Profile]), which decides what the row shows
  * @param realtime the clock the row's order and chronometers use
  * @param wallTime the clock notifications' `when` uses
@@ -46,6 +49,7 @@ class TallyLiveTracker
 constructor(
     private val repository: TallyLiveRepository,
     private val labelOf: (PackageUserKey) -> CharSequence,
+    private val isSystemClock: (PackageUserKey) -> Boolean,
     private val profileOf: (PackageUserKey) -> Profile,
     private val realtime: () -> Long = SystemClock::elapsedRealtime,
     private val wallTime: () -> Long = System::currentTimeMillis,
@@ -77,6 +81,23 @@ constructor(
         return repository.publish(items.values)
     }
 
+    /**
+     * Names every thing again in the current language ([labelOf]), for example after the user
+     * changed it: an app's name is translated too.
+     */
+    @WorkerThread
+    fun relabel(): Set<PackageUserKey> {
+        var changed = false
+        for (entry in items.entries) {
+            val label = labelOf(entry.value.app)
+            if (label.toString() != entry.value.label.toString()) {
+                entry.setValue(entry.value.copy(label = label))
+                changed = true
+            }
+        }
+        return if (changed) repository.publish(items.values) else emptySet()
+    }
+
     private fun itemFor(input: Input, previous: TallyLiveItem? = items[input.key]): TallyLiveItem? {
         if (
             !TallyLiveRules.shownInShade(
@@ -100,7 +121,8 @@ constructor(
                 TallyLiveRules.showsLiveActivity(
                     input.flags,
                     input.category,
-                    input.showsChronometer,
+                    // A running MetricStyle time is the system's chronometer too.
+                    input.showsChronometer || input.metricTime?.running == true,
                     input.progressMax,
                     input.progressIndeterminate,
                     input.callStyle,
@@ -126,17 +148,44 @@ constructor(
             } else {
                 TallyLiveItem.NO_PROGRESS
             }
+        // A MetricStyle's time (Clock's timers and stopwatch) comes before the chronometer, as in
+        // the status bar chip (Notification.resolveCompactContent): running, the row counts it.
+        // Paused, the row shows it still.
+        val metric = if (readouts) input.metricTime else null
+        val metricBase = metric?.chronometerBase(now, wallTime()) ?: TallyLiveItem.NO_CHRONOMETER
+        val pausedSeconds = metric?.pausedSeconds ?: TallyLiveItem.NO_PAUSED_TIME
+        val metricShown =
+            metricBase != TallyLiveItem.NO_CHRONOMETER ||
+                pausedSeconds != TallyLiveItem.NO_PAUSED_TIME
+        val base = if (metricShown) metricBase else chronometerBase
+        val countDown =
+            if (metricShown) metric?.countDown == true else readouts && input.chronometerCountDown
+        // The system Clock's timer and stopwatch go by those names, from the notification's
+        // structure. Not in a work profile, whose tallies show only the app's name and state.
+        val kind =
+            if (readouts) {
+                TallyLiveRules.clockKindOf(
+                    input.app.mPackageName,
+                    input.category,
+                    timeShown = metricShown || base != TallyLiveItem.NO_CHRONOMETER,
+                    countDown = countDown,
+                )
+            } else {
+                null
+            }
         return TallyLiveItem(
             key = input.key,
             app = input.app,
             state = state,
             showsLed = input.canShowBadge,
             showsInRow = profile != Profile.PRIVATE,
-            label = previous?.label ?: labelOf(input.app),
+            label = labelOf(input.app),
+            kind = kind?.takeIf { isSystemClock(input.app) },
             progressPermille = progress,
-            chronometerBase = chronometerBase,
-            countDown = readouts && input.chronometerCountDown,
+            chronometerBase = base,
+            countDown = countDown,
             sinceRealtime = since,
+            pausedSeconds = pausedSeconds,
         )
     }
 
@@ -164,8 +213,8 @@ constructor(
     /**
      * What the tracker reads from one notification and its ranking: flags, category, channel and
      * importance, whether the shade shows it, whether it is a call or media with a session (its
-     * template), and the progress bar and chronometer the system draws. Nothing else: no title,
-     * text or custom view.
+     * template), and the progress bar, chronometer and MetricStyle time the system draws. Nothing
+     * else: no title, text or custom view.
      */
     data class Input(
         val key: String,
@@ -191,6 +240,8 @@ constructor(
         val blockable: Boolean = true,
         /** A call (Notification.CallStyle), incoming, ongoing or screening. */
         val callStyle: Boolean = false,
+        /** A Notification.MetricStyle's time: a timer or a stopwatch, running or paused. */
+        val metricTime: TallyMetricTime? = null,
     ) {
         companion object {
             private val MEDIA_TEMPLATES =
@@ -258,6 +309,9 @@ constructor(
                     chronometerCountDown =
                         extras.getBoolean(Notification.EXTRA_CHRONOMETER_COUNT_DOWN),
                     callStyle = template == Notification.CallStyle::class.java.name,
+                    metricTime =
+                        if (template == TallyMetricTime.TEMPLATE) TallyMetricTime.from(extras)
+                        else null,
                 )
             }
         }

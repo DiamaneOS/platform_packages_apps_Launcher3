@@ -20,7 +20,6 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.pm.LauncherApps
 import android.graphics.Rect
-import android.os.SystemClock
 import android.text.format.DateFormat
 import android.util.AttributeSet
 import android.util.Log
@@ -156,18 +155,29 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
         if (isVisible) onTick() else removeCallbacks(tick)
     }
 
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        super.onWindowFocusChanged(hasWindowFocus)
+        // Home's window has the focus back when the shade closes: the readouts catch up at once.
+        if (hasWindowFocus) onTick()
+    }
+
     private fun show(newItems: List<TallyLiveItem>) {
         items = newItems
         tallies.setItems(if (bandOn) newItems else emptyList())
         onTick()
     }
 
-    /** Counts a chronometer on screen once a second, at the turn of the second. */
+    /**
+     * Counts a chronometer on screen once a second, as each readout turns to its next second (as
+     * the status bar chip turns, [TallyTalliesRow.nextTickDelay]). While the shade is open over
+     * Home the readouts stand still, so Home draws no frame for them, and catch up when it closes
+     * (at the latest on the next second).
+     */
     private fun onTick() {
         removeCallbacks(tick)
-        if (tallies.tick() && shownOnScreen) {
-            postDelayed(tick, TICK_MS - SystemClock.elapsedRealtime() % TICK_MS)
-        }
+        val covered = ApiWrapper.INSTANCE[context].isNotificationShadeExpanded()
+        val counting = if (covered) tallies.isCounting() else tallies.tick()
+        if (counting && shownOnScreen) postDelayed(tick, tallies.nextTickDelay())
     }
 
     private fun open(item: TallyLiveItem?, key: View) {
@@ -228,6 +238,5 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
         private const val SHADOW_DY_DP = 0.5f
         /** The tallies band spans the screen less 16 dp on each side. */
         private const val TALLIES_SIDE_DP = 16f
-        private const val TICK_MS = 1000L
     }
 }
