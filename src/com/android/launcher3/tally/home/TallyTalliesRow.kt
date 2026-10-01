@@ -324,6 +324,9 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
                 setTextColor(context.getColor(R.color.tally_ink))
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
+                // Beside its lamp in either direction, whatever the name's script: against the
+                // lamp's side, each name in its own reading order ("+2 more" stays so in RTL).
+                textAlignment = TEXT_ALIGNMENT_VIEW_START
             }
         private val value =
             TextView(context).apply {
@@ -441,6 +444,8 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             valueParams.width = if (readout) 0 else LayoutParams.WRAP_CONTENT
             valueParams.weight = if (readout) 1f else 0f
             value.gravity = (if (readout) Gravity.END else Gravity.START) or Gravity.CENTER_VERTICAL
+            // "Show" at the band's end in either direction, whatever its script.
+            value.textAlignment = if (readout) TEXT_ALIGNMENT_VIEW_END else TEXT_ALIGNMENT_GRAVITY
             value.ellipsize = if (readout) TextUtils.TruncateAt.END else null
             if (readout) {
                 // "Show" takes the space the name leaves: no fixed width.
@@ -567,6 +572,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             namePaint.typeface = condensedNameFace
             val layout =
                 StaticLayout.Builder.obtain(text, 0, text.length, namePaint, room)
+                    .setTextDirection(label.textDirectionHeuristic)
                     .setIncludePad(label.includeFontPadding)
                     .setLineSpacing(label.lineSpacingExtra, label.lineSpacingMultiplier)
                     .setBreakStrategy(label.breakStrategy)
