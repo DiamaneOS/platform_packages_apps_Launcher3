@@ -204,7 +204,7 @@ object TallyLiveRules {
      * - null for anything else (a ringing alarm, which has no readout) and for any other package.
      *
      * A package name proves nothing on its own: an app can take any name the system does not have.
-     * The band names the kind only for a system app ([TallyAppLabels.kindLabelOf]).
+     * The band names the kind only for a system app ([TallyAppLabels.isSystemClock]).
      */
     @JvmStatic
     fun clockKindOf(
