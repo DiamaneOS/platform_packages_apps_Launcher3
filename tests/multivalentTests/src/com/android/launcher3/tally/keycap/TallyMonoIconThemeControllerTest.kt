@@ -90,14 +90,46 @@ class TallyMonoIconThemeControllerTest {
 
     @Test
     @EnableFlags(Flags.FLAG_FORCE_MONOCHROME_APP_ICONS)
-    fun `a pure black picture keeps the stock glyph`() {
+    fun `a black picture's glyph is its shape`() {
         assumeFalse(isRunningInRobolectric)
         val legacy = iconFactory.wrapToAdaptiveIcon(ColorDrawable(Color.BLACK))
         val info = iconFactory.createBadgedIconBitmap(legacy)
         val tally =
             TallyMonoIconThemeController().createThemedBitmap(legacy, info, iconFactory)
                 as MonoThemedBitmap
-        assertTrue(inkAtPlate(tally.mono) > 0)
+        assertEquals(0, inkAtPlate(tally.mono))
+        assertTrue(inkAtPicture(tally.mono) > 0)
+    }
+
+    @Test
+    fun `a dark glyph on a light plate is found`() {
+        // Robolectric does not draw these drawables.
+        assumeFalse(isRunningInRobolectric)
+        val glyph = InsetDrawable(ColorDrawable(Color.BLACK), 0.3f)
+        val shortcut = AdaptiveIconDrawable(ColorDrawable(0xFFF5F5F5.toInt()), glyph)
+        assertTrue(TallyMonoIconThemeController.glyphOnLightPlate(shortcut) != null)
+    }
+
+    @Test
+    fun `other icons have no dark glyph on a light plate`() {
+        assumeFalse(isRunningInRobolectric)
+        val dark = InsetDrawable(ColorDrawable(Color.BLACK), 0.3f)
+        val light = InsetDrawable(ColorDrawable(Color.LTGRAY), 0.3f)
+        val plate = ColorDrawable(0xFFF5F5F5.toInt())
+        // Their own monochrome layer, a dark plate, a light glyph.
+        assertNull(
+            TallyMonoIconThemeController.glyphOnLightPlate(
+                AdaptiveIconDrawable(plate, dark, ColorDrawable(Color.RED))
+            )
+        )
+        assertNull(
+            TallyMonoIconThemeController.glyphOnLightPlate(
+                AdaptiveIconDrawable(ColorDrawable(Color.DKGRAY), dark)
+            )
+        )
+        assertNull(
+            TallyMonoIconThemeController.glyphOnLightPlate(AdaptiveIconDrawable(plate, light))
+        )
     }
 
     /**
