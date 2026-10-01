@@ -36,9 +36,10 @@ import com.android.launcher3.util.PackageUserKey
  * A notification the shade does not show ([TallyLiveRules.shownInShade]) gives nothing, neither an
  * LED nor a place in the row.
  *
- * @param labelOf the app's name for the tallies row (badged for a work profile)
- * @param kindLabelOf the row's name for the system Clock's timer or stopwatch, badged as the app's
- *   name, or null when the app is not the system Clock ([TallyAppLabels.kindLabelOf])
+ * @param labelOf the app's name for the tallies row (badged for a work profile), in the current
+ *   language ([TallyAppLabels.labelOf])
+ * @param isSystemClock whether the app is the system Clock, whose timer and stopwatch the row names
+ *   by their kind ([TallyAppLabels.isSystemClock])
  * @param profileOf which kind of profile a user is ([Profile]), which decides what the row shows
  * @param realtime the clock the row's order and chronometers use
  * @param wallTime the clock notifications' `when` uses
@@ -48,7 +49,7 @@ class TallyLiveTracker
 constructor(
     private val repository: TallyLiveRepository,
     private val labelOf: (PackageUserKey) -> CharSequence,
-    private val kindLabelOf: (PackageUserKey, TallyLiveRules.ClockKind) -> CharSequence?,
+    private val isSystemClock: (PackageUserKey) -> Boolean,
     private val profileOf: (PackageUserKey) -> Profile,
     private val realtime: () -> Long = SystemClock::elapsedRealtime,
     private val wallTime: () -> Long = System::currentTimeMillis,
@@ -78,6 +79,23 @@ constructor(
             itemFor(input, old[input.key])?.let { items[input.key] = it }
         }
         return repository.publish(items.values)
+    }
+
+    /**
+     * Names every thing again in the current language ([labelOf]), for example after the user
+     * changed it: an app's name is translated too.
+     */
+    @WorkerThread
+    fun relabel(): Set<PackageUserKey> {
+        var changed = false
+        for (entry in items.entries) {
+            val label = labelOf(entry.value.app)
+            if (label.toString() != entry.value.label.toString()) {
+                entry.setValue(entry.value.copy(label = label))
+                changed = true
+            }
+        }
+        return if (changed) repository.publish(items.values) else emptySet()
     }
 
     private fun itemFor(input: Input, previous: TallyLiveItem? = items[input.key]): TallyLiveItem? {
@@ -161,8 +179,8 @@ constructor(
             state = state,
             showsLed = input.canShowBadge,
             showsInRow = profile != Profile.PRIVATE,
-            label = previous?.label ?: labelOf(input.app),
-            kindLabel = kind?.let { kindLabelOf(input.app, it) },
+            label = labelOf(input.app),
+            kind = kind?.takeIf { isSystemClock(input.app) },
             progressPermille = progress,
             chronometerBase = base,
             countDown = countDown,

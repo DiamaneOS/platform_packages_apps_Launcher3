@@ -17,6 +17,7 @@
 package com.android.launcher3.tally.home
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Outline
 import android.graphics.Paint
@@ -53,6 +54,7 @@ import com.android.launcher3.tally.keycap.TallyKeycapLed
 import com.android.launcher3.tally.lamp.TallyLampSize
 import com.android.launcher3.tally.lamp.TallyLampState
 import com.android.launcher3.tally.lamp.TallyLampView
+import com.android.launcher3.tally.live.TallyAppLabels
 import com.android.launcher3.tally.live.TallyLiveItem
 import com.android.launcher3.tally.live.TallyLiveRules
 import com.android.launcher3.util.SafeCloseable
@@ -134,6 +136,14 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         }
         updateVisibility()
         requestLayout()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Where Home takes a change in place, the band's words follow it (its language among
+        // them): every name, state and readout is read again as the band binds.
+        if (lift != null) contentDescription = context.getString(R.string.tally_home_tallies)
+        setItems(items)
     }
 
     /** Hides the band while it is picked up ([TallyHomeLift]). */
@@ -337,6 +347,8 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         /** Measures the name in a face it may not have now. */
         private val namePaint = TextPaint()
         private var item: TallyLiveItem? = null
+        /** [item]'s name as the key shows it ([nameOf]), read as it was bound. */
+        private var name: CharSequence = ""
         /** The readout's pattern (its digits as zeros) and text size its width is fixed for. */
         private var fittedPattern: String? = null
         private var fittedTextSize = 0f
@@ -392,7 +404,8 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             giveWay(readout = false)
             // A time that stands still is not live: its lamp is out, and its readout says Paused.
             lamp.setState(newItem.rowState)
-            label.text = newItem.kindLabel ?: newItem.label
+            name = nameOf(context, newItem)
+            label.text = name
             refreshReadout(describe = true)
         }
 
@@ -406,13 +419,13 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             value.setText(R.string.tally_more_show)
             // The things by the names the band gives them (Timer and Stopwatch, not Clock and
             // Clock), each once, as the prototype's label names its tallies.
-            val names = hidden.map { (it.kindLabel ?: it.label).toString() }.distinct()
+            val names = hidden.map { nameOf(context, it).toString() }.distinct()
             contentDescription =
                 resources.getQuantityString(
                     R.plurals.tally_more_description,
                     hidden.size,
                     hidden.size,
-                    ListFormatter.getInstance().format(names),
+                    ListFormatter.getInstance(resources.configuration.locales[0]).format(names),
                 )
         }
 
@@ -591,7 +604,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             readout: String = readoutOf(current, now),
         ): CharSequence {
             val spoken = spokenReadoutOf(current, now, resources.configuration.locales[0])
-            return describe(context, current, readout, spoken)
+            return describe(context, current, readout, spoken, name)
         }
 
         /**
@@ -729,10 +742,19 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         }
 
         /**
-         * A thing's words for screen readers: its name, with its app's after a kind the row shows
-         * in its place ("Timer, Clock"), then its lamp's state (Paused for a live time that stands
-         * still) and its readout as [spoken]: "Timer, Clock, Active, 9 minutes, 57 seconds",
-         * "Timer, Clock, Paused, 6 minutes, 58 seconds" or "Files, Active, 34%".
+         * The name a thing's key shows, in [context]'s language: its kind for the system Clock's
+         * timer and stopwatch ("Timer", [TallyAppLabels.kindLabel]), else its app's name.
+         */
+        @JvmStatic
+        fun nameOf(context: Context, item: TallyLiveItem): CharSequence =
+            item.kind?.let { TallyAppLabels.kindLabel(context, it, item.app.mUser) } ?: item.label
+
+        /**
+         * A thing's words for screen readers: its name ([shown], as its key shows it), with its
+         * app's after a kind the row shows in its place ("Timer, Clock"), then its lamp's state
+         * (Paused for a live time that stands still) and its readout as [spoken]: "Timer, Clock,
+         * Active, 9 minutes, 57 seconds", "Timer, Clock, Paused, 6 minutes, 58 seconds" or "Files,
+         * Active, 34%".
          */
         @JvmStatic
         fun describe(
@@ -740,11 +762,11 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             item: TallyLiveItem,
             readout: String,
             spoken: String = readout,
+            shown: CharSequence = nameOf(context, item),
         ): CharSequence {
-            val kind = item.kindLabel
             val name =
-                if (kind == null) item.label
-                else context.getString(R.string.tally_kind_of_app, kind, item.label)
+                if (item.kind == null) item.label
+                else context.getString(R.string.tally_kind_of_app, shown, item.label)
             val description =
                 if (item.isPaused) {
                     context.getString(
