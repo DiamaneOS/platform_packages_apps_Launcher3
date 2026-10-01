@@ -24,6 +24,7 @@ import static java.util.Collections.emptyList;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
+import android.content.res.Configuration;
 import android.os.Handler;
 import android.os.Message;
 import android.service.notification.NotificationListenerService;
@@ -68,6 +69,7 @@ public class NotificationListener extends NotificationListenerService {
     private static final int MSG_NOTIFICATION_REMOVED = 2;
     private static final int MSG_NOTIFICATION_FULL_REFRESH = 3;
     private static final int MSG_RANKING_UPDATE = 4;
+    private static final int MSG_TALLY_RELABEL = 5;
 
     private static final Function<PackageUserKey, DotInfo> DOT_FACTOR = key -> new DotInfo();
 
@@ -147,6 +149,13 @@ public class NotificationListener extends NotificationListenerService {
                 dispatchTallyUpdate(tallyLive().onAll(tallyInputs(ranked)));
                 return true;
             }
+            case MSG_TALLY_RELABEL: {
+                // The language may have changed: the tallies' names follow it.
+                if (mTallyLive != null) {
+                    dispatchTallyUpdate(mTallyLive.relabel());
+                }
+                return true;
+            }
         }
         return false;
     }
@@ -215,7 +224,7 @@ public class NotificationListener extends NotificationListenerService {
             mTallyLive = new TallyLiveTracker(
                     LauncherComponentProvider.get(this).getNotificationRepository().getLive(),
                     labels::labelOf,
-                    labels::kindLabelOf,
+                    labels::isSystemClock,
                     key -> {
                         if (key.mUser == null) {
                             return TallyLiveTracker.Profile.PERSONAL;
@@ -303,6 +312,13 @@ public class NotificationListener extends NotificationListenerService {
             mSettingCacheSafeCloseable = null;
         }
         onNotificationFullRefresh();
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // DiamaneOS Tally: the tallies' names are read in the language of the moment.
+        mWorkerHandler.obtainMessage(MSG_TALLY_RELABEL).sendToTarget();
     }
 
     @Override
