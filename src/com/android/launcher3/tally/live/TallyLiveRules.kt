@@ -43,9 +43,9 @@ import com.android.launcher3.tally.lamp.TallyLampState
  *
  * Only the flags, the category, the posting package, the ranking's channel and importance, and
  * whether the notification has a chronometer, a progress bar, a call template or a media session
- * are read here. For the tallies band, [TallyLiveTracker] also reads the progress bar's value and
- * the chronometer's time, which the system itself draws; titles, texts and custom views are never
- * read.
+ * are read here. For the tallies band, [TallyLiveTracker] also reads the progress bar's value, the
+ * chronometer's time and a MetricStyle's time ([TallyMetricTime]), which the system itself draws.
+ * Titles, texts and custom views are never read.
  *
  * A notification the shade does not show gives nothing at all ([shownInShade]).
  */
@@ -126,8 +126,9 @@ object TallyLiveRules {
      * definition of live on Home), from what the notification itself declares:
      * - it is a Live Update: the system promoted it ([Notification.FLAG_PROMOTED_ONGOING], in
      *   [flags]).
-     * - it shows the system's chronometer ([showsChronometer],
-     *   Notification.EXTRA_SHOW_CHRONOMETER): a timer, a stopwatch, a call, a recording;
+     * - it shows the system's chronometer ([showsChronometer], Notification.EXTRA_SHOW_CHRONOMETER,
+     *   or a running MetricStyle time, [TallyMetricTime]): a timer, a stopwatch, a call, a
+     *   recording.
      * - it has a progress bar: a maximum above 0 ([progressMax], Notification.EXTRA_PROGRESS_MAX)
      *   or an indeterminate one ([progressIndeterminate]): a download, an update, an install.
      * - its category is a call, navigation or a stopwatch, or it is a call ([callStyle],
@@ -180,6 +181,44 @@ object TallyLiveRules {
             null
         }
     }
+
+    /** The system Clock's package (DeskClock, on the system image). */
+    const val SYSTEM_CLOCK_PACKAGE = "com.android.deskclock"
+
+    /** What the system Clock's tally is: the tallies band names it so, in place of Clock. */
+    enum class ClockKind {
+        /** A timer: a time counting down, running, paused or past zero. */
+        TIMER,
+        /** A stopwatch: a time counting up. */
+        STOPWATCH,
+    }
+
+    /**
+     * What a tally from [packageName] is when that is the system Clock's package, decided from the
+     * notification's structure alone (never its text), or null:
+     * - [ClockKind.TIMER] while the tally shows a count-down time ([timeShown] with [countDown]): a
+     *   MetricStyle time counting down ([TallyMetricTime.countDown]), running or paused, or the
+     *   system's chronometer counting down.
+     * - [ClockKind.STOPWATCH] for a stopwatch ([Notification.CATEGORY_STOPWATCH]) or a count-up
+     *   time.
+     * - null for anything else (a ringing alarm, which has no readout) and for any other package.
+     *
+     * A package name proves nothing on its own: an app can take any name the system does not have.
+     * The band names the kind only for a system app ([TallyAppLabels.isSystemClock]).
+     */
+    @JvmStatic
+    fun clockKindOf(
+        packageName: String?,
+        category: String?,
+        timeShown: Boolean,
+        countDown: Boolean,
+    ): ClockKind? =
+        when {
+            packageName != SYSTEM_CLOCK_PACKAGE -> null
+            timeShown && countDown -> ClockKind.TIMER
+            timeShown || category == Notification.CATEGORY_STOPWATCH -> ClockKind.STOPWATCH
+            else -> null
+        }
 
     /** How urgent a state is on Home: failed, then live, then requested, then on (lower first). */
     @JvmStatic

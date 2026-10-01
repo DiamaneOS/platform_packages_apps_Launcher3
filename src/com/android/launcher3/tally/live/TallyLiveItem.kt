@@ -17,6 +17,7 @@
 package com.android.launcher3.tally.live
 
 import com.android.launcher3.tally.lamp.TallyLampState
+import com.android.launcher3.tally.live.TallyLiveRules.ClockKind
 import com.android.launcher3.util.PackageUserKey
 
 /**
@@ -35,8 +36,17 @@ data class TallyLiveItem(
     val showsLed: Boolean,
     /** Whether it may show in the tallies row (not for the private space). */
     val showsInRow: Boolean,
-    /** The app's name for the row, badged for a work profile. */
+    /**
+     * The app's name, badged for a work profile: the row shows it unless [kind] is set, and its
+     * accessibility label always says it.
+     */
     val label: CharSequence,
+    /**
+     * For the system Clock's timer and stopwatch ([TallyLiveRules.clockKindOf]), never for any
+     * other app, what it is, or null: the row shows its name ("Timer", "Stopwatch",
+     * [TallyAppLabels.kindLabel]) in place of [label], read in the row's language as it binds.
+     */
+    val kind: ClockKind? = null,
     /** A progress bar's fraction in thousandths, or [NO_PROGRESS]. */
     val progressPermille: Int = NO_PROGRESS,
     /**
@@ -47,9 +57,26 @@ data class TallyLiveItem(
     val countDown: Boolean = false,
     /** When this became live or failed (elapsed realtime): the row shows newer things first. */
     val sinceRealtime: Long = 0L,
+    /**
+     * A paused timer's or stopwatch's time in whole seconds, which the row shows still, or
+     * [NO_PAUSED_TIME].
+     */
+    val pausedSeconds: Long = NO_PAUSED_TIME,
 ) {
+    /** Whether it is a live time that stands still: a paused timer or stopwatch. */
+    val isPaused: Boolean
+        get() = state == TallyLampState.LIVE && pausedSeconds != NO_PAUSED_TIME
+
+    /**
+     * Its lamp in the tallies row, which orders the row by it: [state], but off for a time that
+     * stands still ([isPaused]), as the prototype's paused media. Its app's LED follows [state].
+     */
+    val rowState: TallyLampState
+        get() = if (isPaused) TallyLampState.OFF else state
+
     companion object {
         const val NO_PROGRESS = -1
         const val NO_CHRONOMETER = Long.MIN_VALUE
+        const val NO_PAUSED_TIME = -1L
     }
 }

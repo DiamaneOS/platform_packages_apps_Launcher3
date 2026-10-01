@@ -52,6 +52,8 @@ import com.android.launcher3.util.Executors
 import com.android.launcher3.util.StartActivityParams
 import com.android.quickstep.SystemUiProxy
 import com.android.quickstep.util.FadeOutRemoteTransition
+import com.android.systemui.shared.system.QuickStepContract.SYSUI_STATE_NOTIFICATION_PANEL_EXPANDED
+import com.android.systemui.shared.system.QuickStepContract.SYSUI_STATE_QUICK_SETTINGS_EXPANDED
 import java.util.function.Supplier
 import javax.inject.Inject
 
@@ -178,6 +180,11 @@ open class SystemApiWrapper @Inject constructor(@ApplicationContext context: Con
     // DiamaneOS Tally: Home's "+n more" tally opens the shade, as a pull down on Home does.
     override fun openNotificationShade() =
         SystemUiProxy.INSTANCE[mContext].expandNotificationPanel()
+
+    // DiamaneOS Tally: Home's tallies stop counting while the shade covers Home.
+    override fun isNotificationShadeExpanded() =
+        SystemUiProxy.INSTANCE[mContext].lastSystemUiStateFlags and
+            (SYSUI_STATE_NOTIFICATION_PANEL_EXPANDED or SYSUI_STATE_QUICK_SETTINGS_EXPANDED) != 0L
 
     // DiamaneOS Tally: Home's LEDs and tallies follow what the shade shows under Do Not Disturb.
     override fun isImportanceLockedByCriticalDeviceFunction(channel: NotificationChannel) =
