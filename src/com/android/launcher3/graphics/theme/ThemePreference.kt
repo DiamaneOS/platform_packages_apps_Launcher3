@@ -23,7 +23,9 @@ import com.android.launcher3.LauncherPrefs.Companion.backedUpItem
 import com.android.launcher3.dagger.LauncherAppSingleton
 import com.android.launcher3.graphics.theme.MonoIconThemeFactory.MONO_FACTORY_ID
 import com.android.launcher3.graphics.theme.MonoIconThemeFactory.MONO_THEME_CONTROLLER
+import com.android.launcher3.graphics.theme.TallyColourIconThemeFactory.Companion.COLOUR_FACTORY_ID
 import com.android.launcher3.graphics.theme.ThemePreference.ThemeValue
+import com.android.launcher3.icons.tally.TallyColourIconThemeController
 import com.android.launcher3.util.ListenableRef
 import com.android.launcher3.util.MutableListenableRef
 import javax.inject.Inject
@@ -70,11 +72,12 @@ private constructor(
         // Delete old keys from preference, after the one-time migration is complete
         if (oldValue != null)
             prefs.remove(*(legacyThemeKeys.values + LEGACY_MONO_THEME_ICON).toTypedArray())
-        // DiamaneOS Tally: themed ("Minimal") keys until a style is chosen. Nothing is stored for
-        // this default; choosing Default stores "" and keeps the apps' own icons, and a legacy
-        // choice still migrates as above.
+        // DiamaneOS Tally: the Colour icon style until a style is chosen (its own apps as keys in
+        // their own colours, every other app's own icon). Nothing is stored for this default;
+        // choosing Minimal stores it, choosing Default stores "" and keeps the apps' own icons, and
+        // a legacy choice still migrates as above.
         if (currentValue == null && !prefs.has(THEME_ID) && !prefs.has(LEGACY_MONO_THEME_ICON))
-            currentValue = MONO_THEME_VALUE
+            currentValue = COLOUR_THEME_VALUE
         themePref.dispatchValue(currentValue)
     }
 
@@ -102,6 +105,11 @@ private constructor(
         const val THEME_OVERRIDES_DAGGER_KEY = "THEME_OVERRIDES"
 
         @JvmField val MONO_THEME_VALUE = ThemeValue(MONO_FACTORY_ID, MONO_THEME_CONTROLLER.themeID)
+
+        /** DiamaneOS Tally: the Colour icon style, the default ([TallyColourIconThemeFactory]). */
+        @JvmField
+        val COLOUR_THEME_VALUE =
+            ThemeValue(COLOUR_FACTORY_ID, TallyColourIconThemeController.THEME_ID)
 
         private const val KEY_ICON_THEME = "icon_theme_id"
         private val THEME_ID = backedUpItem(KEY_ICON_THEME, "")

@@ -31,6 +31,7 @@ import com.android.launcher3.Flags
 import com.android.launcher3.icons.BaseIconFactory
 import com.android.launcher3.icons.mono.MonoIconThemeController
 import com.android.launcher3.icons.mono.MonoThemedBitmap
+import com.android.launcher3.icons.tally.TallyMonoIconThemeController
 import com.android.launcher3.util.LauncherMultivalentJUnit.Companion.isRunningInRobolectric
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
