@@ -17,9 +17,9 @@
 package com.android.launcher3.graphics.theme
 
 import com.android.launcher3.icons.IconThemeController
+import com.android.launcher3.icons.tally.TallyMonoIconThemeController
 import com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCHER_THEMED_ICON_ENABLED
 import com.android.launcher3.logging.StatsLogManager.StatsLogger
-import com.android.launcher3.tally.keycap.TallyMonoIconThemeController
 
 /**
  * A factory for creating [IconThemeController] instances. Each factory is associated with a

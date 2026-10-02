@@ -17,6 +17,7 @@ package com.android.launcher3.graphics;
 
 import static com.android.launcher3.BuildConfig.IS_DEBUG_DEVICE;
 import static com.android.launcher3.graphics.ThemeManager.PREF_ICON_SHAPE;
+import static com.android.launcher3.graphics.theme.ThemePreference.COLOUR_THEME_VALUE;
 import static com.android.launcher3.graphics.theme.ThemePreference.MONO_THEME_VALUE;
 import static com.android.launcher3.preview.PreviewSurfaceRenderer.KEY_BITMAP_GENERATION_DELAY_MS;
 import static com.android.launcher3.preview.PreviewSurfaceRenderer.KEY_VIEW_HEIGHT;
@@ -53,6 +54,7 @@ import com.android.launcher3.LauncherPrefs;
 import com.android.launcher3.dagger.ApplicationContext;
 import com.android.launcher3.dagger.LauncherAppSingleton;
 import com.android.launcher3.deviceprofile.parser.GridOption;
+import com.android.launcher3.graphics.theme.TallyIconStyle;
 import com.android.launcher3.graphics.theme.ThemePreference;
 import com.android.launcher3.preview.PreviewLifecycleObserver;
 import com.android.launcher3.preview.PreviewSurfaceRenderer;
@@ -254,6 +256,13 @@ public class GridCustomizationsProxy implements ProxyProvider {
                 Log.d(TAG, "query: path=" + path + ", isMonoThemeEnabled=" + monoThemeEnabled);
                 return cursor;
             }
+            case TallyIconStyle.PATH: {
+                // DiamaneOS Tally: the icon style by name (Colour, Minimal or none).
+                MatrixCursor cursor = new MatrixCursor(new String[]{TallyIconStyle.KEY});
+                cursor.newRow().add(TallyIconStyle.KEY,
+                        TallyIconStyle.nameOf(mThemePreference.getValue()));
+                return cursor;
+            }
             case GET_WORKSPACE_ITEMS_LABEL_HIDDEN:
             case WORKSPACE_ITEMS_LABEL_HIDDEN:
                 if (!com.android.systemui.shared.Flags.workspaceItemsLabelHidden()) {
@@ -323,8 +332,20 @@ public class GridCustomizationsProxy implements ProxyProvider {
                 if (values.getAsBoolean(BOOLEAN_VALUE)) {
                     mThemePreference.setValue(MONO_THEME_VALUE);
                 } else {
-                    mThemePreference.setValue(null, MONO_THEME_VALUE::equals);
+                    // DiamaneOS Tally: themed icons off is every app's own icon, from the Colour
+                    // style too.
+                    mThemePreference.setValue(null, value ->
+                            MONO_THEME_VALUE.equals(value) || COLOUR_THEME_VALUE.equals(value));
                 }
+                return UPDATE_SETTING_SUCCESS;
+            }
+            case TallyIconStyle.PATH: {
+                // DiamaneOS Tally: sets the icon style by name (Colour, Minimal or none).
+                String name = values.getAsString(TallyIconStyle.KEY);
+                if (!TallyIconStyle.isName(name)) {
+                    return UPDATE_SETTING_FAILURE;
+                }
+                mThemePreference.setValue(TallyIconStyle.valueOf(name));
                 return UPDATE_SETTING_SUCCESS;
             }
             case SET_WORKSPACE_ITEMS_LABEL_HIDDEN: {

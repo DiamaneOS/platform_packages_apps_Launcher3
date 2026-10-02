@@ -21,7 +21,8 @@ import androidx.test.filters.SmallTest
 import com.android.launcher3.FakeLauncherPrefs
 import com.android.launcher3.dagger.LauncherAppComponent
 import com.android.launcher3.dagger.LauncherAppSingleton
-import com.android.launcher3.tally.keycap.TallyMonoIconThemeController
+import com.android.launcher3.icons.tally.TallyColourIconThemeController
+import com.android.launcher3.icons.tally.TallyMonoIconThemeController
 import com.android.launcher3.util.AllModulesForTest
 import com.android.launcher3.util.Executors.MAIN_EXECUTOR
 import com.android.launcher3.util.FakePrefsModule
@@ -50,6 +51,14 @@ class ThemeManagerTest {
     fun setUp() {
         context.initDaggerComponent(DaggerThemeManagerComponent.builder())
         themeManager = ThemeManager.INSTANCE[context]
+    }
+
+    @Test
+    fun `the Colour icon style is the default`() {
+        TestUtil.runOnExecutorSync(MAIN_EXECUTOR) {}
+        assertFalse(themeManager.isMonoThemeEnabled)
+        assertThat(themeManager.iconState.themeController)
+            .isInstanceOf(TallyColourIconThemeController::class.java)
     }
 
     @Test
