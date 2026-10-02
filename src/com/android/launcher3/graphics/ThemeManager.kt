@@ -32,6 +32,7 @@ import com.android.launcher3.display.OverlayChangeHandler
 import com.android.launcher3.graphics.ShapeDelegate.Companion.DEFAULT_PATH_SIZE_INT
 import com.android.launcher3.graphics.ShapeDelegate.Companion.pickBestShape
 import com.android.launcher3.graphics.theme.IconThemeFactory
+import com.android.launcher3.graphics.theme.TallyIconStyle
 import com.android.launcher3.graphics.theme.ThemePreference
 import com.android.launcher3.graphics.theme.ThemePreference.Companion.MONO_THEME_VALUE
 import com.android.launcher3.icons.DotRenderer.IconShapeInfo
@@ -42,10 +43,12 @@ import com.android.launcher3.shapes.IconShapeModel.Companion.DEFAULT_ICON_RADIUS
 import com.android.launcher3.shapes.ShapesProvider
 import com.android.launcher3.util.DaggerSingletonObject
 import com.android.launcher3.util.DaggerSingletonTracker
+import com.android.launcher3.util.Executors.ORDERED_BG_EXECUTOR
 import com.android.launcher3.util.ListenableRef
 import com.android.launcher3.util.LooperExecutor
 import com.android.launcher3.util.MutableListenableRef
 import com.android.launcher3.util.SafeCloseable
+import com.android.launcher3.util.SandboxContext
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.inject.Inject
 import javax.inject.Named
@@ -106,6 +109,13 @@ constructor(
         }
         prefs.addListener(prefListener, PREF_ICON_SHAPE)
         lifecycle.addCloseable(themePreference.forEach(mainExecutor) { verifyIconState() })
+        // DiamaneOS Tally: SystemUI draws notifications' app icons in the same style; a preview's
+        // or the boot taskbar's sandbox never sets it.
+        if (context !is SandboxContext) {
+            lifecycle.addCloseable(
+                themePreference.forEach(ORDERED_BG_EXECUTOR) { TallyIconStyle.publish(context, it) }
+            )
+        }
         lifecycle.addCloseable {
             prefs.removeListener(prefListener, PREF_ICON_SHAPE)
             iconState.closeController()
