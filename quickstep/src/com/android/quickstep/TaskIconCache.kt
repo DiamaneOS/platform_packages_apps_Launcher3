@@ -34,9 +34,11 @@ import com.android.launcher3.graphics.ThemeManager
 import com.android.launcher3.icons.BaseIconFactory.IconOptions
 import com.android.launcher3.icons.BitmapInfo
 import com.android.launcher3.icons.IconCache
+import com.android.launcher3.icons.SourceHint
 import com.android.launcher3.icons.cache.AppInfoCachingLogic
 import com.android.launcher3.pm.UserCache
 import com.android.launcher3.util.CancellableTask
+import com.android.launcher3.util.ComponentKey
 import com.android.launcher3.util.DaggerSingletonTracker
 import com.android.launcher3.util.Executors.MAIN_EXECUTOR
 import com.android.launcher3.util.Executors.SimpleThreadFactory
@@ -265,7 +267,13 @@ constructor(
                     IconOptions()
                         .setUser(userInfo)
                         .setExtractedColor(0)
-                        .setWrapperBackgroundColor(desc.primaryColor),
+                        .setWrapperBackgroundColor(desc.primaryColor)
+                        // DiamaneOS Tally: the task's app, for icon styles that go by app (Colour).
+                        .setSourceHint(
+                            key.component?.let {
+                                SourceHint(ComponentKey(it, user), appInfoCachingLogic)
+                            }
+                        ),
                 )
             }
         }
