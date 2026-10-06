@@ -30,6 +30,7 @@ import com.android.launcher3.model.BgDataModel.Callbacks;
 import com.android.launcher3.model.BgDataModel.FixedContainerItems;
 import com.android.launcher3.model.data.AppsListData;
 import com.android.launcher3.model.data.WorkspaceData;
+import com.android.launcher3.tally.moments.MomentsHome;
 import com.android.launcher3.util.LooperExecutor;
 import com.android.launcher3.widget.model.WidgetsListBaseEntriesBuilder;
 import com.android.launcher3.widget.model.WidgetsListBaseEntry;
@@ -87,7 +88,8 @@ public class BaseLauncherBinder {
             StringCache stringCache;
 
             synchronized (mBgDataModel) {
-                itemsIdMap = mBgDataModel.itemsIdMap.copy();
+                // While Moments is on, its own page in place of Home's items.
+                itemsIdMap = MomentsHome.homeData(mBgDataModel.itemsIdMap.copy());
                 mBgDataModel.extraItems.forEach(extraItems::add);
                 if (incrementBindId) {
                     mBgDataModel.lastBindId++;

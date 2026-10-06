@@ -200,6 +200,7 @@ import com.android.launcher3.statemanager.StateManager;
 import com.android.launcher3.statemanager.StateManager.StateHandler;
 import com.android.launcher3.statemanager.StatefulActivity;
 import com.android.launcher3.states.RotationHelper;
+import com.android.launcher3.tally.moments.MomentsHome;
 import com.android.launcher3.testing.TestLogging;
 import com.android.launcher3.testing.shared.TestProtocol;
 import com.android.launcher3.touch.AllAppsItemCustomActionsListener;
@@ -2602,7 +2603,8 @@ public class Launcher extends StatefulActivity<LauncherState>
     // Getters and Setters
 
     public boolean isWorkspaceLocked() {
-        return isWorkspaceLoading() || mPendingRequestArgs != null;
+        // Moments' page lives in memory only: nothing on it may be moved or stored.
+        return isWorkspaceLoading() || mPendingRequestArgs != null || MomentsHome.isActive();
     }
 
     public boolean isWorkspaceLoading() {
