@@ -47,6 +47,7 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.Workspace;
 import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.logger.LauncherAtom;
+import com.android.launcher3.tally.moments.MomentsHome;
 import com.android.launcher3.testing.TestLogging;
 import com.android.launcher3.testing.shared.TestProtocol;
 import com.android.launcher3.util.TouchUtil;
@@ -195,8 +196,10 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
     }
 
     private boolean canHandleLongPress() {
+        // Moments' page cannot be edited, so it has no Home menu.
         return AbstractFloatingView.getTopOpenView(mLauncher) == null
-                && mLauncher.isInState(NORMAL);
+                && mLauncher.isInState(NORMAL)
+                && !MomentsHome.isActive();
     }
 
     private void cancelLongPress() {

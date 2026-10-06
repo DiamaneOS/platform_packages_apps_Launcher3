@@ -37,6 +37,7 @@ import com.android.launcher3.popup.PopupContainer
 import com.android.launcher3.util.Executors
 import com.android.launcher3.util.Executors.MAIN_EXECUTOR
 import com.android.launcher3.util.Executors.UI_HELPER_EXECUTOR
+import com.android.launcher3.tally.moments.MomentsHome
 import com.android.launcher3.util.HybridHotseatOrganizer
 import com.android.launcher3.util.IntArray as LIntArray
 import com.android.launcher3.util.IntArray
@@ -85,6 +86,8 @@ class ModelCallbacks(private var launcher: Launcher) : BgDataModel.Callbacks {
             workspaceState.changes.forEach(MAIN_EXECUTOR) { ev ->
                 // Ignore events which originated from our own UI
                 if (ev.isSource(launcher)) return@forEach
+                // Moments' page is built whole; only a full refresh changes it.
+                if (MomentsHome.isActive() && ev !is FullRefresh) return@forEach
 
                 when (ev) {
                     is AddEvent -> bindWorkspaceItemsAdded(ev.items)
@@ -92,7 +95,7 @@ class ModelCallbacks(private var launcher: Launcher) : BgDataModel.Callbacks {
                     is UpdateEvent -> bindWorkspaceItemsUpdated(ev.items)
                     is FullRefresh ->
                         bindModelWithAsyncInflation(
-                            itemIdMap = workspaceState.value,
+                            itemIdMap = MomentsHome.homeData(workspaceState.value),
                             isBindingSync = false,
                             reason = ev.reason,
                         )
@@ -104,7 +107,7 @@ class ModelCallbacks(private var launcher: Launcher) : BgDataModel.Callbacks {
             // If the data is already loaded, bind synchronously so that the first screen is shown
             // immediately
             bindModelWithAsyncInflation(
-                itemIdMap = workspaceState.value,
+                itemIdMap = MomentsHome.homeData(workspaceState.value),
                 isBindingSync = true,
                 reason = "initial-bind-on-create",
             )
@@ -116,7 +119,7 @@ class ModelCallbacks(private var launcher: Launcher) : BgDataModel.Callbacks {
         val workspaceState = launcher.appComponent.homeScreenRepository.workspaceState
         if (workspaceState.value.version > 0) {
             bindModelWithAsyncInflation(
-                itemIdMap = workspaceState.value,
+                itemIdMap = MomentsHome.homeData(workspaceState.value),
                 isBindingSync = true,
                 reason = "rebinding-on-config-change",
             )
@@ -259,7 +262,7 @@ class ModelCallbacks(private var launcher: Launcher) : BgDataModel.Callbacks {
     }
 
     override fun bindItemsUpdated(updates: Set<ItemInfo>) {
-        if (useModelRepositoryBinding()) return
+        if (useModelRepositoryBinding() || MomentsHome.isActive()) return
         bindWorkspaceItemsUpdated(updates)
     }
 
@@ -367,7 +370,7 @@ class ModelCallbacks(private var launcher: Launcher) : BgDataModel.Callbacks {
     }
 
     override fun bindItemsAdded(items: List<ItemInfo>) {
-        if (useModelRepositoryBinding()) return
+        if (useModelRepositoryBinding() || MomentsHome.isActive()) return
         bindWorkspaceItemsAdded(items)
     }
 
@@ -662,6 +665,8 @@ class ModelCallbacks(private var launcher: Launcher) : BgDataModel.Callbacks {
     }
 
     override fun bindExtraContainerItems(item: FixedContainerItems) {
+        // No predicted apps in the dock while Moments shows only the chosen apps.
+        if (MomentsHome.isActive()) return
         extraContainerCallbacks[item.containerId]?.accept(item.items)
     }
 
