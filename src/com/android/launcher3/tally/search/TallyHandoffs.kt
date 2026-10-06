@@ -24,9 +24,10 @@ package com.android.launcher3.tally.search
  *
  * Each hand-off goes to the user's default app for its kind (the one Android picks without asking:
  * the contacts and files apps for their app categories, the browser that opens web links), and only
- * when that app takes a search: `ACTION_SEARCH` with `SearchManager.QUERY` for contacts and files,
- * `ACTION_WEB_SEARCH` for the browser. No default (Android would ask which app), or a default that
- * takes no search, and there is no hand-off. Each is labelled with the app's own name.
+ * when that app takes a search: `ACTION_SEARCH` with `SearchManager.QUERY` for contacts and files
+ * (our Files, DocumentsUI, takes it in `FilesSearchActivity` and opens browsing, never as a
+ * picker), `ACTION_WEB_SEARCH` for the browser. No default (Android would ask which app), or a
+ * default that takes no search, and there is no hand-off. Each is labelled with the app's own name.
  */
 object TallyHandoffs {
     /** The most of the typed words a hand-off passes on. */
