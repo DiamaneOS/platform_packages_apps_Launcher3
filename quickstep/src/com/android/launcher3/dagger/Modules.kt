@@ -57,6 +57,7 @@ import com.android.launcher3.testing.TestInformationHandler
 import com.android.launcher3.uioverrides.QuickstepProvidersUpdateDispatcher
 import com.android.launcher3.uioverrides.QuickstepWidgetHolder.QuickstepWidgetHolderFactory
 import com.android.launcher3.uioverrides.SystemApiWrapper
+import com.android.launcher3.uioverrides.SystemLocalColorExtractor
 import com.android.launcher3.uioverrides.plugins.PluginManagerWrapperImpl
 import com.android.launcher3.util.ApiWrapper
 import com.android.launcher3.util.BlurBackgroundHelper
@@ -72,6 +73,7 @@ import com.android.launcher3.util.window.RefreshRateTracker
 import com.android.launcher3.util.window.WindowManagerProxy
 import com.android.launcher3.views.ActivityContext
 import com.android.launcher3.widget.LauncherWidgetHolder.WidgetHolderFactory
+import com.android.launcher3.widget.LocalColorExtractor
 import com.android.launcher3.widget.ProvidersUpdateDispatcher
 import com.android.quickstep.AspectRatioSystemShortcut
 import com.android.quickstep.AutomationRepositoryImpl
@@ -168,6 +170,10 @@ abstract class ApiWrapperModule {
     ): TestInformationHandler
 
     @Binds abstract fun bindDisplayController(impl: DisplayControllerImpl): DisplayController
+
+    // DiamaneOS: Wallpaper & style's Home preview shows the colours it previews
+    @Binds
+    abstract fun bindLocalColorExtractor(impl: SystemLocalColorExtractor): LocalColorExtractor
 
     companion object {
         @Provides

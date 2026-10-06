@@ -69,6 +69,7 @@ import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.WorkspaceChangeEvent.UpdateEvent;
 import com.android.launcher3.model.data.WorkspaceData;
 import com.android.launcher3.model.data.WorkspaceItemInfo;
+import com.android.launcher3.tally.home.TallyHomeHeader;
 import com.android.launcher3.util.BaseContext;
 import com.android.launcher3.util.IntSet;
 import com.android.launcher3.util.ItemInflater;
@@ -146,6 +147,11 @@ public class LauncherPreviewRenderer extends BaseContext
                 : R.layout.launcher_preview_layout;
         mRootView = (LauncherPreviewLayout) mHomeElementInflater.inflate(
                 layoutRes, null, false);
+        // DiamaneOS Tally: Home's date above the grid, without the live tallies.
+        TallyHomeHeader tallyHeader = mRootView.findViewById(R.id.tally_home_header);
+        if (tallyHeader != null) {
+            tallyHeader.showDateOnly();
+        }
         mRootView.setInsets(insets);
         measureAndLayoutRootView();
 
