@@ -318,6 +318,11 @@ public class PreviewSurfaceRenderer {
                 configuration.uiMode |= UI_MODE_NIGHT_NO;
             }
             context.applyOverrideConfiguration(configuration);
+        } else {
+            // DiamaneOS: its own resources all the same (an empty override changes nothing), so
+            // the colours override below loads on this render's resources only, not on the
+            // preview context's, which every render shares.
+            context.applyOverrideConfiguration(new Configuration());
         }
 
         final int themeRes = mWallpaperColors == null
