@@ -374,7 +374,9 @@
         <item name="android:layout_gravity">center</item>
         <item name="android:focusable">true</item>
         <item name="android:gravity">center_horizontal</item>
-        <item name="android:textColor">@color/workspace_text_color_light</item>
+        <!-- On Home this is workspaceTextColor (HomeScreenElementTheme): dark on a wallpaper
+             that hints dark text, white on the others. -->
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
         <!-- DiamaneOS Tally: app names in Tally's small label face (the family and weight 500
              of TextAppearance.Tally.LabelSmall). Their size comes from the grid. -->
         <item name="android:fontFamily">@string/tally_font_family</item>
