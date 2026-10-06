@@ -35,6 +35,8 @@ class TallyHandoffsTest {
     private val contactsSearch =
         Target("com.android.contacts", "com.android.contacts.activities.PeopleActivity", "People")
     private val files = Target("com.android.documentsui", ".LauncherActivity", "Files")
+    private val filesSearch =
+        Target("com.android.documentsui", "com.android.documentsui.files.FilesSearchActivity", "")
     private val vanadium = Target("app.vanadium.browser", ".ChromeTabbedActivity", "Vanadium")
     private val vanadiumSearch =
         Target("app.vanadium.browser", "com.google.android.apps.chrome.IntentDispatcher", "")
@@ -67,10 +69,25 @@ class TallyHandoffsTest {
     }
 
     @Test
+    fun filesSearchesInOurFilesWithTheAppsName() {
+        val resolver =
+            FakeResolver(
+                mapOf(Kind.FILES to files),
+                mapOf((Kind.FILES to files.packageName) to filesSearch),
+            )
+        val target = TallyHandoffs.target(Kind.FILES, resolver)!!
+        assertEquals(filesSearch.packageName, target.packageName)
+        assertEquals(filesSearch.className, target.className)
+        assertEquals("Files", target.label)
+        val handoffs = TallyHandoffs.handoffs("holiday", mapOf(Kind.FILES to target))
+        assertEquals(listOf(TallyHandoffs.Handoff(Kind.FILES, target, "holiday")), handoffs)
+    }
+
+    @Test
     fun noHandoffWithoutADefaultOrASearch() {
         val resolver =
             FakeResolver(
-                // Files takes no search (DocumentsUI at the pin); the web has no default browser.
+                // A files app that takes no search; the web has no default browser.
                 mapOf(Kind.FILES to files, Kind.WEB to chooser),
                 emptyMap(),
             )

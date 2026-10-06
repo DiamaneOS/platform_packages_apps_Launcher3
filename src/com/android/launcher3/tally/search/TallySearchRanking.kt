@@ -34,7 +34,7 @@ object TallySearchRanking {
     const val MAX_APPS = 5
     /** The most shortcuts, after the apps. */
     const val MAX_SHORTCUTS = 3
-    /** The most Settings pages. */
+    /** The most Settings results. */
     const val MAX_SETTINGS = 5
 
     /** How a title matches, best first. */
@@ -99,7 +99,7 @@ object TallySearchRanking {
     /**
      * The sections for what was found: [apps] and [shortcuts] ranked best first (ties by title),
      * [settings] in Settings search's own order. With an answer ([hasAnswer]) it is the top result;
-     * otherwise the best of the apps, shortcuts and first Settings page, which then leaves its
+     * otherwise the best of the apps, shortcuts and first Settings result, which then leaves its
      * section. Each section keeps at most its limit.
      */
     @JvmStatic
