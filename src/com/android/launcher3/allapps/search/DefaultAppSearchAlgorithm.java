@@ -132,11 +132,27 @@ public class DefaultAppSearchAlgorithm implements SearchAlgorithm<AdapterItem> {
     }
 
     private boolean isSearchableApp(AppInfo info) {
+        return isSearchableApp(info, mUserCache);
+    }
+
+    /**
+     * Whether search shows {@code info}: not the private space's own entry, and not a private
+     * space app while the space is locked. DiamaneOS: Home's search (Tally) shares the rule.
+     */
+    public static boolean isSearchableApp(AppInfo info, UserCache userCache) {
         CachedUserInfo userInfo =
-                mUserCache.getUserManagerState().getCachedInfo(info.user);
+                userCache.getUserManagerState().getCachedInfo(info.user);
         return !PRIVATE_SPACE_PACKAGE.equals(info.getTargetPackage())
                 && (!userInfo.getIconInfo().isPrivate()
                         || (userInfo.isUnlocked() && !userInfo.isQuietModeEnabled()));
+    }
+
+    /**
+     * Whether search offers the private space entry for {@code query}. DiamaneOS: Home's search
+     * (Tally) offers it too.
+     */
+    public boolean offersPrivateSpace(String query) {
+        return isPrivateSpaceQuery(query) && isPrivateSpaceAvailable();
     }
 
     private boolean isPrivateSpaceQuery(String query) {

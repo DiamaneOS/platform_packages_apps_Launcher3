@@ -70,11 +70,27 @@
     <!-- Home settings: the summary of the tallies band's switch. -->
     <string name="tally_home_tallies_summary">What\'s live now, under the date</string>
     <!-- Home settings: the summary of the switch for Home's search slot (the switch's title is
-         Launcher's all_apps_search_bar_hint, "Search apps"). -->
+         the framework's search_go, "Search"). -->
     <string name="tally_home_search_summary">Under the dock</string>
 
     <!-- All apps' letter rail: a screen reader's label for one slot, which jumps to the apps whose
          names start with its letters. The letters are joined as "G or K" (or "T, V, or W") in the
          language's own way. -->
     <string name="tally_rail_slot">Apps starting with <xliff:g id="letters" example="G or K">%1$s</xliff:g></string>
+
+    <!-- Home's search, which the search slot under the dock opens over Home: the titles of the
+         sheet's sections. The top result, the best of all. [CHAR LIMIT=20] -->
+    <string name="tally_search_top">Top</string>
+    <!-- Home's search: the section of apps and their shortcuts (New timer, New message).
+         [CHAR LIMIT=20] -->
+    <string name="tally_search_apps">Apps</string>
+    <!-- Home's search: the section of Settings pages; also the place shown under a page at
+         Settings' top level. [CHAR LIMIT=20] -->
+    <string name="tally_search_settings">Settings</string>
+    <!-- Home's search: the section of apps that search for the typed words themselves (contacts,
+         files, the browser). [CHAR LIMIT=20] -->
+    <string name="tally_search_in">Search in</string>
+    <!-- Home's search: a row that opens an app with the typed words, for example
+         "Contacts for “batt”" or "Vanadium for “batt”". -->
+    <string name="tally_search_handoff"><xliff:g id="app_name" example="Contacts">%1$s</xliff:g> for “<xliff:g id="query" example="batt">%2$s</xliff:g>”</string>
 </resources>
