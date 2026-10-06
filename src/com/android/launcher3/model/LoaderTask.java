@@ -95,6 +95,7 @@ import com.android.launcher3.pm.UserManagerState;
 import com.android.launcher3.shortcuts.ShortcutKey;
 import com.android.launcher3.shortcuts.ShortcutRequest;
 import com.android.launcher3.shortcuts.ShortcutRequest.QueryResult;
+import com.android.launcher3.tally.home.TallyGalleryMigration;
 import com.android.launcher3.util.ApiWrapper;
 import com.android.launcher3.util.IOUtils;
 import com.android.launcher3.util.IntArray;
@@ -473,6 +474,8 @@ public class LoaderTask implements Runnable {
         if (dbController.loadDefaultFavoritesIfNecessary()) {
             mPrefs.put(PREF_MIGRATION_PENDING, true);
         }
+        // Home items of a former system gallery open the current one.
+        TallyGalleryMigration.run(mContext, dbController, mPrefs, mUserCache, mPmHelper);
 
         synchronized (mBgDataModel) {
             mBgDataModel.clear();
