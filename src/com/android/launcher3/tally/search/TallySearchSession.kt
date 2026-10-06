@@ -51,7 +51,8 @@ import java.util.Locale
  * - Shortcuts: the ones each app's long-press menu shows ([PopupPopulator]), read once per session
  *   through LauncherApps as the default launcher, for the apps search shows and their running,
  *   unlocked profiles.
- * - Settings pages: [TallySettingsSearch], a short pause after typing stops.
+ * - Settings results (pages, app info, accessibility services, keyboards): [TallySettingsSearch], a
+ *   short pause after typing stops.
  * - Hand-off targets: [TallyHandoffs], resolved once per session.
  */
 class TallySearchSession(private val context: Context, private val listener: Listener) {
@@ -74,7 +75,7 @@ class TallySearchSession(private val context: Context, private val listener: Lis
         val shortcuts: List<TallySearchRanking.Found<ShortcutFound>>,
         /** Whether All apps' search would offer the private space entry. */
         val privateSpace: Boolean,
-        /** The Settings app, for its icon on Settings pages, or null. */
+        /** The Settings app, for its icon on Settings results, or null. */
         val settingsApp: AppInfo?,
     )
 
@@ -286,9 +287,9 @@ class TallySearchSession(private val context: Context, private val listener: Lis
     }
 
     companion object {
-        /** The Settings app, whose icon Settings pages show. */
+        /** The Settings app, whose icon Settings results show. */
         private const val SETTINGS_PACKAGE = "com.android.settings"
-        /** The pause after typing before Settings pages are searched. */
+        /** The pause after typing before Settings is searched. */
         private const val PAGES_DELAY_MS = 120L
         /** The most shortcuts a session reads. */
         private const val MAX_INDEXED_SHORTCUTS = 2000
