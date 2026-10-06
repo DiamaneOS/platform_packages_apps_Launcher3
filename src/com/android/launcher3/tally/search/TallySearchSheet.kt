@@ -26,6 +26,8 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
+import android.os.Process
+import android.os.UserHandle
 import android.text.Editable
 import android.text.InputFilter
 import android.text.InputType
@@ -332,7 +334,11 @@ class TallySearchSheet(context: Context) :
                 Found<Any>(page, page.title, Kind.SETTING, match)
             }
         val currentAnswer = answer
-        val sections = TallySearchRanking.sections(apps, shortcuts, settings, currentAnswer != null)
+        val me = Process.myUserHandle()
+        val sections =
+            TallySearchRanking.sections(apps, shortcuts, settings, currentAnswer != null) {
+                appKeyOf(it, me)
+            }
         val settingsIcon =
             found?.settingsApp?.newIcon(context)
                 ?: context.getDrawable(R.drawable.tally_ic_search_settings)?.apply {
@@ -365,6 +371,22 @@ class TallySearchSheet(context: Context) :
             handoffs.forEach(::addHandoff)
         }
     }
+
+    /**
+     * The app [item] names, for showing each app once: an app, or a Settings app-info result
+     * (SettingsIntelligence answers for Launcher's own user, [me], only).
+     */
+    private fun appKeyOf(item: Any, me: UserHandle): TallySearchRanking.AppKey? =
+        when (item) {
+            is AppInfo -> item.targetPackage?.let { TallySearchRanking.AppKey(it, item.user) }
+            is TallySettingsSearch.Page ->
+                if (item.kind == TallySettingsSearch.KIND_APP) {
+                    TallySearchRanking.AppKey(item.key, me)
+                } else {
+                    null
+                }
+            else -> null
+        }
 
     private fun addHeader(title: Int) {
         list.addView(

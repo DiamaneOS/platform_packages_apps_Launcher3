@@ -119,6 +119,44 @@ class TallySearchRankingTest {
     }
 
     @Test
+    fun anAppShowsOnceNotAgainAsAppInfo() {
+        // Items are "app:package/user" for apps, "info:package/user" for app-info results.
+        val appKey = { item: String ->
+            if (item.startsWith("app:") || item.startsWith("info:")) {
+                val (pkg, user) = item.substringAfter(':').split('/')
+                TallySearchRanking.AppKey(pkg, user)
+            } else {
+                null
+            }
+        }
+        val q = "notes"
+        val apps =
+            listOf(
+                Found("app:org.notes/0", "Notes", Kind.APP, Match.EXACT),
+                Found("app:org.notes/10", "Notes", Kind.APP, Match.EXACT),
+            )
+        val settings =
+            listOf(
+                Found("info:org.notes/0", "Notes", Kind.SETTING, Match.EXACT),
+                // The same package in another user than any shown app is another app.
+                Found("info:org.notes/11", "Notes", Kind.SETTING, Match.EXACT),
+                // An app with no launcher entry keeps its app info.
+                Found("info:org.notes.sync/0", "Notes sync", Kind.SETTING, Match.PREFIX),
+                found("Notes on lock screen", Kind.SETTING, q),
+            )
+        val sections = TallySearchRanking.sections(apps, emptyList(), settings, false, appKey)
+        assertEquals("app:org.notes/0", sections.top!!.item)
+        assertEquals(listOf("app:org.notes/10"), sections.apps.map { it.item })
+        assertEquals(
+            listOf("info:org.notes/11", "info:org.notes.sync/0", "Notes on lock screen"),
+            sections.settings.map { it.item },
+        )
+        // Without app keys nothing is hidden.
+        val all = TallySearchRanking.sections(apps, emptyList(), settings, false)
+        assertEquals(settings.size, all.settings.size)
+    }
+
+    @Test
     fun nothingFound() {
         val sections =
             TallySearchRanking.sections(emptyList<Found<String>>(), emptyList(), emptyList(), false)
