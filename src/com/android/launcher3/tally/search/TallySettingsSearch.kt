@@ -141,6 +141,8 @@ class TallySettingsSearch(private val context: Context) {
         private const val COLUMN_KIND = "kind"
         /** A Settings page from the index; SettingsIntelligence names the other kinds. */
         const val KIND_PAGE = "page"
+        /** An installed app's app info; its key is the package name. */
+        const val KIND_APP = "app"
         /** Longer than any kind SettingsIntelligence names. */
         private const val MAX_KIND_LENGTH = 32
         private const val OPEN_ACTIVITY = "$PACKAGE.search.TallyHomeSearchActivity"

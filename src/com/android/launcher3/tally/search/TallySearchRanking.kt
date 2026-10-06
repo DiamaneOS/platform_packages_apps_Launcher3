@@ -53,6 +53,12 @@ object TallySearchRanking {
         SHORTCUT(10),
     }
 
+    /**
+     * An installed app as both Home and Settings name it: its [packageName] in a [user] (any value
+     * that compares equal for the same user, such as a UserHandle).
+     */
+    data class AppKey(val packageName: String, val user: Any)
+
     /** A found [item] with its [title], [kind] and [match]. */
     data class Found<T>(val item: T, val title: String, val kind: Kind, val match: Match) {
         val score: Int
@@ -101,6 +107,10 @@ object TallySearchRanking {
      * [settings] in Settings search's own order. With an answer ([hasAnswer]) it is the top result;
      * otherwise the best of the apps, shortcuts and first Settings result, which then leaves its
      * section. Each section keeps at most its limit.
+     *
+     * An app shows once: a Settings result that [appKey] names as an app (its app info) goes when
+     * that app, in the same user, is among the apps shown; app info of other apps (one with no
+     * launcher entry, say) stays.
      */
     @JvmStatic
     fun <T> sections(
@@ -108,11 +118,16 @@ object TallySearchRanking {
         shortcuts: List<Found<T>>,
         settings: List<Found<T>>,
         hasAnswer: Boolean,
+        appKey: (T) -> AppKey? = { null },
     ): Sections<T> {
         val order = compareByDescending<Found<T>> { it.score }.thenBy { fold(it.title) }
         val rankedApps = apps.sortedWith(order).take(MAX_APPS)
         val rankedShortcuts = shortcuts.sortedWith(order).take(MAX_SHORTCUTS)
-        val keptSettings = settings.take(MAX_SETTINGS + 1)
+        val shownApps = rankedApps.mapNotNullTo(HashSet()) { appKey(it.item) }
+        val keptSettings =
+            settings
+                .filter { setting -> appKey(setting.item).let { it == null || it !in shownApps } }
+                .take(MAX_SETTINGS + 1)
         if (hasAnswer) {
             return Sections(
                 null,
