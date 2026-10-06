@@ -155,7 +155,7 @@ public class AllAppsList {
     }
 
     public void add(AppInfo info, LauncherActivityInfo activityInfo, boolean loadIcon) {
-        if (!mAppFilter.shouldShowApp(info.componentName)) {
+        if (!mAppFilter.shouldShowApp(info.componentName, info.user)) {
             return;
         }
         if (data.stream().anyMatch(it ->
