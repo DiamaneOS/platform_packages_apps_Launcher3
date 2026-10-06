@@ -78,6 +78,7 @@ import com.android.launcher3.pm.UserCache;
 import com.android.launcher3.util.ApiWrapper;
 import com.android.launcher3.util.LooperExecutor;
 import com.android.launcher3.util.Preconditions;
+import com.android.launcher3.tally.moments.MomentsHome;
 import com.android.launcher3.util.SettingsCache;
 import com.android.launcher3.views.ActivityContext;
 import com.android.launcher3.views.RecyclerViewFastScroller;
@@ -217,7 +218,8 @@ public class PrivateProfileManager extends UserProfileManager {
 
     /** Whether private profile should be hidden on Launcher. */
     public boolean isPrivateSpaceHidden() {
-        return getCurrentState() == STATE_DISABLED && SettingsCache.INSTANCE
+        // Moments shows only the user's chosen apps: no private space while it is on.
+        return MomentsHome.isActive() || getCurrentState() == STATE_DISABLED && SettingsCache.INSTANCE
                 .get(mAllApps.getContext()).getValue(PRIVATE_SPACE_HIDE_WHEN_LOCKED_URI);
     }
 
