@@ -16,7 +16,6 @@
 
 package com.android.launcher3.tally.home
 
-import android.animation.Animator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -37,19 +36,21 @@ import com.android.launcher3.AbstractFloatingView
 import com.android.launcher3.Insettable
 import com.android.launcher3.LauncherState
 import com.android.launcher3.R
-import com.android.launcher3.anim.AnimationSuccessListener
 import com.android.launcher3.dragndrop.DraggableView
 import com.android.launcher3.popup.Poppable
 import com.android.launcher3.popup.PoppableType
+import com.android.launcher3.tally.search.TallySearchSheet
 import com.android.launcher3.views.ActivityContext
 import kotlin.math.min
 
 /**
  * Home's search slot under the dock, as the prototype's: a key recessed into the dock's band (a
  * surface with a 1 dp outline, r12, and a 2 dp shade along its inner top edge), a search icon and
- * "Search apps". A tap opens All apps with its search field and the keyboard, as All apps' own
- * search does; it searches what All apps searches (the apps), nothing else. The hotseat lays it out
- * in the space it reserves for a search bar (qsb_widget_height), 16 dp from the screen's sides.
+ * "Search" (the framework's word, in every language). A tap opens Home's search over Home
+ * ([TallySearchSheet]) with its field and the keyboard: apps and their shortcuts, Settings pages,
+ * quick answers, and hand-offs to the apps that search contacts, files and the web. All apps keeps
+ * its own search (apps only), a swipe up away. The hotseat lays the slot out in the space it
+ * reserves for a search bar (qsb_widget_height), 16 dp from the screen's sides.
  *
  * It comes off Home as a widget does ([TallyHomeLift]: a long press, or TalkBack's Remove) and
  * comes back in Home settings ([TallyHomeItem.SEARCH]). Taken off, where Tally lays Home out, the
@@ -110,7 +111,7 @@ class TallySearchSlot(context: Context) :
                     TypedValue.COMPLEX_UNIT_PX,
                     min(textSize, capPx * TallyHomeLayout.TEXT_SCALE_CAP),
                 )
-                setText(R.string.all_apps_search_bar_hint)
+                setText(android.R.string.search_go)
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
                 importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -121,7 +122,7 @@ class TallySearchSlot(context: Context) :
                 marginStart = resources.getDimensionPixelSize(R.dimen.tally_space_m)
             },
         )
-        contentDescription = context.getString(R.string.all_apps_search_bar_hint)
+        contentDescription = context.getString(android.R.string.search_go)
         setOnClickListener { openSearch() }
         refresh()
     }
@@ -209,18 +210,11 @@ class TallySearchSlot(context: Context) :
     }
 
     private fun openSearch() {
-        // Only Home's own slot opens anything (not a grid preview's).
+        // Only Home's own slot opens anything (not a grid preview's), and only on Home.
         val launcher = TallyHomeLift.launcherOf(context) ?: return
+        if (!launcher.isInState(LauncherState.NORMAL)) return
         AbstractFloatingView.closeAllOpenViews(launcher)
-        launcher.stateManager.goToState(
-            LauncherState.ALL_APPS,
-            true,
-            object : AnimationSuccessListener() {
-                override fun onAnimationSuccess(animator: Animator) {
-                    launcher.appsView.searchUiManager.editText?.showKeyboard()
-                }
-            },
-        )
+        TallySearchSheet.show(launcher)
     }
 
     private companion object {
