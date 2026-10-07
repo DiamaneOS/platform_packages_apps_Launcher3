@@ -44,6 +44,7 @@ import com.android.launcher3.dragndrop.SystemDragItemInfo;
 import com.android.launcher3.homescreenfiles.HomeScreenFilesUtilsKt;
 import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.LauncherAppWidgetInfo;
+import com.android.launcher3.tally.home.TallySearchSlot;
 import com.android.launcher3.util.HorizontalInsettableView;
 import com.android.launcher3.util.LauncherBindableItemsContainer.ItemOperator;
 import com.android.launcher3.util.MultiPropertyFactory;
@@ -338,8 +339,14 @@ public class Hotseat extends CellLayout implements Insettable {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
         DeviceProfile dp = mActivity.getDeviceProfile();
+        // DiamaneOS Tally: Home's search slot spans the width the hotseat measures now. Passed in
+        // the spec, so that the slot is measured again whenever that width changes (as from
+        // landscape's narrow bar back to upright).
+        int qsbWidth = mQsb instanceof TallySearchSlot slot
+                ? slot.widthIn(getMeasuredWidth())
+                : dp.getHotseatProfile().getQsbWidth();
         mQsb.measure(
-                makeMeasureSpec(dp.getHotseatProfile().getQsbWidth(), MeasureSpec.EXACTLY),
+                makeMeasureSpec(qsbWidth, MeasureSpec.EXACTLY),
                 makeMeasureSpec(dp.getHotseatProfile().getQsbHeight(), MeasureSpec.EXACTLY)
         );
     }
