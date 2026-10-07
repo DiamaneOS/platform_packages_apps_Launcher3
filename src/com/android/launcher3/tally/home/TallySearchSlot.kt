@@ -27,7 +27,6 @@ import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.MotionEvent
-import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -41,6 +40,7 @@ import com.android.launcher3.popup.Poppable
 import com.android.launcher3.popup.PoppableType
 import com.android.launcher3.tally.search.TallySearchSheet
 import com.android.launcher3.views.ActivityContext
+import kotlin.math.max
 import kotlin.math.min
 
 /**
@@ -50,7 +50,7 @@ import kotlin.math.min
  * ([TallySearchSheet]) with its field and the keyboard: apps and their shortcuts, Settings pages,
  * quick answers, and hand-offs to the apps that search contacts, files and the web. All apps keeps
  * its own search (apps only), a swipe up away. The hotseat lays the slot out in the space it
- * reserves for a search bar (qsb_widget_height), 16 dp from the screen's sides.
+ * reserves for a search bar (qsb_widget_height), 16 dp from its sides ([widthIn]).
  *
  * It comes off Home as a widget does ([TallyHomeLift]: a long press, or TalkBack's Remove) and
  * comes back in Home settings ([TallyHomeItem.SEARCH]). Taken off, where Tally lays Home out, the
@@ -149,13 +149,14 @@ class TallySearchSlot(context: Context) :
     private val displayMetrics
         get() = resources.displayMetrics
 
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        // The hotseat measures its search bar at the grid's width, which a phone's non-scalable
-        // grid leaves at 0: the slot spans the screen less 16 dp on each side instead.
-        val parentWidth = (parent as? View)?.width?.takeIf { it > 0 } ?: displayMetrics.widthPixels
-        val width = parentWidth - 2 * sideMarginPx
-        super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec)
-    }
+    /**
+     * The slot's width in a hotseat [hotseatWidthPx] wide, as the hotseat measures it: the
+     * hotseat's width less 16 dp on each side, where stock measures its search bar at the grid's
+     * width, which a phone's non-scalable grid leaves at 0. It comes in the measure spec rather
+     * than from the hotseat's last layout, which may still be landscape's narrow bar, and a spec
+     * that does not change does not measure the slot again.
+     */
+    fun widthIn(hotseatWidthPx: Int): Int = max(0, hotseatWidthPx - 2 * sideMarginPx)
 
     override fun draw(canvas: Canvas) {
         if (removed || lifted) return
