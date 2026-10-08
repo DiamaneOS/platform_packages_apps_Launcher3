@@ -268,6 +268,17 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
         }
         boolean isHidden = mHiddenFlags != 0;
         mAlphaProperties[INDEX_HIDDEN_FLAGS_ALPHA].updateValue(isHidden ? 0 : 1);
+        if (mStillRunning != null) {
+            // Tally: the Still running row is not about a card, so Recents without cards (the
+            // last one swiped away) keeps it; the other reasons hide it with the action keys.
+            mStillRunning.setActionsAlpha(INDEX_HIDDEN_FLAGS_ALPHA,
+                    hidesStillRunning(mHiddenFlags) ? 0 : 1);
+        }
+    }
+
+    /** Tally: whether these hidden flags hide the Still running row: all but no cards do. */
+    public static boolean hidesStillRunning(@ActionsHiddenFlags int hiddenFlags) {
+        return (hiddenFlags & ~HIDDEN_NO_TASKS) != 0;
     }
 
     /**
@@ -418,11 +429,12 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
     /**
      * Tally: whether the Still running row fades with this alpha of the action keys. It follows
      * all of them but the ones about the action keys alone: scrolling to Clear all, a split pair
-     * in front, a third-party launcher's group actions.
+     * in front, a third-party launcher's group actions. The hidden flags it gets from
+     * {@link #updateHiddenFlags}, without the one for no cards.
      */
     private static boolean stillRunningFollowsAlpha(int index) {
         return index != INDEX_SCROLL_ALPHA && index != INDEX_GROUPED_ALPHA
-                && index != INDEX_3P_LAUNCHER;
+                && index != INDEX_3P_LAUNCHER && index != INDEX_HIDDEN_FLAGS_ALPHA;
     }
 
     /** Positions actions buttons according to device settings and insets. */
