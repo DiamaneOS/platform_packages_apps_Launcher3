@@ -25,6 +25,8 @@ import com.android.launcher3.graphics.ThemeManager.Companion.ICON_FACTORY_DAGGER
 import com.android.launcher3.graphics.theme.IconThemeFactory
 import com.android.launcher3.graphics.theme.MonoIconThemeFactory
 import com.android.launcher3.graphics.theme.MonoIconThemeFactory.MONO_FACTORY_ID
+import com.android.launcher3.graphics.theme.TallyColourIconThemeFactory
+import com.android.launcher3.graphics.theme.TallyColourIconThemeFactory.Companion.COLOUR_FACTORY_ID
 import com.android.launcher3.graphics.theme.ThemePreference.Companion.THEME_OVERRIDES_DAGGER_KEY
 import com.android.launcher3.model.ModelWriterFactory
 import com.android.launcher3.model.ModelWriterFactoryImpl
@@ -67,6 +69,13 @@ abstract class LauncherModelModule {
     abstract fun legacyThemeKeys(): Map<String, ConstantItem<String>>
 
     @Multibinds @Named(NAMED_CUSTOM_WIDGETS) abstract fun extraCustomWidgets(): Set<CustomWidget>
+
+    // DiamaneOS Tally: the Colour icon style, the default (ThemePreference).
+    @Binds
+    @IntoMap
+    @StringKey(COLOUR_FACTORY_ID)
+    @Named(ICON_FACTORY_DAGGER_KEY)
+    abstract fun colourIconFactory(factory: TallyColourIconThemeFactory): IconThemeFactory
 
     companion object {
 

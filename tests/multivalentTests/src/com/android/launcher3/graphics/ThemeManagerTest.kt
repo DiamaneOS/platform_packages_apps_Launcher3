@@ -21,7 +21,8 @@ import androidx.test.filters.SmallTest
 import com.android.launcher3.FakeLauncherPrefs
 import com.android.launcher3.dagger.LauncherAppComponent
 import com.android.launcher3.dagger.LauncherAppSingleton
-import com.android.launcher3.icons.mono.MonoIconThemeController
+import com.android.launcher3.icons.tally.TallyColourIconThemeController
+import com.android.launcher3.icons.tally.TallyMonoIconThemeController
 import com.android.launcher3.util.AllModulesForTest
 import com.android.launcher3.util.Executors.MAIN_EXECUTOR
 import com.android.launcher3.util.FakePrefsModule
@@ -53,12 +54,20 @@ class ThemeManagerTest {
     }
 
     @Test
+    fun `the Colour icon style is the default`() {
+        TestUtil.runOnExecutorSync(MAIN_EXECUTOR) {}
+        assertFalse(themeManager.isMonoThemeEnabled)
+        assertThat(themeManager.iconState.themeController)
+            .isInstanceOf(TallyColourIconThemeController::class.java)
+    }
+
+    @Test
     fun `isMonoThemeEnabled get and set`() {
         themeManager.isMonoThemeEnabled = true
         TestUtil.runOnExecutorSync(MAIN_EXECUTOR) {}
         assertTrue(themeManager.isMonoThemeEnabled)
         assertThat(themeManager.iconState.themeController)
-            .isInstanceOf(MonoIconThemeController::class.java)
+            .isInstanceOf(TallyMonoIconThemeController::class.java)
 
         themeManager.isMonoThemeEnabled = false
         TestUtil.runOnExecutorSync(MAIN_EXECUTOR) {}

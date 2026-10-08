@@ -21,6 +21,7 @@ import androidx.test.filters.SmallTest
 import com.android.launcher3.ConstantItem
 import com.android.launcher3.InMemoryLauncherPrefs
 import com.android.launcher3.LauncherPrefs.Companion.backedUpItem
+import com.android.launcher3.graphics.theme.ThemePreference.Companion.COLOUR_THEME_VALUE
 import com.android.launcher3.graphics.theme.ThemePreference.Companion.LEGACY_MONO_THEME_ICON
 import com.android.launcher3.graphics.theme.ThemePreference.Companion.MONO_THEME_VALUE
 import com.android.launcher3.graphics.theme.ThemePreference.Companion.parsePrefValue
@@ -58,6 +59,19 @@ class ThemePreferenceTest {
         getThemePref().setValue(ThemeValue("alpha", "beta"))
         assertEquals(ThemeValue("alpha", "beta"), getThemePref().value)
 
+        getThemePref().setValue(null)
+        assertNull(getThemePref().value)
+    }
+
+    @Test
+    fun no_choice_defaults_to_colour() {
+        assertEquals(COLOUR_THEME_VALUE, getThemePref().value)
+
+        // Choosing Minimal is kept
+        getThemePref().setValue(MONO_THEME_VALUE)
+        assertEquals(MONO_THEME_VALUE, getThemePref().value)
+
+        // Choosing Default is kept
         getThemePref().setValue(null)
         assertNull(getThemePref().value)
     }
