@@ -39,6 +39,7 @@ import com.android.launcher3.display.DisplayController;
 import com.android.launcher3.util.MultiValueAlpha;
 import com.android.launcher3.util.NavigationMode;
 import com.android.quickstep.TaskOverlayFactory.OverlayUICallbacks;
+import com.android.quickstep.tally.TallyStillRunningView;
 import com.android.quickstep.util.LayoutUtils;
 import com.android.wm.shell.shared.TypefaceUtils;
 import com.android.wm.shell.shared.TypefaceUtils.FontFamily;
@@ -149,6 +150,9 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
      * mActionButtons, since it is the sole button that appears for a grouped task.
      */
     private Button mSaveAppPairButton;
+    /** Tally: the "Still running · Stop" row under the action keys, if this layout has one. */
+    @Nullable
+    private TallyStillRunningView mStillRunning;
 
     @ActionsHiddenFlags
     private int mHiddenFlags;
@@ -188,6 +192,7 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
         // Currently, the only grouped task action is "save app pairs".
         mActionButtons = findViewById(R.id.action_buttons);
         mSaveAppPairButton = findViewById(R.id.action_save_app_pair);
+        mStillRunning = findViewById(R.id.tally_still_running);
         TypefaceUtils.setTypeface(mSaveAppPairButton, FontFamily.GSF_LABEL_LARGE);
         // Initialize a list to hold alphas for mActionButtons and any group action buttons.
         mMultiValueAlphas[ACTIONS_ALPHAS] = new MultiValueAlpha(mActionButtons, NUM_ALPHAS);
@@ -201,6 +206,9 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
             mAlphaProperties[index] = new AnimatedFloat(() -> {
                 for (MultiValueAlpha multiValueAlpha : mMultiValueAlphas) {
                     multiValueAlpha.get(index).setValue(mAlphaProperties[index].value);
+                }
+                if (mStillRunning != null && stillRunningFollowsAlpha(index)) {
+                    mStillRunning.setActionsAlpha(index, mAlphaProperties[index].value);
                 }
             }, 1f /* initialValue */);
         }
@@ -260,6 +268,17 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
         }
         boolean isHidden = mHiddenFlags != 0;
         mAlphaProperties[INDEX_HIDDEN_FLAGS_ALPHA].updateValue(isHidden ? 0 : 1);
+        if (mStillRunning != null) {
+            // Tally: the Still running row is not about a card, so Recents without cards (the
+            // last one swiped away) keeps it. The other reasons hide it with the action keys.
+            mStillRunning.setActionsAlpha(INDEX_HIDDEN_FLAGS_ALPHA,
+                    hidesStillRunning(mHiddenFlags) ? 0 : 1);
+        }
+    }
+
+    /** Tally: whether these hidden flags hide the Still running row: all but no cards do. */
+    public static boolean hidesStillRunning(@ActionsHiddenFlags int hiddenFlags) {
+        return (hiddenFlags & ~HIDDEN_NO_TASKS) != 0;
     }
 
     /**
@@ -278,6 +297,11 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
         }
         boolean isEnabled = (mDisabledFlags & ~DISABLED_ROTATED) == 0;
         LayoutUtils.setViewEnabled(this, isEnabled);
+        if (mStillRunning != null) {
+            // Tally: the Still running row is not about the task in front, so what disables the
+            // action keys (scrolling, a task without a thumbnail) leaves its Stop key alone.
+            LayoutUtils.setViewEnabled(mStillRunning, true);
+        }
     }
 
     /**
@@ -395,6 +419,22 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
     public void updateVerticalMargin(NavigationMode mode) {
         updateActionBarPosition(mActionButtons);
         updateActionBarPosition(mSaveAppPairButton);
+        if (mStillRunning != null && mDp != null) {
+            // Tally: the Still running row sits right under the action keys.
+            mStillRunning.setTopMargin(mDp.getOverviewProfile().getActionsTopMarginPx()
+                    + mDp.getOverviewProfile().getActionsHeight());
+        }
+    }
+
+    /**
+     * Tally: whether the Still running row fades with this alpha of the action keys. It follows
+     * all of them but the ones about the action keys alone: scrolling to Clear all, a split pair
+     * in front, a third-party launcher's group actions. The hidden flags it gets from
+     * {@link #updateHiddenFlags}, without the one for no cards.
+     */
+    private static boolean stillRunningFollowsAlpha(int index) {
+        return index != INDEX_SCROLL_ALPHA && index != INDEX_GROUPED_ALPHA
+                && index != INDEX_3P_LAUNCHER && index != INDEX_HIDDEN_FLAGS_ALPHA;
     }
 
     /** Positions actions buttons according to device settings and insets. */
