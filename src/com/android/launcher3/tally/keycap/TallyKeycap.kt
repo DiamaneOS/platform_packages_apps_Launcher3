@@ -157,9 +157,8 @@ class TallyKeycap(context: Context) {
 
     /**
      * Draws the key's relief (and, while pressed, its press layer) over an icon drawn in
-     * [iconBounds] at [iconScale] (about its centre), and its LED unless [hideLed] (the dot's
-     * forced-hidden state, for example while the key is dragged). [dock] keys have the dock's
-     * deeper skirt.
+     * [iconBounds] at [iconScale] (about its centre), and its LED unless [hideLed]. [dock] keys
+     * have the dock's deeper skirt.
      */
     fun draw(
         canvas: Canvas,
