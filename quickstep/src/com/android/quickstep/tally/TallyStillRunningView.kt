@@ -42,8 +42,10 @@ import kotlin.math.max
  *
  * The Stop key refuses touches that come through another window over it, as the whole row does
  * (`filterTouchesWhenObscured`, set in its layout): an app's overlay can cover the launcher's
- * window. Its touch target is at least 48 × 48 dp around the 28 dp key. A touch on the rest of the
- * row does nothing, so it never falls through to Recents behind it (which goes Home on a tap).
+ * window. It also refuses touches while a window covers another part of the screen, which could
+ * hide the app's name and leave Stop showing. Its touch target is at least 48 × 48 dp around the
+ * 28 dp key. A touch on the rest of the row does nothing, so it never falls through to Recents
+ * behind it (which goes Home on a tap).
  *
  * It fades with the action keys (see [setActionsAlpha]) and shows only while [TallyStillRunning]
  * has a row. It says nothing but its words: the lamp is not for accessibility.
@@ -224,9 +226,26 @@ constructor(context: Context, attrs: AttributeSet? = null) :
     override fun shouldDelayChildPressedState() = false
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        val inRow = rowRect.contains(event.x.toInt(), event.y.toInt())
+        if (event.flags and MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED != 0) {
+            // A window over part of the screen: the Stop key gets none of it, and a press that
+            // started before it appeared is cancelled (with no flags, so the cancel gets through).
+            val cancel =
+                MotionEvent.obtain(
+                    event.downTime,
+                    event.eventTime,
+                    MotionEvent.ACTION_CANCEL,
+                    event.x,
+                    event.y,
+                    0,
+                )
+            super.dispatchTouchEvent(cancel)
+            cancel.recycle()
+            return inRow
+        }
         // super drops touches that come through a window over this one (filterTouchesWhenObscured).
         val handled = super.dispatchTouchEvent(event)
-        return handled || rowRect.contains(event.x.toInt(), event.y.toInt())
+        return handled || inRow
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
