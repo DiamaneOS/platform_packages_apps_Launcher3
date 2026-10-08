@@ -51,7 +51,7 @@ class TallyMonoIconThemeControllerTest {
     private val iconFactory = BaseIconFactory(context, DisplayMetrics.DENSITY_MEDIUM, 30)
 
     @Test
-    fun `a legacy icon's picture is found on its plate`() {
+    fun `a legacy icon picture is found on its plate`() {
         val legacy = iconFactory.wrapToAdaptiveIcon(ColorDrawable(Color.GRAY))
         assertSame(legacy.foreground, TallyMonoIconThemeController.pictureOnPlate(legacy))
     }
@@ -71,7 +71,7 @@ class TallyMonoIconThemeControllerTest {
 
     @Test
     @EnableFlags(Flags.FLAG_FORCE_MONOCHROME_APP_ICONS)
-    fun `a legacy icon's glyph is its picture, not the plate`() {
+    fun `a legacy icon glyph is its picture and not the plate`() {
         // Robolectric does not draw into 8-bit bitmaps.
         assumeFalse(isRunningInRobolectric)
         val legacy = iconFactory.wrapToAdaptiveIcon(ColorDrawable(Color.GRAY))
@@ -91,7 +91,7 @@ class TallyMonoIconThemeControllerTest {
 
     @Test
     @EnableFlags(Flags.FLAG_FORCE_MONOCHROME_APP_ICONS)
-    fun `a black picture's glyph is its shape`() {
+    fun `a black picture glyph is its shape`() {
         assumeFalse(isRunningInRobolectric)
         val legacy = iconFactory.wrapToAdaptiveIcon(ColorDrawable(Color.BLACK))
         val info = iconFactory.createBadgedIconBitmap(legacy)
