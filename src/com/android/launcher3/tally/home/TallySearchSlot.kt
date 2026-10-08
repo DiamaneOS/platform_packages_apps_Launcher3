@@ -24,9 +24,11 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.MotionEvent
+import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -158,6 +160,12 @@ class TallySearchSlot(context: Context) :
      */
     fun widthIn(hotseatWidthPx: Int): Int = max(0, hotseatWidthPx - 2 * sideMarginPx)
 
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        // A width change goes to the log, so a slot that comes out narrow can be traced.
+        Log.i(TAG, "Search slot ${oldw}x$oldh -> ${w}x$h, hotseat ${(parent as? View)?.width}")
+    }
+
     override fun draw(canvas: Canvas) {
         if (removed || lifted) return
         super.draw(canvas)
@@ -219,6 +227,7 @@ class TallySearchSlot(context: Context) :
     }
 
     private companion object {
+        const val TAG = "TallySearchSlot"
         /** The search text's size (sp), before its cap. */
         const val TEXT_SP = 14f
         /** The recess's shade along the top edge. */
