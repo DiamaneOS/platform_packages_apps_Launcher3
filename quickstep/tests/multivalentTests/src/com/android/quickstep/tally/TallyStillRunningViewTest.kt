@@ -31,6 +31,7 @@ import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.launcher3.R
 import com.android.launcher3.util.SafeCloseable
+import com.android.quickstep.views.OverviewActionsView
 import com.android.systemui.shared.recents.model.Task
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.Executor
@@ -115,6 +116,23 @@ class TallyStillRunningViewTest {
 
         assertThat(stopped).containsExactly(MUSIC)
         assertThat(row.visibility).isEqualTo(View.INVISIBLE)
+    }
+
+    @Test
+    fun recentsWithoutCards_keepsTheRow_otherHiddenReasonsHideIt() {
+        // The last card swiped away leaves Recents without cards: the row is still about its app.
+        assertThat(OverviewActionsView.hidesStillRunning(0)).isFalse()
+        assertThat(OverviewActionsView.hidesStillRunning(OverviewActionsView.HIDDEN_NO_TASKS))
+            .isFalse()
+        assertThat(OverviewActionsView.hidesStillRunning(OverviewActionsView.HIDDEN_NO_RECENTS))
+            .isTrue()
+        assertThat(
+                OverviewActionsView.hidesStillRunning(
+                    OverviewActionsView.HIDDEN_NO_TASKS or
+                        OverviewActionsView.HIDDEN_NON_ZERO_ROTATION
+                )
+            )
+            .isTrue()
     }
 
     @Test
