@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The DiamaneOS Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<!-- Tally's new words in Recents. The row's other words are stock Android's ("%1$s is running",
+     the framework's app_running_notification_title). The translations of tally_recents_stop are
+     SystemUI's for the same button (fgs_manager_app_item_stop_button_label). -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Label of the key that stops an app from Recents, after the user swiped away the card of an
+         app that is still running (a foreground service). It does what the Stop button of the
+         Active apps dialog in Quick Settings does, and has the same words (SystemUI's
+         fgs_manager_app_item_stop_button_label). [CHAR LIMIT=12] -->
+    <string name="tally_recents_stop">Stop</string>
+</resources>
