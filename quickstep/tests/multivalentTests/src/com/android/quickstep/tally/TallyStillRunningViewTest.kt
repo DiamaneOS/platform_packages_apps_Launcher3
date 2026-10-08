@@ -106,6 +106,27 @@ class TallyStillRunningViewTest {
     }
 
     @Test
+    fun partlyObscuredTouch_neverReachesTheStopKey_andCancelsAPress() {
+        val partly = MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED
+        val both = partly or MotionEvent.FLAG_WINDOW_IS_OBSCURED
+        instrumentation.runOnMainSync {
+            for (flags in intArrayOf(partly, both)) {
+                assertThat(touch(row, MotionEvent.ACTION_DOWN, flags)).isTrue()
+                assertThat(stopKey.isPressed).isFalse()
+                touch(row, MotionEvent.ACTION_UP, flags)
+            }
+            // A window that appears during a press on Stop cancels it: no click on the way up.
+            assertThat(touch(row, MotionEvent.ACTION_DOWN, 0)).isTrue()
+            assertThat(stopKey.isPressed).isTrue()
+            touch(row, MotionEvent.ACTION_MOVE, partly)
+            assertThat(stopKey.isPressed).isFalse()
+            touch(row, MotionEvent.ACTION_UP, 0)
+        }
+        instrumentation.waitForIdleSync()
+        assertThat(stopped).isEmpty()
+    }
+
+    @Test
     fun unobscuredTouch_pressesTheStopKey_andItsClickStopsTheSwipedApp() {
         instrumentation.runOnMainSync {
             assertThat(touch(row, MotionEvent.ACTION_DOWN, 0)).isTrue()
