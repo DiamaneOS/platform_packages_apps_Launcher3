@@ -123,7 +123,7 @@ object TallyLiveRules {
 
     /**
      * Whether a notification shows a live readout or an activity in progress (the
-     * definition of live on Home, 30 September 2026), from what the notification itself declares:
+     * definition of live on Home), from what the notification itself declares:
      * - it is a Live Update: the system promoted it ([Notification.FLAG_PROMOTED_ONGOING], in
      *   [flags]);
      * - it shows the system's chronometer ([showsChronometer], Notification.EXTRA_SHOW_CHRONOMETER,
