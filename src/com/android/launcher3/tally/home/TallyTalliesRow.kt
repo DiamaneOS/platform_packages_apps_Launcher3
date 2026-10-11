@@ -772,7 +772,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         ): CharSequence {
             val name =
                 if (item.kind == null) item.label
-                else context.getString(R.string.tally_kind_of_app, shown, item.label)
+                else context.getString(R.string.tally_key_with_state, shown, item.label)
             val description =
                 if (item.isPaused) {
                     context.getString(

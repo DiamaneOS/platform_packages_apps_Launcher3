@@ -49,7 +49,7 @@
 
     <com.android.launcher3.tally.home.TallyHomeItemSwitch
         android:key="pref_tally_home_search"
-        android:title="@string/all_apps_search_bar_hint"
+        android:title="@android:string/search_go"
         android:summary="@string/tally_home_search_summary"
         android:defaultValue="true"
         android:persistent="true" />
