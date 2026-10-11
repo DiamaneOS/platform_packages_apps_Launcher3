@@ -362,7 +362,7 @@ class TallySearchSheet(context: Context) :
             sections.shortcuts.forEach { addFound(it, settingsIcon, isTop = false) }
         }
         if (sections.settings.isNotEmpty()) {
-            addHeader(R.string.tally_search_settings)
+            addHeader(R.string.widget_settings)
             sections.settings.forEach { addFound(it, settingsIcon, isTop = false) }
         }
         val handoffs = TallyHandoffs.handoffs(text, targets)
@@ -414,7 +414,7 @@ class TallySearchSheet(context: Context) :
                     ItemClickHandler.INSTANCE.onClick(icon)
                 }
             is TallySettingsSearch.Page -> {
-                val place = item.parent ?: context.getString(R.string.tally_search_settings)
+                val place = item.parent ?: context.getString(R.string.widget_settings)
                 addRow(settingsIcon, null, item.title, place, isTop) { icon ->
                     launcher.startActivitySafely(icon, session.pageIntent(item), null)
                 }

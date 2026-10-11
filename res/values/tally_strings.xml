@@ -30,7 +30,8 @@
          stopwatch (swn_paused), with its translations (tally_clock_strings.xml). [CHAR LIMIT=30] -->
     <string name="tally_state_paused">Paused</string>
     <!-- An app key's accessibility label with its LED's state word: the app's name, then the state.
-         For example "Files, Error" or "Clock, Active". -->
+         For example "Files, Error" or "Clock, Active". Also joins a tally's own name with its
+         app's name: "Timer, Clock". -->
     <string name="tally_key_with_state"><xliff:g id="app_name" example="Clock">%1$s</xliff:g>, <xliff:g id="state" example="Active">%2$s</xliff:g></string>
     <!-- Home's tallies band: the readout of a paused timer or stopwatch, its state word
          (tally_state_paused) before its time, for example "Paused · 04:12". Only punctuation, so
@@ -50,10 +51,6 @@
     <!-- Home's tallies band: the name a tally of the system's Clock app shows in place of "Clock"
          for its stopwatch, as Clock's own Stopwatch tab is named. [CHAR LIMIT=20] -->
     <string name="tally_clock_stopwatch">Stopwatch</string>
-    <!-- Screen readers' name of a tally that shows what it is (tally_clock_timer) in place of its
-         app's name: that, then the app's name, so the app is always said. Its state and readout
-         follow, for example "Timer, Clock, Active, 09:57". -->
-    <string name="tally_kind_of_app"><xliff:g id="kind" example="Timer">%1$s</xliff:g>, <xliff:g id="app_name" example="Clock">%2$s</xliff:g></string>
 
     <!-- The readout of the "+n more" key: what a tap does. [CHAR LIMIT=12] -->
     <string name="tally_more_show">Show</string>
@@ -82,11 +79,8 @@
          sheet's sections. The top result, the best of all. [CHAR LIMIT=20] -->
     <string name="tally_search_top">Top</string>
     <!-- Home's search: the section of apps and their shortcuts (New timer, New message).
-         [CHAR LIMIT=20] -->
+         Translated in values-*/tally_search_strings.xml. [CHAR LIMIT=20] -->
     <string name="tally_search_apps">Apps</string>
-    <!-- Home's search: the section of Settings pages; also the place shown under a page at
-         Settings' top level. [CHAR LIMIT=20] -->
-    <string name="tally_search_settings">Settings</string>
     <!-- Home's search: the section of apps that search for the typed words themselves (contacts,
          files, the browser). [CHAR LIMIT=20] -->
     <string name="tally_search_in">Search in</string>
