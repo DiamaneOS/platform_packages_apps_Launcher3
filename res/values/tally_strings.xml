@@ -30,7 +30,8 @@
          stopwatch (swn_paused), with its translations (tally_clock_strings.xml). [CHAR LIMIT=30] -->
     <string name="tally_state_paused">Paused</string>
     <!-- An app key's accessibility label with its LED's state word: the app's name, then the state.
-         For example "Files, Error" or "Clock, Active". -->
+         For example "Files, Error" or "Clock, Active". Also joins a tally's own name with its
+         app's name: "Timer, Clock". -->
     <string name="tally_key_with_state"><xliff:g id="app_name" example="Clock">%1$s</xliff:g>, <xliff:g id="state" example="Active">%2$s</xliff:g></string>
     <!-- Home's tallies band: the readout of a paused timer or stopwatch, its state word
          (tally_state_paused) before its time, for example "Paused · 04:12". Only punctuation, so
@@ -50,10 +51,6 @@
     <!-- Home's tallies band: the name a tally of the system's Clock app shows in place of "Clock"
          for its stopwatch, as Clock's own Stopwatch tab is named. [CHAR LIMIT=20] -->
     <string name="tally_clock_stopwatch">Stopwatch</string>
-    <!-- Screen readers' name of a tally that shows what it is (tally_clock_timer) in place of its
-         app's name: that, then the app's name, so the app is always said. Its state and readout
-         follow, for example "Timer, Clock, Active, 09:57". -->
-    <string name="tally_kind_of_app"><xliff:g id="kind" example="Timer">%1$s</xliff:g>, <xliff:g id="app_name" example="Clock">%2$s</xliff:g></string>
 
     <!-- The readout of the "+n more" key: what a tap does. [CHAR LIMIT=12] -->
     <string name="tally_more_show">Show</string>
@@ -70,11 +67,24 @@
     <!-- Home settings: the summary of the tallies band's switch. -->
     <string name="tally_home_tallies_summary">What\'s live now, under the date</string>
     <!-- Home settings: the summary of the switch for Home's search slot (the switch's title is
-         Launcher's all_apps_search_bar_hint, "Search apps"). -->
+         the framework's search_go, "Search"). -->
     <string name="tally_home_search_summary">Under the dock</string>
 
     <!-- All apps' letter rail: a screen reader's label for one slot, which jumps to the apps whose
          names start with its letters. The letters are joined as "G or K" (or "T, V, or W") in the
          language's own way. -->
     <string name="tally_rail_slot">Apps starting with <xliff:g id="letters" example="G or K">%1$s</xliff:g></string>
+
+    <!-- Home's search, which the search slot under the dock opens over Home: the titles of the
+         sheet's sections. The top result, the best of all. [CHAR LIMIT=20] -->
+    <string name="tally_search_top">Top</string>
+    <!-- Home's search: the section of apps and their shortcuts (New timer, New message).
+         Translated in values-*/tally_search_strings.xml. [CHAR LIMIT=20] -->
+    <string name="tally_search_apps">Apps</string>
+    <!-- Home's search: the section of apps that search for the typed words themselves (contacts,
+         files, the browser). [CHAR LIMIT=20] -->
+    <string name="tally_search_in">Search in</string>
+    <!-- Home's search: a row that opens an app with the typed words, for example
+         "Contacts for “batt”" or "Vanadium for “batt”". -->
+    <string name="tally_search_handoff"><xliff:g id="app_name" example="Contacts">%1$s</xliff:g> for “<xliff:g id="query" example="batt">%2$s</xliff:g>”</string>
 </resources>
