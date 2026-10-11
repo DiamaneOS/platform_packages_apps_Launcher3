@@ -76,6 +76,9 @@ import kotlin.math.max
  * words are never logged nor kept: closing the sheet clears them, and it closes whenever Home stops
  * (an app opens, the screen locks), so it never shows over the lock screen or on return.
  *
+ * While nothing is typed it can show a "Suggestions" row ([TallyFrequentRow]). Its counts do not
+ * order what typing finds.
+ *
  * Rows are at least 56 dp tall (48 dp targets and more), section titles are headings for screen
  * readers, and the sheet keeps a screen reader inside it while open.
  */
@@ -103,6 +106,7 @@ class TallySearchSheet(context: Context) :
     private val list: LinearLayout
     private val scroll: ScrollView
     private val session = TallySearchSession(context, this)
+    private val frequent = TallyFrequentRow(context)
     private val systemInsets = Rect()
     private var imeBottom = 0
     private val closeOnStop = Runnable { close(false) }
@@ -206,6 +210,20 @@ class TallySearchSheet(context: Context) :
                 false
             }
         }
+        frequent.onOpen = { icon, item ->
+            when (item) {
+                is TallyFrequentStore.ShownApp -> {
+                    icon.tag = item.app
+                    ItemClickHandler.INSTANCE.onClick(icon)
+                }
+                is TallyFrequentStore.ShownPage -> openPage(icon, item.page)
+            }
+        }
+        frequent.onDismiss = { item ->
+            TallyFrequentStore.dismiss(context, item.key)
+            // The next most used takes its place.
+            loadFrequent()
+        }
         updatePadding()
     }
 
@@ -214,6 +232,7 @@ class TallySearchSheet(context: Context) :
         launcher.dragLayer.addView(this, BaseDragLayer.LayoutParams(MATCH_PARENT, MATCH_PARENT))
         launcher.addEventCallback(BaseActivity.EVENT_STOPPED, closeOnStop)
         session.start()
+        loadFrequent()
         alpha = 0f
         animate().alpha(1f).setDuration(OPEN_MS).start()
         post { if (mIsOpen) field.showKeyboard() }
@@ -316,12 +335,32 @@ class TallySearchSheet(context: Context) :
         render()
     }
 
+    private fun loadFrequent() {
+        TallyFrequentStore.load(context) { items ->
+            if (mIsOpen) {
+                frequent.showItems(items)
+                // The row is in the list only while nothing is typed.
+                if (query.isBlank()) render()
+            }
+        }
+    }
+
+    /** Opens the Settings [page] from [icon] and counts it for the "Suggestions" row. */
+    private fun openPage(icon: View, page: TallySettingsSearch.Page) {
+        if (launcher.startActivitySafely(icon, session.pageIntent(page), null) != null) {
+            TallyFrequentStore.onPageOpened(context, page)
+        }
+    }
+
     /** Lays the sections out for the words and what was found. */
     private fun render() {
         list.removeAllViews()
         openTop = null
         val text = query.trim()
-        if (text.isEmpty()) return
+        if (text.isEmpty()) {
+            list.addView(frequent, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+            return
+        }
 
         val found = appsFound
         val apps = found?.apps.orEmpty().map { Found<Any>(it.item, it.title, it.kind, it.match) }
@@ -416,7 +455,7 @@ class TallySearchSheet(context: Context) :
             is TallySettingsSearch.Page -> {
                 val place = item.parent ?: context.getString(R.string.widget_settings)
                 addRow(settingsIcon, null, item.title, place, isTop) { icon ->
-                    launcher.startActivitySafely(icon, session.pageIntent(item), null)
+                    openPage(icon, item)
                 }
             }
         }

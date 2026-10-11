@@ -58,6 +58,7 @@ import com.android.launcher3.R;
 import com.android.launcher3.display.DisplayController;
 import com.android.launcher3.display.LauncherDisplayInfo;
 import com.android.launcher3.tally.home.TallyHomeItem;
+import com.android.launcher3.tally.search.TallyFrequentStore;
 import com.android.launcher3.util.SafeCloseable;
 import com.android.launcher3.util.SettingsCache;
 
@@ -332,6 +333,11 @@ public class SettingsActivity extends FragmentActivity
                 // DiamaneOS Tally: Home's tallies band and search slot, where Tally lays Home out.
                 case TallyHomeItem.TALLIES_KEY:
                 case TallyHomeItem.SEARCH_KEY:
+                // And the "Suggestions" row of Home's search, with the rows under it.
+                case TallyFrequentStore.ENABLED_KEY:
+                case TallyFrequentStore.DOCK_KEY:
+                case TallyFrequentStore.UNHIDE_KEY:
+                case TallyFrequentStore.CLEAR_KEY:
                     return TallyHomeItem.inSettings(getContext());
             }
             return true;

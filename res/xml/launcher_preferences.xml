@@ -54,4 +54,33 @@
         android:defaultValue="true"
         android:persistent="true" />
 
+    <!-- DiamaneOS Tally: the "Suggestions" row of Home's search, off by default. Turning it off
+         deletes what Home counted. Keys as in TallyFrequentStore. -->
+    <com.android.launcher3.tally.search.TallyFrequentSwitch
+        android:key="pref_tally_search_frequent"
+        android:title="@string/suggested_widgets_header_title"
+        android:summary="@string/tally_frequent_summary"
+        android:defaultValue="false"
+        android:persistent="true" />
+
+    <SwitchPreference
+        android:key="pref_tally_search_frequent_dock"
+        android:title="@string/tally_frequent_dock"
+        android:summary="@string/tally_frequent_dock_summary"
+        android:defaultValue="true"
+        android:dependency="pref_tally_search_frequent"
+        android:persistent="true" />
+
+    <com.android.launcher3.tally.search.TallyFrequentUnhide
+        android:key="pref_tally_search_frequent_unhide"
+        android:title="@string/tally_frequent_unhide"
+        android:persistent="false" />
+
+    <com.android.launcher3.tally.search.TallyFrequentClear
+        android:key="pref_tally_search_frequent_clear"
+        android:title="@string/tally_frequent_clear"
+        android:summary="@string/tally_frequent_clear_summary"
+        android:dependency="pref_tally_search_frequent"
+        android:persistent="false" />
+
 </androidx.preference.PreferenceScreen>
