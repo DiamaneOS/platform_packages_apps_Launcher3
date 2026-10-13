@@ -201,6 +201,7 @@ import com.android.launcher3.statemanager.StateManager.StateHandler;
 import com.android.launcher3.statemanager.StatefulActivity;
 import com.android.launcher3.states.RotationHelper;
 import com.android.launcher3.tally.moments.MomentsHome;
+import com.android.launcher3.tally.search.TallyFrequentStore;
 import com.android.launcher3.testing.TestLogging;
 import com.android.launcher3.testing.shared.TestProtocol;
 import com.android.launcher3.touch.AllAppsItemCustomActionsListener;
@@ -1984,6 +1985,10 @@ public class Launcher extends StatefulActivity<LauncherState>
         }
 
         RunnableList result = super.startActivitySafely(v, intent, item);
+        // DiamaneOS Tally: counted for the "Suggestions" row of Home's search while it is on.
+        if (result != null) {
+            TallyFrequentStore.onLaunched(this, intent, item);
+        }
         if (shouldShowHomeBehindDesktop()) {
             Runnable endAction = () -> {
                 closeOpenViews();
