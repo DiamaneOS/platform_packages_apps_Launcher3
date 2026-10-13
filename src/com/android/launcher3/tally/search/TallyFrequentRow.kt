@@ -36,6 +36,7 @@ import android.widget.Space
 import android.widget.TextView
 import androidx.core.graphics.ColorUtils
 import com.android.launcher3.R
+import com.android.launcher3.icons.BitmapInfo
 import com.android.launcher3.tally.search.TallyFrequentStore.Shown
 import com.android.launcher3.tally.search.TallyFrequentStore.ShownApp
 import com.android.launcher3.tally.search.TallyFrequentStore.ShownPage
@@ -111,7 +112,7 @@ class TallyFrequentRow(context: Context) : LinearLayout(context) {
                 title = item.app.title ?: ""
                 description = item.app.contentDescription ?: title
                 dismissLabel = context.getString(R.string.tally_frequent_dismiss)
-                iconView.setImageDrawable(item.app.newIcon(context))
+                iconView.setImageDrawable(item.app.newIcon(context, BitmapInfo.FLAG_THEMED))
             }
             is ShownPage -> {
                 title = item.page.title
