@@ -87,4 +87,26 @@
     <!-- Home's search: a row that opens an app with the typed words, for example
          "Contacts for “batt”" or "Vanadium for “batt”". -->
     <string name="tally_search_handoff"><xliff:g id="app_name" example="Contacts">%1$s</xliff:g> for “<xliff:g id="query" example="batt">%2$s</xliff:g>”</string>
+
+    <!-- Home settings: the summary of the "Suggestions" switch for Home's search. -->
+    <string name="tally_frequent_summary">Search shows what you open most from Home. Home keeps a count for each, on this phone only.</string>
+    <!-- Home settings: whether "Suggestions" also shows apps in Home's dock. [CHAR LIMIT=30] -->
+    <string name="tally_frequent_dock">Include dock apps</string>
+    <!-- Home settings: the summary of "Include dock apps". -->
+    <string name="tally_frequent_dock_summary">Also show apps that are already in the dock</string>
+    <!-- Home settings: takes back every "Don't suggest" in "Suggestions". [CHAR LIMIT=30] -->
+    <string name="tally_frequent_unhide">Show hidden items again</string>
+    <!-- Home settings: the summary of "Show hidden items again". -->
+    <plurals name="tally_frequent_hidden">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> hidden</item>
+        <item quantity="other"><xliff:g id="count" example="3">%d</xliff:g> hidden</item>
+    </plurals>
+    <!-- Home settings: deletes all that "Suggestions" keeps. [CHAR LIMIT=30] -->
+    <string name="tally_frequent_clear">Clear suggestions</string>
+    <!-- Home settings: the summary of "Clear suggestions". -->
+    <string name="tally_frequent_clear_summary">Deletes all counts. Hidden items can show again too.</string>
+    <!-- Home settings: shown briefly after "Clear suggestions". [CHAR LIMIT=40] -->
+    <string name="tally_frequent_cleared">Suggestions cleared</string>
+    <!-- Home's search: takes an app or a Settings page off "Suggestions". [CHAR LIMIT=30] -->
+    <string name="tally_frequent_dismiss">Don\'t suggest</string>
 </resources>
