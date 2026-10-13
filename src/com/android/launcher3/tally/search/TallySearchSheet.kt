@@ -56,6 +56,7 @@ import com.android.launcher3.Launcher
 import com.android.launcher3.LauncherState
 import com.android.launcher3.R
 import com.android.launcher3.anim.AnimationSuccessListener
+import com.android.launcher3.icons.BitmapInfo
 import com.android.launcher3.model.data.AppInfo
 import com.android.launcher3.tally.search.TallySearchRanking.Found
 import com.android.launcher3.tally.search.TallySearchRanking.Kind
@@ -379,7 +380,7 @@ class TallySearchSheet(context: Context) :
                 appKeyOf(it, me)
             }
         val settingsIcon =
-            found?.settingsApp?.newIcon(context)
+            found?.settingsApp?.newIcon(context, BitmapInfo.FLAG_THEMED)
                 ?: context.getDrawable(R.drawable.tally_ic_search_settings)?.apply {
                     setTint(inkMuted)
                 }
@@ -443,12 +444,24 @@ class TallySearchSheet(context: Context) :
     private fun addFound(found: Found<Any>, settingsIcon: Drawable?, isTop: Boolean) {
         when (val item = found.item) {
             is AppInfo ->
-                addRow(item.newIcon(context), null, found.title, null, isTop) { icon ->
+                addRow(
+                    item.newIcon(context, BitmapInfo.FLAG_THEMED),
+                    null,
+                    found.title,
+                    null,
+                    isTop,
+                ) { icon ->
                     icon.tag = item
                     ItemClickHandler.INSTANCE.onClick(icon)
                 }
             is TallySearchSession.ShortcutFound ->
-                addRow(item.info.newIcon(context), null, item.label, item.appTitle, isTop) { icon ->
+                addRow(
+                    item.info.newIcon(context, BitmapInfo.FLAG_THEMED),
+                    null,
+                    item.label,
+                    item.appTitle,
+                    isTop,
+                ) { icon ->
                     icon.tag = item.info
                     ItemClickHandler.INSTANCE.onClick(icon)
                 }
