@@ -14,7 +14,8 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<!-- DiamaneOS Tally: text that stock Launcher3 has no string for (English only for now). -->
+<!-- DiamaneOS Tally: text that stock Launcher3 has no string for. German, French, Spanish and
+     Italian are in values-*/tally_translated_strings.xml, the other languages English only. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Label for the keycap icon shape option in the customization picker: a square key with
          rounded corners, DiamaneOS's default icon shape. -->
