@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 The DiamaneOS Project
+  SPDX-License-Identifier: Apache-2.0
+
+  Spanish for values/tally_strings.xml, translated by the DiamaneOS project.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="tally_keycap_shape_title">"Tecla"</string>
+    <plurals name="tally_more_description">
+        <item quantity="one">"<xliff:g id="count" example="2">%1$d</xliff:g> más: <xliff:g id="names" example="Files and Recorder">%2$s</xliff:g>. Mostrar en el panel de notificaciones"</item>
+        <item quantity="other">"<xliff:g id="count" example="2">%1$d</xliff:g> más: <xliff:g id="names" example="Files and Recorder">%2$s</xliff:g>. Mostrar en el panel de notificaciones"</item>
+    </plurals>
+    <string name="tally_home_tallies">"Tallies"</string>
+    <string name="tally_home_tallies_summary">"Lo que está activo ahora, debajo de la fecha"</string>
+    <string name="tally_home_search_summary">"Debajo del dock"</string>
+    <string name="tally_rail_slot">"Aplicaciones que empiezan por <xliff:g id="letters" example="G or K">%1$s</xliff:g>"</string>
+    <string name="tally_search_top">"Mejor resultado"</string>
+    <string name="tally_search_in">"Buscar en"</string>
+    <string name="tally_search_handoff">"«<xliff:g id="query" example="batt">%2$s</xliff:g>» en <xliff:g id="app_name" example="Contacts">%1$s</xliff:g>"</string>
+    <string name="tally_frequent_summary">"La búsqueda muestra lo que más abres desde la pantalla de inicio. La pantalla de inicio lleva un recuento de cada elemento, solo en este teléfono."</string>
+    <string name="tally_frequent_dock">"Incluir apps del dock"</string>
+    <string name="tally_frequent_dock_summary">"Mostrar también las apps que ya están en el dock"</string>
+    <string name="tally_frequent_unhide">"Volver a mostrar ocultos"</string>
+    <plurals name="tally_frequent_hidden">
+        <item quantity="one">"<xliff:g id="count" example="3">%d</xliff:g> oculto"</item>
+        <item quantity="other">"<xliff:g id="count" example="3">%d</xliff:g> ocultos"</item>
+    </plurals>
+    <string name="tally_frequent_clear">"Borrar sugerencias"</string>
+    <string name="tally_frequent_clear_summary">"Elimina todos los recuentos. Los elementos ocultos también pueden volver a aparecer."</string>
+    <string name="tally_frequent_cleared">"Sugerencias borradas"</string>
+    <string name="tally_frequent_dismiss">"No sugerir"</string>
+</resources>
