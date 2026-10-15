@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 The DiamaneOS Project
+  SPDX-License-Identifier: Apache-2.0
+
+  German for values/tally_strings.xml, translated by the DiamaneOS project.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="tally_keycap_shape_title">"Tastenkappe"</string>
+    <plurals name="tally_more_description">
+        <item quantity="one">"<xliff:g id="count" example="2">%1$d</xliff:g> weitere: <xliff:g id="names" example="Files and Recorder">%2$s</xliff:g>. In der Benachrichtigungsleiste anzeigen"</item>
+        <item quantity="other">"<xliff:g id="count" example="2">%1$d</xliff:g> weitere: <xliff:g id="names" example="Files and Recorder">%2$s</xliff:g>. In der Benachrichtigungsleiste anzeigen"</item>
+    </plurals>
+    <string name="tally_home_tallies">"Tallies"</string>
+    <string name="tally_home_tallies_summary">"Was gerade läuft, unter dem Datum"</string>
+    <string name="tally_home_search_summary">"Unter dem Dock"</string>
+    <string name="tally_rail_slot">"Apps, die mit <xliff:g id="letters" example="G or K">%1$s</xliff:g> beginnen"</string>
+    <string name="tally_search_top">"Top-Treffer"</string>
+    <string name="tally_search_in">"Suchen in"</string>
+    <string name="tally_search_handoff">"„<xliff:g id="query" example="batt">%2$s</xliff:g>“ in <xliff:g id="app_name" example="Contacts">%1$s</xliff:g>"</string>
+    <string name="tally_frequent_summary">"Die Suche zeigt, was du über den Startbildschirm am häufigsten öffnest. Der Startbildschirm zählt dafür mit, nur auf diesem Smartphone."</string>
+    <string name="tally_frequent_dock">"Dock-Apps einbeziehen"</string>
+    <string name="tally_frequent_dock_summary">"Auch Apps anzeigen, die schon im Dock sind"</string>
+    <string name="tally_frequent_unhide">"Ausgeblendete wieder anzeigen"</string>
+    <plurals name="tally_frequent_hidden">
+        <item quantity="one">"<xliff:g id="count" example="3">%d</xliff:g> ausgeblendet"</item>
+        <item quantity="other">"<xliff:g id="count" example="3">%d</xliff:g> ausgeblendet"</item>
+    </plurals>
+    <string name="tally_frequent_clear">"Vorschläge löschen"</string>
+    <string name="tally_frequent_clear_summary">"Löscht alle Zählungen. Ausgeblendete Elemente können auch wieder erscheinen."</string>
+    <string name="tally_frequent_cleared">"Vorschläge gelöscht"</string>
+    <string name="tally_frequent_dismiss">"Nicht vorschlagen"</string>
+</resources>
