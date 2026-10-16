@@ -62,8 +62,8 @@ class TallyWindowRect {
 
 /**
  * The prototype's window motion (`apps.js`: `wm.homeRect`, `wm.backMove`, `Win.render`,
- * `wm.homeTarget`) in px on the device's screen. The prototype measures in dp on the FP6's 372 ×
- * 828 dp canvas; the lengths here are its dp values times the display density, and its 34 dp window
+ * `wm.homeTarget`) in px on the device's screen. The prototype measures in dp on a 372 ×
+ * 828 dp canvas. The lengths here are its dp values times the display density, and its 34 dp window
  * corner is the device's own window corner radius, as stock reads it.
  */
 object TallyWindowMotion {
@@ -81,7 +81,7 @@ object TallyWindowMotion {
     const val DOWN_RUBBER_DP = 24f
     /**
      * The rubber band's coefficient, the token library's `tally_rubber_band_coefficient`, which
-     * Launcher reads (see [homeRect]); this copy is for tests and the harness.
+     * Launcher reads (see [homeRect]). This copy is for tests and the harness.
      */
     const val RUBBER = 0.35f
 
@@ -106,7 +106,7 @@ object TallyWindowMotion {
     /** Back: the share of Home's dim that lifts with the progress. */
     const val BACK_DIM_LIFT = 0.6f
 
-    /** The keycap splash's key (`SPLASH_KC`), centred on the window; WM Shell draws it. */
+    /** The keycap splash's key (`SPLASH_KC`), centred on the window. WM Shell draws it. */
     const val SPLASH_KEYCAP_DP = 88f
     /** Where a window's content is pinned as its rect changes (`.win-content` origin). */
     const val CONTENT_PIVOT_X = 0.5f
@@ -125,7 +125,7 @@ object TallyWindowMotion {
 
     /**
      * A key's neighbours part by this much (the token library's `tally_grid_parting`, which
-     * Launcher reads; this copy is for tests and the harness)...
+     * Launcher reads, with this copy for tests and the harness)...
      */
     const val PART_DP = 8f
     /** ... when their centres are within this many units of the key's centre... */
@@ -198,7 +198,7 @@ object TallyWindowMotion {
      * Back: the prototype's progress, 0 to 1, for the platform's [progress]. An edge swipe's
      * platform progress is the finger's travel over [distancePx] (the BackTouchTracker's distance:
      * the display's width on a phone), and the prototype's is the same travel over
-     * [BACK_DISTANCE_DP]; a Back button's (no edge) is taken as it is. WM Shell's page Back maps it
+     * [BACK_DISTANCE_DP]. A Back button's (no edge) is taken as it is. WM Shell's page Back maps it
      * the same way (`TallyPageMotion.backProgress`).
      */
     @JvmStatic
@@ -320,7 +320,7 @@ object TallyWindowMotion {
  * content scales uniformly by [scale] and is cropped to the rect, and the content's point at
  * ([pivotX], [pivotY]) of the window stays at the same point of the rect. Gives the leash's
  * [matrix] (window to screen), its [crop] (in the window) and its corner [layerRadius] (in the
- * window, so that the screen shows the rect's radius). One per animation; no allocation per frame.
+ * window, so that the screen shows the rect's radius). One per animation. No allocation per frame.
  */
 class TallyWindowContent {
     val matrix = Matrix()

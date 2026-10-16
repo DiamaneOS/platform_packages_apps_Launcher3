@@ -413,7 +413,7 @@
 
     </style>
 
-    <!-- Tally: without blur (the FP6 has none), Recents lies on the opaque surfaceHigh, as the
+    <!-- Tally: without blur (on devices that have none), Recents lies on the opaque surfaceHigh, as the
          prototype's backdrop. -->
     <style name="OverviewBlurFallbackStyle">
         <item name="overviewScrimColor">@color/tally_surface_high</item>

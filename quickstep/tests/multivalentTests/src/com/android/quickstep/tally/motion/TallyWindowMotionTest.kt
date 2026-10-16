@@ -25,7 +25,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The prototype's window rects (`apps.js`) on the FP6: 1116 × 2484 px at density 3 (the prototype's
+ * The prototype's window rects (`apps.js`) on a 1116 × 2484 px screen at density 3 (the prototype's
  * 372 × 828 dp canvas), windows at rest with 34 dp corners as the prototype's.
  */
 @SmallTest
@@ -72,7 +72,7 @@ class TallyWindowMotionTest {
         val at = out.rect.width()
         TallyWindowMotion.homeRect(361f * D, 0f, W, H, D, R, out)
         val oneDpOn = out.rect.width()
-        // Before the band the width drops 0.54 × 372 / 360 dp per dp; after it, less, never a jump.
+        // Before the band the width drops 0.54 × 372 / 360 dp per dp. After it, less, never a jump.
         val before = 0.54f * 372f / 360f * D
         assertThat(at - oneDpOn).isLessThan(before)
         assertThat(at - oneDpOn).isGreaterThan(0f)
@@ -116,7 +116,7 @@ class TallyWindowMotionTest {
 
     @Test
     fun backProgress_isTheFingersTravelOver160dp() {
-        // The platform's progress is the travel over the display's width (372 dp on the FP6).
+        // The platform's progress is the travel over the display's width (372 dp here).
         val at80dp = 80f / 372f
         assertThat(TallyWindowMotion.backProgress(at80dp, true, W, D)).isWithin(1e-5f).of(0.5f)
         assertThat(TallyWindowMotion.backProgress(160f / 372f, true, W, D)).isWithin(1e-5f).of(1f)

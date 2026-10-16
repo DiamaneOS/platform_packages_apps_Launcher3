@@ -42,7 +42,7 @@ import kotlin.math.sqrt
  *
  * A press sends the key in, as the prototype's `T.pressKey`: it scales to 97 % on the pebble spring
  * with a tap impulse, its skirt compresses to 2 % (2 dp on the dock) and the press layer
- * (tally_press) covers its face; letting go brings it back on the same spring. With animations off
+ * (tally_press) covers its face. Letting go brings it back on the same spring. With animations off
  * (Remove animations) the key jumps.
  *
  * Its LED ([TallyKeycapLed]) sits in the key's top-right corner and moves with the key.
@@ -78,9 +78,9 @@ class TallyKeycap(context: Context) {
     private val ledPainter = TallyKeycapLed(context)
     private var led: TallyLampState? = null
 
-    /** This key's relief, from [reliefOf]; null until it is first drawn. */
+    /** This key's relief, from [reliefOf]. Null until it is first drawn. */
     private var relief: Relief? = null
-    /** This key's relief at rest as a bitmap, from [restImageOf]; null until drawn at rest. */
+    /** This key's relief at rest as a bitmap, from [restImageOf]. Null until drawn at rest. */
     private var restImage: RestImage? = null
     /** A skirt between rest and pressed in, built for each frame while the key moves. */
     private val movingSkirt = Path()
@@ -149,7 +149,7 @@ class TallyKeycap(context: Context) {
         jump()
     }
 
-    /** Moves the key to the current frame; returns the scale its icon draws at next. */
+    /** Moves the key to the current frame. Returns the scale its icon draws at next. */
     fun advance(): Float {
         step(AnimationUtils.currentAnimationTimeMillis())
         return 1f - PRESS_DEPTH * press
@@ -173,7 +173,7 @@ class TallyKeycap(context: Context) {
         if (size <= 0) return
         val relief = reliefFor(shape, size, dock)
         val skirt = skirtAt(press, size, dock)
-        // At rest or pressed in, the skirt is the relief's; moving, it is built for this frame.
+        // At rest or pressed in, the skirt is the relief's. Moving, it is built for this frame.
         val skirtPath =
             when {
                 !relief.built -> null
@@ -355,7 +355,7 @@ class TallyKeycap(context: Context) {
         val highlight = Path()
         val restSkirt = Path()
         val pressedSkirt = Path()
-        /** Whether the paths were built; if not, the key is drawn clipped. */
+        /** Whether the paths were built. If not, the key is drawn clipped. */
         val built: Boolean
 
         init {
@@ -384,7 +384,7 @@ class TallyKeycap(context: Context) {
 
         /**
          * Sets [out] to the band of [face] that the key moved down by [dy] (up for a negative one)
-         * does not cover, using [moved]; returns whether that worked.
+         * does not cover, using [moved]. Returns whether that worked.
          */
         fun band(dy: Float, out: Path, moved: Path): Boolean {
             if (dy == 0f) {
@@ -433,7 +433,7 @@ class TallyKeycap(context: Context) {
 
         /**
          * The bitmaps of reliefs at rest last drawn, the most recent last, at most [MAX_IMAGES] and
-         * [MAX_IMAGE_BYTES] (on the FP6 about 115 kB each for Home and the dock, 100 kB for All
+         * [MAX_IMAGE_BYTES] (at density 3 about 115 kB each for Home and the dock, 100 kB for All
          * apps, in each theme).
          */
         const val MAX_IMAGES = 8

@@ -47,7 +47,7 @@ class TallySearchSlotTest {
             val hotseat = launcher.hotseat
             val slot = hotseat.qsb as TallySearchSlot
             assertTrue(slot.widthIn(UPRIGHT_PX) > slot.widthIn(BAR_PX))
-            // Landscape lays the hotseat out as a narrow bar; back upright the slot shows again,
+            // Landscape lays the hotseat out as a narrow bar. Back upright the slot shows again,
             // which asks for its layout, and the hotseat is measured at the screen's width.
             layOut(hotseat, BAR_PX)
             slot.requestLayout()
@@ -69,7 +69,7 @@ class TallySearchSlotTest {
     }
 
     private companion object {
-        /** The FP6's screen width, and its hotseat's width as landscape's bar (px). */
+        /** A 1116 px screen width, and its hotseat's width as landscape's bar (px). */
         const val UPRIGHT_PX = 1116
         const val BAR_PX = 280
         const val HEIGHT_PX = 600

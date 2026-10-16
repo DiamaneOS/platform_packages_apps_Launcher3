@@ -41,17 +41,17 @@ import kotlin.math.roundToInt
  * and one from the bottom (the dock's keys and the search slot), with equal rows between them. At
  * 100 to 130 % text: the date at 64 dp, the tallies at 104, the grid from 184 (plus a tenth of any
  * height over 828), the dock's band 228 dp above the bottom with its keys centred 174 dp above it,
- * the search slot's bottom 72 dp above it, and 16 dp between the grid and the dock's band; rows are
+ * the search slot's bottom 72 dp above it, and 16 dp between the grid and the dock's band. Rows are
  * at most 120 dp. From 150 % text: 56, 94, 214, 232 (keys at 178, the slot at 76), 14 dp, at most
  * 108 dp rows.
  *
  * App keys keep their size on the glass, as the prototype's `T.GLASS`: 56 dp on Home and in the
  * dock and 52 dp in All apps at density 480, scaled by 480 / density and rounded to 4 dp at other
- * display sizes. These are the keys' visible sizes; Launcher's icon sizes include the adaptive
+ * display sizes. These are the keys' visible sizes. Launcher's icon sizes include the adaptive
  * icon's margin, so they are larger by 1 / ICON_VISIBLE_AREA_FACTOR. App names are 12 sp and stop
  * growing at 130 % text, as the prototype's labels do.
  *
- * The tallies band and the search slot can be taken off Home ([TallyHomeItem]); the grid takes the
+ * The tallies band and the search slot can be taken off Home ([TallyHomeItem]). The grid takes the
  * space one leaves, all of it (see [rhythm]).
  *
  * Launcher applies this through three hooks: [applyToDisplayOption] when it picks a grid
@@ -118,15 +118,15 @@ object TallyHomeLayout {
      *
      * The prototype gives a taller canvas's extra height to the grid: at 100 to 130 % text a tenth
      * goes above it (its top line moves down), the rest to its rows up to their limit, and what the
-     * limit leaves stays between the grid and the dock; from 150 % text the grid's top stays and it
+     * limit leaves stays between the grid and the dock. From 150 % text the grid's top stays and it
      * all goes to the rows, up to their limit.
      *
      * The space a removed item leaves goes to the grid, all of it: the band's (from its line to the
-     * grid's: 80 dp, 120 dp from 150 %) at the top, so the grid's line moves up to the band's; the
+     * grid's: 80 dp, 120 dp from 150 %) at the top, so the grid's line moves up to the band's. The
      * slot's (78 dp) at the bottom, so the dock moves down until its keys are centred where the
      * slot was, and the grid follows it. At 100 to 130 % text a tenth of it goes above the grid, as
      * of a taller canvas's height (the date then stands as far above the first keys as the band
-     * does); the rest goes to the rows, past their limit ([Rhythm.freedForRows]), so that nothing
+     * does). The rest goes to the rows, past their limit ([Rhythm.freedForRows]), so that nothing
      * is left empty where the item was nor between the grid and the dock.
      */
     @JvmStatic
@@ -208,8 +208,8 @@ object TallyHomeLayout {
         val i = INDEX_DEFAULT
         option.textSizes[i] = cappedSp(LABEL_SP, fontScale)
         option.allAppsIconTextSizes[i] = cappedSp(LABEL_SP, fontScale)
-        // At the largest display sizes the rows can be too short for a key and its name (on the
-        // FP6 from 115 % text): the key shrinks only as far as the name needs (the dock's keys,
+        // At the largest display sizes the rows can be too short for a key and its name (on a
+        // 372 × 828 dp screen from 115 % text): the key shrinks only as far as the name needs (the dock's keys,
         // which Launcher sizes as Home's, follow).
         val heightDp = max(info.currentSize.x, info.currentSize.y) / density
         val labelPx =
@@ -305,8 +305,8 @@ object TallyHomeLayout {
     /**
      * The hotseat's space between its keys and the search slot, and below the slot (dp), that put
      * the dock's keys and the slot on the rhythm. The hotseat's bar is its cell (the key and the
-     * reach of a folder preview), then that space, the slot and the space below it; its keys are
-     * centred in the cell at the top of the bar. Without the slot ([search] false; the hotseat then
+     * reach of a folder preview), then that space, the slot and the space below it. Its keys are
+     * centred in the cell at the top of the bar. Without the slot ([search] false, so the hotseat
      * has no room for it, [hotseatQsbHeightPx]) the bar is the cell and the space below it.
      */
     @JvmStatic
