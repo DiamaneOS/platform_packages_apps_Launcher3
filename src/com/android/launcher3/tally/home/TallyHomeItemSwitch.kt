@@ -24,8 +24,8 @@ import androidx.preference.SwitchPreference
 /**
  * Home settings' switch for one of Home's removable items ([TallyHomeItem]): the tallies band or
  * the search slot. A plain switch reads its setting once, but these settings also change on Home (a
- * long press and Remove, or Undo) while Home settings may still be open behind it, so the switch
- * showed the old value and a tap set the opposite of what the user meant. This one follows its
+ * long press and Remove, or Undo) while Home settings may still be open behind it, so a plain
+ * switch shows the old value and a tap sets the opposite of what the user meant. This one follows its
  * setting while it is on screen, as stock's notification dots row follows its system setting
  * (NotificationDotsPreference): it always shows the stored value, and a tap sets what it shows.
  */
