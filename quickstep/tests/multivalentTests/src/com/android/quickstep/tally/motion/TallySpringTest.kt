@@ -122,7 +122,7 @@ class TallySpringTest {
         val slab = TallySpring(TallySpring.SLAB)
         val grow = slab.Move(0.0, 1.0, slab.impulse(1.0), 0.0005, 0.005)
         val prototype = PrototypeSpring(TallySpring.SLAB.toDouble(), 0.0, 1.0, grow.v0)
-        // A ValueAnimator of grow.millis at scale 0.5 runs grow.millis / 2 of wall time; its
+        // A ValueAnimator of grow.millis at scale 0.5 runs grow.millis / 2 of wall time. Its
         // fraction at wall time w is w / (0.5 · millis), so the curve is at 2w.
         val frame = 1.0 / 120.0
         var w = 0.0
@@ -230,7 +230,7 @@ class TallySpringTest {
     private companion object {
         /**
          * The closed form (SpringForce's own solution) and the prototype's 1 ms semi-implicit Euler
-         * steps differ by less than 1.5 % of the travel; the difference is the prototype's step
+         * steps differ by less than 1.5 % of the travel. The difference is the prototype's step
          * error, which grows with the stiffness (1.1 % for fill, 0.5 % for slab).
          */
         const val TOLERANCE = 0.015

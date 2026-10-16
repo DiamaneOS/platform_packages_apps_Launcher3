@@ -23,13 +23,13 @@ package com.android.quickstep.tally
 data class StoppableApp(val packageName: String, val userId: Int) {
 
     companion object {
-        /** SystemUI sends a few apps at most; anything larger is not a list to trust. */
+        /** SystemUI sends a few apps at most. Anything larger is not a list to trust. */
         const val MAX_APPS = 1000
 
         /**
          * The whole set SystemUI sent through `IStoppableAppsListener`: app i is `packageNames[i]`
          * in user `userIds[i]`. Arrays that do not pair up give the empty set, so nothing is
-         * offered; entries without a package name are left out.
+         * offered. Entries without a package name are left out.
          */
         fun setOf(packageNames: Array<String?>?, userIds: IntArray?): Set<StoppableApp> {
             if (

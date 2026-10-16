@@ -42,10 +42,10 @@ import com.android.wm.shell.shared.compat.AnimatedSurfaceUtils
 /**
  * A launch from a key (the prototype's `T.launch`): the window grows out of the key, from the key's
  * rect and corners (22 % of its side) to the window's bounds and the device's window corners, on
- * the slab spring with a tap impulse; Home dims to [TallyWindowMotion.HOME_DIM] on the fill spring;
- * the key's neighbours part and settle ([TallyParting]). Stock's launch
+ * the slab spring with a tap impulse. Home dims to [TallyWindowMotion.HOME_DIM] on the fill spring.
+ * The key's neighbours part and settle ([TallyParting]). Stock's launch
  * (QuickstepTransitionManager's icon launch) builds the same targets, floating icon and surface
- * applier; this replaces how they move, not what is launched.
+ * applier. This replaces how they move, not what is launched.
  *
  * The window's content shows as the prototype's does: a warm start's content scales uniformly to
  * fill the rect, pinned at (50 %, 32 %) of the window. On a cold start the window shows WM Shell's
@@ -56,7 +56,7 @@ import com.android.wm.shell.shared.compat.AnimatedSurfaceUtils
  * icon differs from the app's (a themed icon) on a cold start: then it fades over the window as
  * stock's does (25 to 75 ms).
  *
- * One Animator plays the whole launch; its duration is the slab spring's settle time (about 480
+ * One Animator plays the whole launch. Its duration is the slab spring's settle time (about 480
  * ms), so the animator duration scale applies, and Remove animations shows the open window at once.
  * Nothing is allocated per frame beyond the surface transaction stock also creates.
  */
@@ -142,7 +142,7 @@ class TallyLaunch(
 
                         override fun onAnimationEnd(animation: Animator) {
                             if (launcherClosing) {
-                                // Launcher is behind the window now; the dim goes with it.
+                                // Launcher is behind the window now. The dim goes with it.
                                 motion.dim.clear()
                                 launcher.resumeExpensiveViewUpdates()
                             }

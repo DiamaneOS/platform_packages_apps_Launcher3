@@ -38,7 +38,7 @@ object TallyZoneTimes {
     /** A place: its [zone] and the [name] shown. */
     data class Place(val zone: ZoneId, val name: String)
 
-    /** [time] in [place]; [from] is where an asked time was (null for now). */
+    /** [time] in [place]. [from] is where an asked time was (null for now). */
     data class ZoneTime(val time: ZonedDateTime, val place: Place, val from: Place?)
 
     private val REGIONS =
@@ -134,7 +134,7 @@ object TallyZoneTimes {
 
     /**
      * The time [text] asks for, at [now] here, or null. "time in X", "X time" and "now in X" ask
-     * for the time there now; "T in X" for the time there when it is T here; "T X in Y" (or "T in X
+     * for the time there now. "T in X" for the time there when it is T here. "T X in Y" (or "T in X
      * to Y") for the time in Y when it is T in X.
      */
     @JvmStatic
@@ -173,7 +173,7 @@ object TallyZoneTimes {
 
     /**
      * "15:30", "9am", "9:30 pm London", "10:00 in Tokyo": that time today where it is (here when no
-     * place is named), with the place named (null for here); null if it is not a time.
+     * place is named), with the place named (null for here). Null if it is not a time.
      */
     private fun askedTime(text: String, now: ZonedDateTime): Pair<ZonedDateTime, Place?>? {
         val match = TIME.find(text) ?: return null

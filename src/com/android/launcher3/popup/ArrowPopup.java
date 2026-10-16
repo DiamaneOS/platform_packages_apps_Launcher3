@@ -394,7 +394,7 @@ public abstract class ArrowPopup<T extends ActivityContext> extends AbstractFloa
     }
 
     /**
-     * DiamaneOS Tally: whether the popup may open above its target when there is room; if not, it
+     * DiamaneOS Tally: whether the popup may open above its target when there is room. If not, it
      * opens below it.
      */
     protected boolean canOpenAboveTarget() {

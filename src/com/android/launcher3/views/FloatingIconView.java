@@ -114,7 +114,7 @@ public class FloatingIconView extends FrameLayout implements
     private float mIconOffsetY;
 
     // DiamaneOS Tally: the window this view stands in for, as a rounded rect in this view's own
-    // coordinates; while set, nothing is drawn outside it (setWindowClip).
+    // coordinates. While set, nothing is drawn outside it (setWindowClip).
     private final Path mWindowClip = new Path();
     private boolean mClipToWindow;
 
@@ -194,7 +194,7 @@ public class FloatingIconView extends FrameLayout implements
      * {@code windowRect} (in the coordinates of the rect given to {@link #update}) with corners
      * {@code windowRadius}, or everywhere again when {@code windowRect} is null. Tally's motion
      * places this view on the key's whole icon bounds, larger than the window, so that the key
-     * inside them matches the window; the icon's background fills those bounds, and would show
+     * inside them matches the window. The icon's background fills those bounds, and would show
      * around the window as a rim. Call it after each {@link #update}, which moves and scales this
      * view. Allocates nothing.
      */

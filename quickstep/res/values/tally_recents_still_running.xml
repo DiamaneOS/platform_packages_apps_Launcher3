@@ -14,7 +14,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<!-- Recents' "Still running · Stop" row (Tally). Sizes the token library has come from it; these
+<!-- Recents' "Still running · Stop" row (Tally). Sizes the token library has come from it. These
      are the prototype's own for this row (design/prototypes/tally/app.css, .rc-still, .rs-stop). -->
 <resources>
     <!-- The row: 10 dp before the lamp (its end padding is tally_space_xs). -->

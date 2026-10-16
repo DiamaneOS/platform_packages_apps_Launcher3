@@ -49,7 +49,7 @@
                      android:featureFlag="android.security.app_lock_apis" />
     <uses-permission android:name="com.android.systemui.permission.LAUNCH_ACCESSIBILITY_SHORTCUT_CHOOSER_DIALOG" />
     <!-- DiamaneOS Tally: Home's search reads Settings pages from Settings search's index and opens
-         them (SettingsIntelligence's signature permission; Launcher is signed with the same key). -->
+         them (SettingsIntelligence's signature permission, as Launcher is signed with the same key). -->
     <uses-permission android:name="de.diamaneos.permission.QUERY_SETTINGS_SEARCH" />
 
     <permission

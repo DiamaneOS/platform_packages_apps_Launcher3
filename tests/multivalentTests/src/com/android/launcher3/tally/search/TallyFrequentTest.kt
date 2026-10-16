@@ -106,7 +106,7 @@ class TallyFrequentTest {
         assertEquals(2, hidden.hidden.size)
         val again = TallyFrequent.unhide(hidden)
         assertTrue(again.hidden.isEmpty())
-        // The other counts stay; a hidden item's count is not restored.
+        // The other counts stay. A hidden item's count is not restored.
         assertEquals(hidden.entries, again.entries)
         assertEquals(listOf(Entry(app("clock"), 3000, DAY)), again.entries)
         assertEquals("en-GB", again.locale)
@@ -153,7 +153,7 @@ class TallyFrequentTest {
         val atWork = TallyFrequent.appKey(10, "org.example.vault", "org.example.vault.Main")!!
         val state = State().opened(plain, DAY, 3).opened(disguised, DAY, 3).opened(atWork, DAY, 3)
         val hidden = TallyFrequent.hide(state, plain)
-        // Both activities' counts go; the work profile's copy is another app.
+        // Both activities' counts go. The work profile's copy is another app.
         assertEquals(listOf(atWork), hidden.entries.map { it.key })
         assertTrue(TallyFrequent.hides(hidden, disguised))
         assertFalse(TallyFrequent.hides(hidden, atWork))
@@ -178,7 +178,7 @@ class TallyFrequentTest {
                     .opened(app("notes"), DAY, times = 2),
                 app("notes"),
             )
-        // Health goes from the user's own profile; the work profile's copy stays.
+        // Health goes from the user's own profile. The work profile's copy stays.
         val gone =
             TallyFrequent.forget(state) {
                 it.packageName in setOf("org.example.health", "org.example.notes") &&

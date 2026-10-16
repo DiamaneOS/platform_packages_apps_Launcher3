@@ -26,7 +26,7 @@ import java.util.Locale
  * A title matches by how the typed words meet it, best first: the whole title, its start, the start
  * of one of its words, the starts of several of its words (each typed word one), anywhere in it.
  * Case and accents do not count. Apps are found as All apps' search finds them (Launcher's own
- * matcher, which also reads word breaks inside names); one it finds that none of these rules meets
+ * matcher, which also reads word breaks inside names). One it finds that none of these rules meets
  * still ranks, last ([Match.OTHER]).
  */
 object TallySearchRanking {
@@ -65,7 +65,7 @@ object TallySearchRanking {
             get() = match.score + kind.bonus
     }
 
-    /** The sections of the sheet, each in order; [top] is in none of the others. */
+    /** The sections of the sheet, each in order. [top] is in none of the others. */
     data class Sections<T>(
         val top: Found<T>?,
         val apps: List<Found<T>>,
@@ -104,12 +104,12 @@ object TallySearchRanking {
 
     /**
      * The sections for what was found: [apps] and [shortcuts] ranked best first (ties by title),
-     * [settings] in Settings search's own order. With an answer ([hasAnswer]) it is the top result;
-     * otherwise the best of the apps, shortcuts and first Settings result, which then leaves its
+     * [settings] in Settings search's own order. With an answer ([hasAnswer]) it is the top result.
+     * Otherwise the best of the apps, shortcuts and first Settings result, which then leaves its
      * section. Each section keeps at most its limit.
      *
      * An app shows once: a Settings result that [appKey] names as an app (its app info) goes when
-     * that app, in the same user, is among the apps shown; app info of other apps (one with no
+     * that app, in the same user, is among the apps shown. App info of other apps (one with no
      * launcher entry, say) stays.
      */
     @JvmStatic

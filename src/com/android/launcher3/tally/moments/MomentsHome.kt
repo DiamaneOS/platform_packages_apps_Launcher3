@@ -46,7 +46,7 @@ import com.android.launcher3.util.Executors.MODEL_EXECUTOR
  * All apps, for this user only (no work profile, no private space).
  *
  * SystemUI says when Moments is on (`tally_moments_home_active`) and Settings keeps the chosen
- * apps (`tally_moments_home_apps`); both are system settings no app can read. Home's own layout
+ * apps (`tally_moments_home_apps`). Both are system settings no app can read. Home's own layout
  * is never touched: Moments shows a page of its own, built in memory, and while it is up Home
  * cannot be edited, so nothing is written to Home's database. When Moments ends, Home reloads
  * its layout as it was. With no apps chosen, Home stays as it is.

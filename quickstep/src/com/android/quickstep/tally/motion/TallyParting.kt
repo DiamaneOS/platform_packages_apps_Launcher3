@@ -179,7 +179,7 @@ class TallyParting(
                     animator = null
                     currentMove = null
                 }
-                // A move played to its end leaves the keys where it ends; back at rest, they are
+                // A move played to its end leaves the keys where it ends. Back at rest, they are
                 // forgotten.
                 if (!cancelled && progress == 0f && animator == null) keys.clear()
             }
@@ -233,7 +233,7 @@ class TallyParting(
         private const val PART_MIN_UNIT_DP = TallyWindowMotion.PART_MIN_UNIT_DP
         private const val PART_SETTLE_MS = TallyWindowMotion.PART_SETTLE_MS
 
-        /** Keys move; widgets and anything else stay. */
+        /** Keys move. Widgets and anything else stay. */
         @JvmStatic
         fun isKey(view: View): Boolean =
             view is BubbleTextView || view is FolderIcon || view is AppPairIcon

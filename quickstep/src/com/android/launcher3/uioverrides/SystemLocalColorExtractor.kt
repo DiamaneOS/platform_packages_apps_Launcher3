@@ -32,7 +32,7 @@ import javax.inject.Inject
  * them, so the preview kept the applied colours until the option was applied. This loads them on
  * the preview's context as a resources loader, as the platform does for a widget's colours
  * (AppWidgetHostView.setColorResources), and gives the preview's widgets the same colours. Only the
- * system palette and dynamic colours can be overridden this way; the picker sends no others that
+ * system palette and dynamic colours can be overridden this way. The picker sends no others that
  * Launcher reads.
  */
 class SystemLocalColorExtractor @Inject constructor() : LocalColorExtractor() {

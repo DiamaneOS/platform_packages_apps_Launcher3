@@ -86,7 +86,7 @@ class ModelCallbacks(private var launcher: Launcher) : BgDataModel.Callbacks {
             workspaceState.changes.forEach(MAIN_EXECUTOR) { ev ->
                 // Ignore events which originated from our own UI
                 if (ev.isSource(launcher)) return@forEach
-                // Moments' page is built whole; only a full refresh changes it.
+                // Moments' page is built whole. Only a full refresh changes it.
                 if (MomentsHome.isActive() && ev !is FullRefresh) return@forEach
 
                 when (ev) {

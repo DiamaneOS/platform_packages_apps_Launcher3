@@ -43,7 +43,7 @@ import java.util.Locale
 
 /**
  * What Home's search finds while its sheet is open ([TallySearchSheet]), off the main thread,
- * delivered on it for the latest words only. One session per opening; closing it drops all it found
+ * delivered on it for the latest words only. One session per opening. Closing it drops all it found
  * (nothing is kept between openings, and nothing is logged).
  * - Apps: All apps' search's own rules on Launcher's app model ([DefaultAppSearchAlgorithm]: the
  *   same apps, work profile and private space included as there, a private space's only while
@@ -88,7 +88,7 @@ class TallySearchSession(private val context: Context, private val listener: Lis
     private val settingsSearch = TallySettingsSearch(context.applicationContext)
     private val handler = Handler(Looper.getMainLooper())
 
-    /** The latest search; results of an older one are dropped (main thread). */
+    /** The latest search. Results of an older one are dropped (main thread). */
     private var generation = 0L
     @Volatile private var closed = false
     private var pagesSignal: CancellationSignal? = null
@@ -113,7 +113,7 @@ class TallySearchSession(private val context: Context, private val listener: Lis
         }
     }
 
-    /** Searches for [text] (trimmed); an empty one finds nothing. */
+    /** Searches for [text] (trimmed). An empty one finds nothing. */
     @MainThread
     fun search(text: String) {
         val current = ++generation

@@ -1154,7 +1154,7 @@ public abstract class AbsSwipeUpHandler<
 
     /**
      * DiamaneOS Tally: whether this handler's gestures may take Tally's motion (Launcher's own
-     * Recents; a third-party launcher's keeps stock's).
+     * Recents, while a third-party launcher's keeps stock's).
      */
     protected boolean canUseTallyMotion() {
         return false;

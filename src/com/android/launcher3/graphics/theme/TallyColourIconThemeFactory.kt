@@ -29,7 +29,7 @@ import javax.inject.Inject
 
 /**
  * DiamaneOS Tally: the Colour icon style, the default. Each of DiamaneOS's own apps is a key in its
- * own colour with a white glyph, from the Tally tokens' app key table; every other app keeps its
+ * own colour with a white glyph, from the Tally tokens' app key table. Every other app keeps its
  * own icon ([TallyColourIconThemeController]).
  */
 @LauncherAppSingleton
@@ -52,7 +52,7 @@ constructor(@ApplicationContext private val context: Context) : IconThemeFactory
     override fun createController(themeId: String): IconThemeController? =
         if (themeId == TallyColourIconThemeController.THEME_ID) controller else null
 
-    // Stats count the monochrome style as themed icons; the Colour style keeps apps' own icons.
+    // Stats count the monochrome style as themed icons. The Colour style keeps apps' own icons.
     override fun logThemeEvent(themeId: String, logger: StatsLogger) {
         logger.log(LAUNCHER_THEMED_ICON_DISABLED)
     }

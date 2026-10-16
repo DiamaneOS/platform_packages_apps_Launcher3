@@ -46,7 +46,7 @@ import com.android.quickstep.views.RecentsView
  * in place of stock's scaling reveal (ScalingWorkspaceRevealAnim, which scales Home from 85 % over
  * a second with a blur): Home is simply there, at rest, and the key the window lands in makes room
  * for it. Its neighbours part as the window flies ([TallyParting.part]) and settle as it lands
- * ([TallyParting.settle]); Home's dim ([dimFrom] to none), the wallpaper's depth and the system
+ * ([TallyParting.settle]). Home's dim ([dimFrom] to none), the wallpaper's depth and the system
  * bars' scrim clear on the fill spring. Where the gesture had hidden Home (a swipe up hides it
  * behind Recents), Home fades in on fill ([fadeIn]). With no key on Home nothing parts.
  *

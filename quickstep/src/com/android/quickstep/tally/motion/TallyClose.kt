@@ -21,16 +21,16 @@ import android.graphics.RectF
 /**
  * A window closing into its key, or to the dock's centre when Home has no key for it (the
  * prototype's `wm.goHome`, `wm.homeTarget` and `Win.render`), one frame at a time: the flight
- * ([RectFSpringAnim] on the slab spring) gives the window's rect and progress `q`; this gives its
+ * ([RectFSpringAnim] on the slab spring) gives the window's rect and progress `q`. This gives its
  * corners, its content mapping and alpha, and the floating icon's alpha and bounds.
  *
  * With a key, the window's rect lands on the key's visible rect and its corners go from where they
- * were to the key's (22 % of its side); the key's icon comes back over the window's content as the
+ * were to the key's (22 % of its side). The key's icon comes back over the window's content as the
  * rect narrows from half the screen to [TallyWindowMotion.KEY_BACK_TO_DP] (the prototype's splash
  * returning): the window fades out over the floating icon, which lies under it and is drawn only
  * inside the window's rounded rect ([window]), as the prototype draws its splash inside the window.
  * Without a key, the window lands on a [TallyWindowMotion.DOCK_TARGET_DP] key on the dock's centre
- * and fades out ([TallyWindowMotion.fadeOut]). One per flight; nothing is allocated per frame.
+ * and fades out ([TallyWindowMotion.fadeOut]). One per flight. Nothing is allocated per frame.
  *
  * @param startRadius the window's corners when the flight starts, in px
  * @param endRadius the key's corners (or the dock target's), in px
@@ -86,7 +86,7 @@ class TallyClose(
      * The floating icon's bounds for the flight's [rect] (in the icon's coordinates): the rect
      * grown to the icon's bounds about its centre, so the icon's key matches the window. The icon
      * fills these bounds with its background, so it is clipped to [rect] with the window's corners
-     * (FloatingIconView.setWindowClip); unclipped, the margin shows around the window as a rim.
+     * (FloatingIconView.setWindowClip). Unclipped, the margin shows around the window as a rim.
      */
     fun icon(rect: RectF): RectF {
         val hw = rect.width() * iconScale / 2f

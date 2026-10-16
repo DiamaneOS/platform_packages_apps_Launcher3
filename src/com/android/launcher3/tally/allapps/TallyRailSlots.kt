@@ -21,7 +21,7 @@ package com.android.launcher3.tally.allapps
  * Every slot is at least 48 dp tall, so when the sections don't fit, letters share a slot, as the
  * prototype's rail does (on the 372 × 828 dp canvas K shares G's slot and W shares V's: "the rarest
  * letters share their neighbour's slot", each one app, one row after the letter it joins). The
- * prototype names its pairs; here they are chosen from the list itself, one merge at a time:
+ * prototype names its pairs. Here they are chosen from the list itself, one merge at a time:
  * 1. the rarest letter (the fewest apps),
  * 2. then the one whose first app is the fewest rows below the first app of the letter before it
  *    (0: the same row, so a tap on the shared slot shows both letters' first apps at once),
@@ -114,7 +114,7 @@ object TallyRailSlots {
                 if (before.row < 0 || joining.row < 0) Int.MAX_VALUE - 1
                 else joining.row - before.row
             val total = before.apps + joining.apps
-            // Rarer first, then fewer rows, then the smaller slot; ties go to the later letter.
+            // Rarer first, then fewer rows, then the smaller slot. Ties go to the later letter.
             val better =
                 when {
                     apps != bestApps -> apps < bestApps

@@ -75,7 +75,7 @@ internal class TallyRailMark(context: Context) : RecyclerView.ItemDecoration() {
         val icon = parent.findViewHolderForAdapterPosition(position)?.itemView as? BubbleTextView
         if (icon == null) return
         icon.getIconBounds(iconBounds)
-        // The key is the icon's visible area; the ring's centre line is 3 dp + half its width out.
+        // The key is the icon's visible area. The ring's centre line is 3 dp + half its width out.
         val size =
             (iconBounds.width() * ICON_VISIBLE_AREA_FACTOR + 2 * (offsetPx + strokePx / 2))
                 .roundToInt()

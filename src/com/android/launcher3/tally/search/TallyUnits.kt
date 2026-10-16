@@ -23,7 +23,7 @@ import java.util.Locale
  * Unit conversions for Home's search, worked out on the phone: "5 km in mi", "100 °F to C", "2.5 l
  * = cup". Length, mass, volume (US customary cups, pints, quarts, gallons and fluid ounces),
  * temperature, speed, area, data (kB = 1000 B, KiB = 1024 B) and time spans. Units are read by
- * their symbols and English names; the words between them are `in`, `to`, `as`, `into`, `=` or an
+ * their symbols and English names. The words between them are `in`, `to`, `as`, `into`, `=` or an
  * arrow.
  */
 object TallyUnits {

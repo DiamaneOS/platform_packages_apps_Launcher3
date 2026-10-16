@@ -66,7 +66,7 @@ import kotlin.math.roundToInt
 /**
  * All apps' one letter index, the prototype's rail: a single 48 dp wide control at the list's end
  * edge, one quiet column of letters in the muted colour. Tap a letter and its apps scroll to the
- * top of the list; run a finger along the rail and the list jumps from letter to letter, with a
+ * top of the list. Run a finger along the rail and the list jumps from letter to letter, with a
  * tick at each. The first app of the letter is ringed ([TallyRailMark]). Every slot is at least 48
  * dp tall: when the letters don't fit, letters share a slot ([TallyRailSlots]), which shows its
  * first letter and names all of them to screen readers ("Apps starting with G or K"). There are no
@@ -78,7 +78,7 @@ import kotlin.math.roundToInt
  * layout does not apply (a phone held sideways, a tablet, the taskbar's All apps), it is the stock
  * scroller, and All apps keeps its stock paddings ([listEndPaddingPx]).
  *
- * Screen readers see one button per slot; with a keyboard, the arrows move between slots and Enter
+ * Screen readers see one button per slot. With a keyboard, the arrows move between slots and Enter
  * jumps.
  */
 class TallyLetterRail
@@ -219,7 +219,7 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 
     override fun setThumbOffsetY(y: Int) {
         super.setThumbOffsetY(y)
-        // The rail shows while the list can scroll; only then can the keyboard reach it.
+        // The rail shows while the list can scroll. Only then can the keyboard reach it.
         val focusable = tally && y >= 0
         if (isFocusable != focusable) isFocusable = focusable
     }
@@ -349,8 +349,8 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
     }
 
     /**
-     * Brings the list's place (where its content shows in this view) and the slots up to date;
-     * returns whether the rail shows.
+     * Brings the list's place (where its content shows in this view) and the slots up to date.
+     * Returns whether the rail shows.
      */
     private fun updateRail(): Boolean {
         val rv = mRv as? AllAppsRecyclerView
@@ -381,7 +381,7 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
         return shown
     }
 
-    /** Finds where [rv] shows its content in this view; returns whether a slot fits. */
+    /** Finds where [rv] shows its content in this view. Returns whether a slot fits. */
     private fun updateTrack(rv: RecyclerView): Boolean {
         val host = parent as? ViewGroup ?: return false
         var y = 0

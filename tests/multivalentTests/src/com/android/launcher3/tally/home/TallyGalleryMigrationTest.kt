@@ -83,7 +83,7 @@ class TallyGalleryMigrationTest {
 
     @Test
     fun movesTheOtherWayToo() {
-        // Glimpse is gone after an update; GrapheneOS's gallery is the system gallery.
+        // Glimpse is gone after an update. GrapheneOS's gallery is the system gallery.
         val plan =
             TallyGalleryMigration.plan(
                 listOf(AppItem(1, GLIMPSE, 0L), AppItem(2, GALLERY2, 0L)),
@@ -97,7 +97,7 @@ class TallyGalleryMigrationTest {
 
     @Test
     fun keepsGalleriesThatStillOpenAndTheCurrentOne() {
-        // A gallery the user installed keeps its item; the current gallery's item stays.
+        // A gallery the user installed keeps its item. The current gallery's item stays.
         val plan =
             TallyGalleryMigration.plan(
                 listOf(AppItem(1, GRAPHENEOS, 0L), AppItem(2, GLIMPSE, 0L)),

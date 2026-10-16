@@ -36,7 +36,7 @@ import kotlin.math.min
  * Tally's motion in one Launcher: the window growing out of its key, the return to
  * Home and Back to Home flying into it, Home's dim and the key's neighbours. It applies where
  * Tally's Home layout applies, a phone held upright ([TallyHomeLayout.appliesTo]), to a full-screen
- * window with no rotation on the way; everywhere else (landscape, tablets, a taskbar, split screen,
+ * window with no rotation on the way. Everywhere else (landscape, tablets, a taskbar, split screen,
  * desktop windows, a third-party launcher's Recents) the motion stays stock's. It changes how
  * things move, never what opens, closes, goes back or goes Home, or when.
  *

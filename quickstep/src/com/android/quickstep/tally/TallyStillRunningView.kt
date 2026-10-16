@@ -37,7 +37,7 @@ import kotlin.math.max
 
 /**
  * Recents' "Still running · Stop" row (Tally), under the action keys: a live lamp, "<app> is
- * running" and a Stop key, as the prototype's row (32 dp, 8 dp corners, a hairline edge; the Stop
+ * running" and a Stop key, as the prototype's row (32 dp, 8 dp corners, a hairline edge, and the Stop
  * key 28 dp with 4 dp corners), growing with the text size.
  *
  * The Stop key refuses touches that come through another window over it, as the whole row does
@@ -275,7 +275,7 @@ constructor(context: Context, attrs: AttributeSet? = null) :
         val targetHeight = max(targetMin, keyHeight + 2 * ringReach)
         stopKey.measure(exactly(targetWidth), exactly(targetHeight))
 
-        // Past the row's end the target may reach out; keep it inside this view, row centred.
+        // Past the row's end the target may reach out. Keep it inside this view, row centred.
         val overhang = max(0, (targetWidth - keyWidth) / 2 - rowPaddingEnd)
         setMeasuredDimension(rowWidth + 2 * overhang, max(rowHeight + 2 * gap, targetHeight))
     }

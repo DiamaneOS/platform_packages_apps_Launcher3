@@ -41,16 +41,16 @@ import com.android.launcher3.touch.ItemLongClickListener
  * Lifts Home's tallies band or search slot ([item], drawn by [view]) as Launcher lifts a widget,
  * where Tally lays Home out (an upright phone, [TallyHomeLayout.appliesTo]) and Home is at rest:
  * - a long press, after the widget's timeout (CheckLongPressHelper), picks it up and shows the
- *   widget's long-press menu over it (Remove);
+ *   widget's long-press menu over it (Remove).
  * - moving the finger drags it, scaled as a widget to the workspace's edit scale, with Launcher's
- *   drop targets: Remove, or a fling up, removes it as a widget with Undo ([TallyHomeRemoval]);
- *   dropped anywhere else, it goes back to its place, its only one on Home (Launcher's drag
- *   controller hands it here instead of to the workspace: [placeOf]);
+ *   drop targets: Remove, or a fling up, removes it as a widget with Undo ([TallyHomeRemoval]).
+ *   Dropped anywhere else, it goes back to its place, its only one on Home (Launcher's drag
+ *   controller hands it here instead of to the workspace: [placeOf]).
  * - TalkBack gets the Remove action a widget has.
  *
  * The view feeds its touches to [onTouchEvent] (and [hasPerformedLongPress] from its
  * onInterceptTouchEvent), passes on TalkBack's calls, and hides itself while [setLifted] says it is
- * picked up; a change of Home's layout (the view's setInsets) ends that too. It is a DraggableView
+ * picked up. A change of Home's layout (the view's setInsets) ends that too. It is a DraggableView
  * of the widget kind, which Launcher draws into the drag's image, and Poppable, which gives it the
  * long-press menu.
  */
@@ -119,7 +119,7 @@ class TallyHomeLift(
         )
     }
 
-    /** Performs TalkBack's Remove; returns whether [action] was it. */
+    /** Performs TalkBack's Remove. Returns whether [action] was it. */
     fun performAccessibilityAction(action: Int): Boolean {
         if (action != R.id.action_remove) return false
         val launcher = launcher() ?: return false
@@ -127,9 +127,9 @@ class TallyHomeLift(
         return true
     }
 
-    // DragSource: removed (the drop's target took it) or not; if not, it is back where it was.
+    // DragSource: removed (the drop's target took it) or not. If not, it is back where it was.
     override fun onDropCompleted(target: View?, d: DragObject, success: Boolean) {
-        // Removed, it stays hidden until Home drops it; put back (onDrop), it shows once the drag's
+        // Removed, it stays hidden until Home drops it. Put back (onDrop), it shows once the drag's
         // image has settled.
         if (!success) setLifted(false)
     }
@@ -222,7 +222,7 @@ class TallyHomeItemInfo(@JvmField val item: TallyHomeItem, columns: Int) : ItemI
 
     /**
      * Whether its long-press menu opens below it: the band's does, clear of the date and the status
-     * bar above it; the slot's opens above it, as there is no room below.
+     * bar above it. The slot's opens above it, as there is no room below.
      */
     val menuOpensBelow: Boolean
         get() = item == TallyHomeItem.TALLIES

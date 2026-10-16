@@ -35,16 +35,16 @@ import com.android.quickstep.util.TransformParams
  * the device's to 24 dp), instead of shrinking into its Recents card as stock's does. When Recents
  * joins in (stock attaches Recents when the finger pauses or a quick switch starts) the window
  * settles into its card on the stone spring, as the prototype's window settles into its card when
- * Recents arms; stock's TaskViewSimulator still places the card.
+ * Recents arms. Stock's TaskViewSimulator still places the card.
  *
  * What the gesture leads to, and when, stays stock's (AbsSwipeUpHandler decides Home, Recents, a
  * quick switch or back to the app). On release this only changes the motion: Home flies from where
- * the window is ([current]); back to the app returns on the slab spring with the finger's velocity
- * ([returnMove]); Recents and a quick switch finish settling into the card with stock's own end
+ * the window is ([current]). Back to the app returns on the slab spring with the finger's velocity
+ * ([returnMove]). Recents and a quick switch finish settling into the card with stock's own end
  * animation ([finishInCard]).
  *
- * The recents input consumer still takes every touch while the window moves; nothing here handles
- * input. One per gesture; nothing is allocated per frame.
+ * The recents input consumer still takes every touch while the window moves. Nothing here handles
+ * input. One per gesture. Nothing is allocated per frame.
  */
 class TallySwipeWindow(
     private val stone: TallySpring,

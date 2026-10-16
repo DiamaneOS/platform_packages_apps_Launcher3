@@ -270,7 +270,7 @@ public class LauncherSwipeHandlerV2 extends AbsSwipeUpHandler<
             @Override
             protected void playScalingRevealAnimation() {
                 if (tally != null && mContainer != null) {
-                    // DiamaneOS Tally: Home at rest; the key's neighbours make room and settle as
+                    // DiamaneOS Tally: Home at rest. The key's neighbours make room and settle as
                     // the window lands (TallyHomeEntrance).
                     new TallyHomeEntrance(mContainer, tally, workspaceView, mSiblingAnimation,
                             tallyReleaseDim(), true /* fadeIn */, 0).start();

@@ -73,7 +73,7 @@ class TallySearchRankingTest {
             }
         val settings = listOf(found("Calls", Kind.SETTING, q))
         val sections = TallySearchRanking.sections(apps, emptyList(), settings, false)
-        // Both prefixes beat a setting's prefix; ties go by title.
+        // Both prefixes beat a setting's prefix. Ties go by title.
         assertEquals("Calculator", sections.top!!.title)
         assertEquals(
             listOf("Calendar", "Local Weather", "Vocal Coach"),

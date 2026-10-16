@@ -53,7 +53,7 @@ private const val DOCK_PREF_KEY = "pref_tally_search_frequent_dock"
 /**
  * Counts what Home opens for the "Suggestions" row of Home's search, only while its Home setting is
  * on (off by default). Counted are apps, shortcuts and Settings pages opened from Home, in the
- * user's own profile and a work profile; never the private space or a cloned profile.
+ * user's own profile and a work profile. Never the private space or a cloned profile.
  *
  * The record is one file in Launcher's credential-encrypted files, read and written on the model
  * thread only. It is in no backup (Launcher's backup takes only the files it lists) and is never
@@ -63,7 +63,7 @@ object TallyFrequentStore {
     @JvmField
     val ENABLED: ConstantItem<Boolean> = LauncherPrefs.backedUpItem(ENABLED_PREF_KEY, false)
 
-    /** Off leaves the dock's apps out of the row; they are still counted. */
+    /** Off leaves the dock's apps out of the row. They are still counted. */
     @JvmField val DOCK: ConstantItem<Boolean> = LauncherPrefs.backedUpItem(DOCK_PREF_KEY, true)
 
     const val ENABLED_KEY = ENABLED_PREF_KEY
@@ -72,7 +72,7 @@ object TallyFrequentStore {
     const val CLEAR_KEY = "pref_tally_search_frequent_clear"
 
     private const val FILE_NAME = "tally_frequent"
-    /** More than a full record takes; a larger file is not read. */
+    /** More than a full record takes. A larger file is not read. */
     private const val MAX_FILE_BYTES = 256 * 1024L
 
     sealed class Shown(val key: TallyFrequent.Key)
@@ -88,7 +88,7 @@ object TallyFrequentStore {
     /** Called on the main thread with the number of "Don't suggest" items. */
     private val hiddenWatchers = CopyOnWriteArrayList<(Int) -> Unit>()
 
-    /** Called for every activity Home starts; only an app's own launch or a shortcut is counted. */
+    /** Called for every activity Home starts. Only an app's own launch or a shortcut is counted. */
     @JvmStatic
     @MainThread
     fun onLaunched(context: Context, intent: Intent, item: ItemInfo?) {
@@ -125,7 +125,7 @@ object TallyFrequentStore {
         }
     }
 
-    /** Gives the row's items to [callback] on the main thread; none while the setting is off. */
+    /** Gives the row's items to [callback] on the main thread. None while the setting is off. */
     @MainThread
     fun load(context: Context, callback: (List<Shown>) -> Unit) {
         val app = context.applicationContext
@@ -149,7 +149,7 @@ object TallyFrequentStore {
         MODEL_EXECUTOR.execute { update(app) { TallyFrequent.unhide(it) } }
     }
 
-    /** Tells [watcher] how many "Don't suggest" items there are on each change; never a name. */
+    /** Tells [watcher] how many "Don't suggest" items there are on each change. Never a name. */
     @AnyThread
     fun watchHidden(context: Context, watcher: (Int) -> Unit) {
         hiddenWatchers.add(watcher)

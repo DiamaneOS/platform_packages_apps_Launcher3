@@ -314,7 +314,7 @@ public abstract class SwipeUpAnimationLogic implements
 
         /**
          * DiamaneOS Tally: how each frame of the flight looks, for a window whose corners on screen
-         * are {@code stockStartRadius} where stock's motion left it; only called when
+         * are {@code stockStartRadius} where stock's motion left it. Only called when
          * {@link #getTallySpring()} is not null.
          */
         @Nullable
@@ -361,7 +361,7 @@ public abstract class SwipeUpAnimationLogic implements
 
     /**
      * DiamaneOS Tally: sets {@code windowRect} (in the window's space) to where the window is when
-     * it follows the finger as Tally's does; stock's start rect otherwise.
+     * it follows the finger as Tally's does. Stock's start rect otherwise.
      */
     protected void overrideTallyStartRect(RectF windowRect) {}
 

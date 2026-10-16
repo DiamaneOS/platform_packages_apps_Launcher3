@@ -70,9 +70,9 @@ import kotlin.math.max
  * and the keyboard up, and what was found in sections: Top (the best of all, or a quick answer),
  * Apps (apps, then their shortcuts), Settings (pages), and Search in (hand-offs to the apps that
  * search contacts, files and the web with the typed words). The search slot under the dock opens it
- * ([com.android.launcher3.tally.home.TallySearchSlot]); All apps keeps its own search.
+ * ([com.android.launcher3.tally.home.TallySearchSlot]). All apps keeps its own search.
  *
- * It searches only what Launcher already has or is given for it ([TallySearchSession]); it reads no
+ * It searches only what Launcher already has or is given for it ([TallySearchSession]). It reads no
  * contacts, files or messages and sends nothing anywhere until a web hand-off is tapped. The typed
  * words are never logged nor kept: closing the sheet clears them, and it closes whenever Home stops
  * (an app opens, the screen locks), so it never shows over the lock screen or on return.
@@ -158,7 +158,7 @@ class TallySearchSheet(context: Context) :
                 hint = context.getString(android.R.string.search_go)
                 isSingleLine = true
                 maxLines = 1
-                // As All apps' search field, without capitals; and no learning from the words.
+                // As All apps' search field: no capitals and no learning from the words.
                 inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
                 imeOptions =
                     EditorInfo.IME_ACTION_SEARCH or
@@ -182,7 +182,7 @@ class TallySearchSheet(context: Context) :
                 clipToPadding = false
                 addView(list, ViewGroup.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
                 // Dragging the results puts the keyboard away, as in All apps' search. (The scroll
-                // view only sees the moves once it scrolls; a tap on a row stays the row's.)
+                // view only sees the moves once it scrolls. A tap on a row stays the row's.)
                 setOnTouchListener { _, ev ->
                     if (ev.actionMasked == MotionEvent.ACTION_MOVE && field.hasFocus()) {
                         field.hideKeyboard()
@@ -262,7 +262,7 @@ class TallySearchSheet(context: Context) :
 
     override fun isOfType(type: Int): Boolean = type and TYPE_TALLY_SEARCH != 0
 
-    // Touches go to the sheet's own views; nothing behind it takes them.
+    // Touches go to the sheet's own views. Nothing behind it takes them.
     override fun onControllerInterceptTouchEvent(ev: MotionEvent?): Boolean = false
 
     override fun getAccessibilityTarget(): Pair<View, String> =
@@ -531,7 +531,7 @@ class TallySearchSheet(context: Context) :
     }
 
     /**
-     * Adds a row: [icon] (tinted [tint] when given), [title], and [subtitle] under it; the top row
+     * Adds a row: [icon] (tinted [tint] when given), [title], and [subtitle] under it. The top row
      * on a key-like surface. A tap runs [onTap] with the icon, which launches animate from.
      */
     private fun addRow(
@@ -611,7 +611,7 @@ class TallySearchSheet(context: Context) :
         return row
     }
 
-    /** A row's press ripple, in r12; the top row also on a surface with a hairline. */
+    /** A row's press ripple, in r12. The top row also on a surface with a hairline. */
     private fun rowBackground(isTop: Boolean): Drawable {
         val mask =
             GradientDrawable().apply {

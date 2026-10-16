@@ -14,7 +14,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<!-- Tally: the words and icons of Recents' keys, in ink; faded as stock's while a key is off. -->
+<!-- Tally: the words and icons of Recents' keys, in ink. Faded as stock's while a key is off. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:alpha="?android:disabledAlpha" android:color="@color/tally_ink"
         android:state_enabled="false" />

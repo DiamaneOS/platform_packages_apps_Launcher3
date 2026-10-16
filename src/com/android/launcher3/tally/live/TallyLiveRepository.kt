@@ -26,7 +26,7 @@ import com.android.launcher3.util.PackageUserKey
 
 /**
  * What is live or failed on Home now: the keycap LEDs and the tallies row. The notification
- * listener publishes it from its worker thread (through [TallyLiveTracker]); views read it on the
+ * listener publishes it from its worker thread (through [TallyLiveTracker]). Views read it on the
  * main thread. Each publish replaces immutable values, so readers never see a half update.
  */
 class TallyLiveRepository {
@@ -75,7 +75,7 @@ class TallyLiveRepository {
     companion object {
         /**
          * The row's order, by each thing's lamp in the row ([TallyLiveItem.rowState]): failed, then
-         * live, then requested, then on, then off (a paused time); among equals the one that became
+         * live, then requested, then on, then off (a paused time). Among equals the one that became
          * so most recently first, which a readout's updates do not change.
          */
         @JvmField

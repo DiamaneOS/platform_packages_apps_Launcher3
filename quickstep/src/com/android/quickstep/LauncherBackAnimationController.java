@@ -137,7 +137,7 @@ public class LauncherBackAnimationController {
     private int mLastBlurRadius = 0;
 
     // DiamaneOS Tally: Back to Home as the prototype's (the window scales to 0.9 and follows the
-    // finger; Home stays at rest under a lifting dim), or null for stock's.
+    // finger, and Home stays at rest under a lifting dim), or null for stock's.
     private TallyMotion mTally;
     private final TallyWindowRect mTallyRect = new TallyWindowRect();
     private float mTallyProgress;
@@ -316,7 +316,7 @@ public class LauncherBackAnimationController {
     private void onCancelFinished() {
         customizeStatusBarAppearance(false);
         if (mTally != null) {
-            // DiamaneOS Tally: the app is in front again; Launcher's dim goes with Launcher.
+            // DiamaneOS Tally: the app is in front again. Launcher's dim goes with Launcher.
             mTally.getDim().clear();
         } else if (!mLauncher.getWorkspace().isOverlayShown()
                 && !mLauncher.isInState(LauncherState.ALL_APPS)) {
@@ -380,7 +380,7 @@ public class LauncherBackAnimationController {
                 && tally.appliesToReturn(new RemoteAnimationTarget[]{ mBackTarget })
                 ? tally : null;
         if (mTally != null) {
-            // DiamaneOS Tally: Home stays at rest under its dim; no scale, blur or scrim.
+            // DiamaneOS Tally: Home stays at rest under its dim. No scale, blur or scrim.
             mTallyProgress = 0;
             mTallyTouchDy = 0;
             mTallyDirection = 0;
@@ -464,7 +464,7 @@ public class LauncherBackAnimationController {
         if (mTally != null) {
             // DiamaneOS Tally: the prototype's progress, the finger's travel over 160 dp (the
             // platform's is the travel over the display's width, the window's width here), as WM
-            // Shell's page Back takes it; a Back button's progress as it is.
+            // Shell's page Back takes it. A Back button's progress as it is.
             int edge = event.getSwipeEdge();
             mTallyDirection =
                     edge == BackEvent.EDGE_LEFT ? 1 : edge == BackEvent.EDGE_RIGHT ? -1 : 0;

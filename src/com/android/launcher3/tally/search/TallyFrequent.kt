@@ -22,7 +22,7 @@ import kotlin.math.roundToInt
 
 /**
  * The rules for the "Suggestions" row of Home's search: what is counted, how a count fades and what
- * shows. Pure Kotlin; [TallyFrequentStore] keeps the record.
+ * shows. Pure Kotlin. [TallyFrequentStore] keeps the record.
  *
  * Kept per item: an app's launcher activity and profile, or a Settings page's key and title, with a
  * count and the day of the last opening. Never typed words, a shortcut's id or a time of day.
@@ -65,7 +65,7 @@ object TallyFrequent {
     data class Entry(val key: Key, val points: Int, val day: Long, val title: String = "")
 
     /**
-     * [hidden] holds "Don't suggest" items, oldest first; [locale] is the page titles' language.
+     * [hidden] holds "Don't suggest" items, oldest first. [locale] is the page titles' language.
      */
     data class State(
         val entries: List<Entry> = emptyList(),
@@ -192,7 +192,7 @@ object TallyFrequent {
     /** Drops the counts and "Don't suggest" names of the items that are [gone]. */
     @JvmStatic fun forget(state: State, gone: (Key) -> Boolean): State = forget(state, gone, gone)
 
-    /** A count goes with its activity; a "Don't suggest" name stays until the app itself goes. */
+    /** A count goes with its activity. A "Don't suggest" name stays until the app itself goes. */
     @JvmStatic
     fun forget(state: State, gone: (Key) -> Boolean, goneHidden: (Key) -> Boolean): State {
         val entries = state.entries.filter { !gone(it.key) }
@@ -231,7 +231,7 @@ object TallyFrequent {
         }
     }
 
-    /** Skips every line that is not as [encode] writes it; without the header, all of them. */
+    /** Skips every line that is not as [encode] writes it. Without the header, all of them. */
     @JvmStatic
     fun decode(text: String): State {
         val lines = text.split('\n')

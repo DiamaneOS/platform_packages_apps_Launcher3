@@ -38,7 +38,7 @@ import java.net.URISyntaxException
  * Keeps Home's gallery when the system gallery changes, as an OS update does when it moves from
  * Gallery2 to LineageOS's Glimpse, or later to GrapheneOS's new gallery. A Home, dock or folder
  * item that opens a former gallery which no longer has a launcher entry would be dropped when Home
- * loads; this points it at the current gallery instead, in the same place.
+ * loads. This points it at the current gallery instead, in the same place.
  *
  * It runs before Home reads its database. Only items the loader would otherwise drop change: a
  * former gallery that still has a launcher entry (one the user installed, say) keeps its items. It
@@ -74,7 +74,7 @@ object TallyGalleryMigration {
 
     /**
      * Brings Home to the current system gallery if it changed since the last run. Called by the
-     * loader before it reads the database; a failure is logged and leaves Home as it was.
+     * loader before it reads the database. A failure is logged and leaves Home as it was.
      */
     @JvmStatic
     @WorkerThread

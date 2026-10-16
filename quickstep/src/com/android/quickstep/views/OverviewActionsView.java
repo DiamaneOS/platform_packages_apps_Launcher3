@@ -270,7 +270,7 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
         mAlphaProperties[INDEX_HIDDEN_FLAGS_ALPHA].updateValue(isHidden ? 0 : 1);
         if (mStillRunning != null) {
             // Tally: the Still running row is not about a card, so Recents without cards (the
-            // last one swiped away) keeps it; the other reasons hide it with the action keys.
+            // last one swiped away) keeps it. The other reasons hide it with the action keys.
             mStillRunning.setActionsAlpha(INDEX_HIDDEN_FLAGS_ALPHA,
                     hidesStillRunning(mHiddenFlags) ? 0 : 1);
         }

@@ -87,7 +87,7 @@ class TallyHandoffsTest {
     fun noHandoffWithoutADefaultOrASearch() {
         val resolver =
             FakeResolver(
-                // A files app that takes no search; the web has no default browser.
+                // A files app that takes no search. The web has no default browser.
                 mapOf(Kind.FILES to files, Kind.WEB to chooser),
                 emptyMap(),
             )

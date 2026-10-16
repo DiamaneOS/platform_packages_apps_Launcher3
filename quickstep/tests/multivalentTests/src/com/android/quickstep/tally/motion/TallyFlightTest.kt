@@ -100,7 +100,7 @@ class TallyFlightTest {
     @Test
     fun neighbours_withinReach_moveStraightAway() {
         val out = FloatArray(2)
-        // A key 93 px to the right moves right; the key itself and keys out of reach stay.
+        // A key 93 px to the right moves right. The key itself and keys out of reach stay.
         assertThat(TallyParting.direction(100f, 100f, 193f, 100f, 140f, out)).isTrue()
         assertThat(out[0]).isWithin(1e-6f).of(1f)
         assertThat(out[1]).isWithin(1e-6f).of(0f)

@@ -109,7 +109,7 @@ constructor(
         }
         prefs.addListener(prefListener, PREF_ICON_SHAPE)
         lifecycle.addCloseable(themePreference.forEach(mainExecutor) { verifyIconState() })
-        // DiamaneOS Tally: SystemUI draws notifications' app icons in the same style; a preview's
+        // DiamaneOS Tally: SystemUI draws notifications' app icons in the same style. A preview's
         // or the boot taskbar's sandbox never sets it.
         if (context !is SandboxContext) {
             lifecycle.addCloseable(

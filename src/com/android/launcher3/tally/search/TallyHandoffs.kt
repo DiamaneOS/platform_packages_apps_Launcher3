@@ -19,7 +19,7 @@ package com.android.launcher3.tally.search
 /**
  * Home's search hands personal data and the web to the apps that hold them ("Contacts for "batt"",
  * "Files for "batt"", "Vanadium for "batt""): Home never reads contacts, files or messages, and
- * nothing leaves the phone until the user taps a web hand-off. Pure Kotlin; the Android side
+ * nothing leaves the phone until the user taps a web hand-off. Pure Kotlin. The Android side
  * resolves the apps ([Resolver]).
  *
  * Each hand-off goes to the user's default app for its kind (the one Android picks without asking:
@@ -76,7 +76,7 @@ object TallyHandoffs {
     fun isChooser(target: Target): Boolean =
         target.packageName == CHOOSER_PACKAGE || target.className.endsWith(".ResolverActivity")
 
-    /** The words passed on: trimmed, single spaces, at most [MAX_QUERY_LENGTH]; null if blank. */
+    /** The words passed on: trimmed, single spaces, at most [MAX_QUERY_LENGTH]. Null if blank. */
     @JvmStatic
     fun queryOf(text: String): String? {
         val words = text.trim().replace(Regex("\\s+"), " ")

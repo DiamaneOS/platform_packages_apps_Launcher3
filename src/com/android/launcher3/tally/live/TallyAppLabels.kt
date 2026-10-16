@@ -31,9 +31,9 @@ import com.android.launcher3.util.PackageUserKey
 /**
  * The names the tallies row shows: an app's launcher name as Home shows it, or its application name
  * for a package without one (a system service's notification), badged for a work profile as the
- * system badges labels; and whether an app is the system Clock, whose timer and stopwatch the row
+ * system badges labels. It also tells whether an app is the system Clock, whose timer and stopwatch the row
  * names in their place ([isSystemClock], [kindLabel]). Remembered per app in the language they were
- * read in; call from a worker thread.
+ * read in. Call from a worker thread.
  */
 class TallyAppLabels(private val context: Context) {
     private val packageManager = context.packageManager

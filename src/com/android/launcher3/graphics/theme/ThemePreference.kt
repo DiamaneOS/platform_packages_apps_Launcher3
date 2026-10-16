@@ -73,8 +73,8 @@ private constructor(
         if (oldValue != null)
             prefs.remove(*(legacyThemeKeys.values + LEGACY_MONO_THEME_ICON).toTypedArray())
         // DiamaneOS Tally: the Colour icon style until a style is chosen (its own apps as keys in
-        // their own colours, every other app's own icon). Nothing is stored for this default;
-        // choosing Minimal stores it, choosing Default stores "" and keeps the apps' own icons, and
+        // their own colours, every other app's own icon). Nothing is stored for this default.
+        // Choosing Minimal stores it, choosing Default stores "" and keeps the apps' own icons, and
         // a legacy choice still migrates as above.
         if (currentValue == null && !prefs.has(THEME_ID) && !prefs.has(LEGACY_MONO_THEME_ICON))
             currentValue = COLOUR_THEME_VALUE

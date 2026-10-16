@@ -25,11 +25,11 @@ import kotlin.math.pow
 /**
  * Sums for Home's search, worked out on the phone: a small recursive-descent parser over numbers,
  * the four operations, powers, percentages and brackets. No script engine, and nothing evaluated
- * but these; input is capped at [MAX_LENGTH] characters and [MAX_DEPTH] levels of nesting.
+ * but these. Input is capped at [MAX_LENGTH] characters and [MAX_DEPTH] levels of nesting.
  *
- * Multiplication takes `*`, `×`, `·` and `x`; division `/` and `÷` (not `:`, which a time has);
- * minus `-` and `−`; powers `^`. A number takes `.` or the language's own decimal separator,
- * without grouping. `a ± b%` adds or takes b percent of a, as a calculator does; elsewhere `b%` is
+ * Multiplication takes `*`, `×`, `·` and `x`. Division `/` and `÷` (not `:`, which a time has).
+ * Minus `-` and `−`, and powers `^`. A number takes `.` or the language's own decimal separator,
+ * without grouping. `a ± b%` adds or takes b percent of a, as a calculator does. Elsewhere `b%` is
  * b / 100. `2(3)` multiplies.
  */
 object TallyArithmetic {
@@ -37,7 +37,7 @@ object TallyArithmetic {
     const val MAX_LENGTH = 120
     /** The deepest nesting of brackets, signs and powers read. */
     private const val MAX_DEPTH = 32
-    /** Exact powers up to this exponent; others in double precision. */
+    /** Exact powers up to this exponent. Others in double precision. */
     private const val MAX_EXACT_EXPONENT = 999
     /** Results beyond this magnitude are not shown. */
     private val LIMIT = BigDecimal("1E1000")

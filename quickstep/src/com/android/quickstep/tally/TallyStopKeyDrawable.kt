@@ -28,8 +28,8 @@ import kotlin.math.ceil
 
 /**
  * The Stop key of Recents' "Still running · Stop" row (Tally): a filled key in the accent with 4 dp
- * corners, centred in the bounds of a larger touch target. Pressed, the press layer lies over it;
- * with keyboard focus, the accent focus ring sits 2 dp clear of it.
+ * corners, centred in the bounds of a larger touch target. Pressed, the press layer lies over it.
+ * With keyboard focus, the accent focus ring sits 2 dp clear of it.
  */
 internal class TallyStopKeyDrawable(context: Context) : Drawable() {
 

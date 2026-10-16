@@ -2115,7 +2115,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                             .setDuration(mTallyMotion.getImpulseFlightMillis()));
                 }
             } else if (tally) {
-                // DiamaneOS Tally: Home is at rest; the key's neighbours make room and settle as
+                // DiamaneOS Tally: Home is at rest. The key's neighbours make room and settle as
                 // the window lands, and Home's dim clears (TallyHomeEntrance).
                 anim.play(new TallyHomeEntrance(mLauncher, mTallyMotion, launcherView,
                         rectFSpringAnim, fromPredictiveBack

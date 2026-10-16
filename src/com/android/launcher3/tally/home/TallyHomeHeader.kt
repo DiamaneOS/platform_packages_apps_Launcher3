@@ -51,13 +51,13 @@ import kotlin.math.roundToInt
  * or a tablet, where Home keeps stock's layout, it shows nothing.
  *
  * The band comes off Home as a widget does ([TallyHomeLift]) and comes back in Home settings
- * ([TallyHomeItem.TALLIES]); the date stays. Taken off, the band only hides: the notifications
+ * ([TallyHomeItem.TALLIES]). The date stays. Taken off, the band only hides: the notifications
  * behind it are read as before, for the keys' LEDs.
  *
  * The band shows what [com.android.launcher3.tally.live.TallyLiveRepository] publishes: things live
  * or failed now, read from the dots' notification listener. A tap on one opens its app through
  * Launcher's own start path, its window growing out of the band's key (or the notification shade
- * for a system service with no app on Home); "+n more" opens the shade.
+ * for a system service with no app on Home). "+n more" opens the shade.
  */
 class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
     FrameLayout(context, attrs), Insettable {
@@ -205,8 +205,8 @@ class TallyHomeHeader @JvmOverloads constructor(context: Context, attrs: Attribu
 
     /**
      * Starts [item]'s app as All apps starts it, through Launcher's own start path (its safe-mode,
-     * work profile and private space handling, and the launch animation, growing out of [key]);
-     * returns whether it started.
+     * work profile and private space handling, and the launch animation, growing out of [key]).
+     * Returns whether it started.
      */
     private fun startApp(item: TallyLiveItem, key: View): Boolean {
         val user = item.app.mUser ?: return false

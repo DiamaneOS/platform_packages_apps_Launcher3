@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 <!-- DiamaneOS Tally: a long-press menu's group has a hairline edge in the outline variant, as the
-     prototype's menus (.mc-menu), so it stands off a wallpaper in the same tone; its arrow carries
+     prototype's menus (.mc-menu), so it stands off a wallpaper in the same tone. Its arrow carries
      the edge on (ArrowPopup). -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">

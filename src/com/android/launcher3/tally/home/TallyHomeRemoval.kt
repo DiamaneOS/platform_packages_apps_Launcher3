@@ -38,7 +38,7 @@ object TallyHomeRemoval {
     /** Whether [info] is one of Tally's Home items, which the model never holds. */
     @JvmStatic fun handles(info: ItemInfo): Boolean = info is TallyHomeItemInfo
 
-    /** Removes [info]'s item if it is one of Tally's Home items; returns whether it was. */
+    /** Removes [info]'s item if it is one of Tally's Home items. Returns whether it was. */
     @JvmStatic
     fun remove(launcher: Launcher, info: ItemInfo): Boolean {
         if (info !is TallyHomeItemInfo) return false

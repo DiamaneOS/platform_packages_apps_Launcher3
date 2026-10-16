@@ -93,7 +93,7 @@ class StillRunningModelTest {
         model.onStoppableAppsChanged(setOf(MUSIC))
         model.onTaskSwiped(MUSIC, "Music")
 
-        // Recents closes and opens; a card is swiped before SystemUI answers.
+        // Recents closes and opens. A card is swiped before SystemUI answers.
         model.onStoppableAppsChanged(null)
         model.onTaskSwiped(DOWNLOADS, "Downloads")
         model.onStoppableAppsChanged(setOf(MUSIC))
@@ -153,7 +153,7 @@ class StillRunningModelTest {
         model.onTaskSwiped(MUSIC, "Music")
         model.takeStop()
 
-        // SystemUI refused and still lists the app; another app's service changed meanwhile.
+        // SystemUI refused and still lists the app. Another app's service changed meanwhile.
         model.onStoppableAppsChanged(setOf(MUSIC, DOWNLOADS))
 
         assertThat(model.row).isNull()

@@ -68,7 +68,7 @@ import kotlin.math.min
  * readout each, with hairline dividers like a gauge cluster and colour only in the lamps. It shows
  * the most urgent thing live or failed now (failed, then live, then requested, then on) and, when
  * there are more than two, "+n more", which opens the notification shade. Two keys sit side by side
- * (one alone spans the row); from 150 % text they stack. With nothing live the band is empty, and
+ * (one alone spans the row). From 150 % text they stack. With nothing live the band is empty, and
  * Home keeps its place, so the grid never moves.
  *
  * On Home, the band comes off as a widget does ([lift], [TallyHomeLift]): a long press anywhere on
@@ -161,7 +161,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
             }
     }
 
-    /** Updates the readouts (a chronometer's time); returns whether one is counting. */
+    /** Updates the readouts (a chronometer's time). Returns whether one is counting. */
     fun tick(): Boolean {
         var counting = false
         for (i in 0 until shown) counting = cells[i].refreshReadout() or counting
@@ -177,7 +177,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
     /**
      * How long from [now] (SystemClock.elapsedRealtime) the next [tick] should wait: until a
      * counting readout turns to its next second, and a few milliseconds more, as the system's
-     * chronometer and the status bar chip wait, so the band and the chip turn together; at most a
+     * chronometer and the status bar chip wait, so the band and the chip turn together. At most a
      * second.
      */
     fun nextTickDelay(now: Long = SystemClock.elapsedRealtime()): Long {
@@ -477,7 +477,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         /**
          * What the key shows for [current]'s [readout]: the readout, or for a time that stands
          * still "Paused · 04:12", or "Paused" alone where the key has no room for the time
-         * ([pausedTimeFits]; its words for screen readers always have it).
+         * ([pausedTimeFits], while its words for screen readers always have it).
          */
         private fun shownReadout(current: TallyLiveItem, readout: String): String =
             when {
@@ -548,7 +548,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
 
         /**
          * Fits the name in [room], as the prototype fits a label before it truncates one: in Semi
-         * Condensed where it does not fit, then on two lines ([showsWholeOnTwoLines]); never
+         * Condensed where it does not fit, then on two lines ([showsWholeOnTwoLines]). Never
          * narrower than Semi Condensed. Only then does it end in an ellipsis.
          */
         private fun fitName(room: Int) {
@@ -721,7 +721,7 @@ class TallyTalliesRow(context: Context) : ViewGroup(context), DraggableView, Pop
         /**
          * A thing's readout as screen readers say it: a time in the user's language, each unit only
          * when it is not zero ("9 minutes, 57 seconds", "1 minute", "0 seconds"), as the system's
-         * chronometer reads its time; else [readoutOf] (a percentage), or nothing.
+         * chronometer reads its time. Else [readoutOf] (a percentage), or nothing.
          */
         @JvmStatic
         fun spokenReadoutOf(

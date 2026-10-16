@@ -33,7 +33,7 @@ public class AppFilter {
         return !mFilteredComponents.contains(app);
     }
 
-    /** Whether All apps lists {@code app} of {@code user}; Moments narrows it while it is on. */
+    /** Whether All apps lists {@code app} of {@code user}. Moments narrows it while it is on. */
     public boolean shouldShowApp(ComponentName app, UserHandle user) {
         return shouldShowApp(app) && MomentsHome.shouldShowApp(app, user);
     }

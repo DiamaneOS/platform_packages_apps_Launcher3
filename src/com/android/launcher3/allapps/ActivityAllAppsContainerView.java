@@ -1607,7 +1607,7 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         final AlphabeticalAppsList mAppsList;
         final Rect mPadding = new Rect();
         // DiamaneOS Tally: the letter rail's column, kept at the end edge only while the list can
-        // scroll (the rail shows only then); otherwise the grid stays centred.
+        // scroll (the rail shows only then). Otherwise the grid stays centred.
         int mRailPadding;
         AllAppsRecyclerView mRecyclerView;
         private OnFocusChangeListener mOnFocusChangeListener;

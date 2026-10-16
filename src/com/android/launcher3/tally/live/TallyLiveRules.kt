@@ -44,8 +44,8 @@ import com.android.launcher3.tally.lamp.TallyLampState
  * Only the flags, the category, the posting package, the ranking's channel and importance, and
  * whether the notification has a chronometer, a progress bar, a call template or a media session
  * are read here. For the tallies band, [TallyLiveTracker] also reads the progress bar's value, the
- * chronometer's time and a MetricStyle's time ([TallyMetricTime]), which the system itself draws;
- * titles, texts and custom views are never read.
+ * chronometer's time and a MetricStyle's time ([TallyMetricTime]), which the system itself draws.
+ * Titles, texts and custom views are never read.
  *
  * A notification the shade does not show gives nothing at all ([shownInShade]).
  */
@@ -75,12 +75,12 @@ object TallyLiveRules {
     /**
      * Whether the notification shade shows a notification while the phone is awake, as SystemUI's
      * RankingCoordinator filters its list, and no stricter:
-     * - an app the system suspends shows nothing ([suspended], Ranking.isSuspended);
+     * - an app the system suspends shows nothing ([suspended], Ranking.isSuspended).
      * - Do Not Disturb hides a notification it intercepts with SUPPRESSED_EFFECT_NOTIFICATION_LIST
      *   in [suppressedVisualEffects] (Ranking.getSuppressedVisualEffects, set only for an
      *   intercepted notification), unless it is exempt, as NotificationEntry's
      *   isExemptFromDndVisualSuppression decides: a call, message, alarm, event or reminder never
-     *   is; otherwise a foreground service or a user-initiated job ([flags]), a [media]
+     *   is. Otherwise a foreground service or a user-initiated job ([flags]), a [media]
      *   notification with a session, or one whose channel is not [blockable] is.
      */
     @JvmStatic
@@ -125,14 +125,14 @@ object TallyLiveRules {
      * Whether a notification shows a live readout or an activity in progress (the
      * definition of live on Home), from what the notification itself declares:
      * - it is a Live Update: the system promoted it ([Notification.FLAG_PROMOTED_ONGOING], in
-     *   [flags]);
+     *   [flags]).
      * - it shows the system's chronometer ([showsChronometer], Notification.EXTRA_SHOW_CHRONOMETER,
      *   or a running MetricStyle time, [TallyMetricTime]): a timer, a stopwatch, a call, a
-     *   recording;
+     *   recording.
      * - it has a progress bar: a maximum above 0 ([progressMax], Notification.EXTRA_PROGRESS_MAX)
-     *   or an indeterminate one ([progressIndeterminate]): a download, an update, an install;
+     *   or an indeterminate one ([progressIndeterminate]): a download, an update, an install.
      * - its category is a call, navigation or a stopwatch, or it is a call ([callStyle],
-     *   Notification.CallStyle);
+     *   Notification.CallStyle).
      * - it is [media] with a session (Notification.MediaStyle with
      *   Notification.EXTRA_MEDIA_SESSION), which [stateOf] counts only while it runs, as it does
      *   while playing.
@@ -198,9 +198,9 @@ object TallyLiveRules {
      * notification's structure alone (never its text), or null:
      * - [ClockKind.TIMER] while the tally shows a count-down time ([timeShown] with [countDown]): a
      *   MetricStyle time counting down ([TallyMetricTime.countDown]), running or paused, or the
-     *   system's chronometer counting down;
+     *   system's chronometer counting down.
      * - [ClockKind.STOPWATCH] for a stopwatch ([Notification.CATEGORY_STOPWATCH]) or a count-up
-     *   time;
+     *   time.
      * - null for anything else (a ringing alarm, which has no readout) and for any other package.
      *
      * A package name proves nothing on its own: an app can take any name the system does not have.
@@ -231,7 +231,7 @@ object TallyLiveRules {
             else -> 4
         }
 
-    /** The more urgent of two states (the first when they are equal); null is none. */
+    /** The more urgent of two states (the first when they are equal). Null is none. */
     @JvmStatic
     fun moreUrgent(a: TallyLampState?, b: TallyLampState?): TallyLampState? =
         when {

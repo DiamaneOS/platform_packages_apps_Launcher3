@@ -564,7 +564,7 @@ public class RectFSpringAnim extends SurfaceReleaseCheck {
 
     /**
      * DiamaneOS Tally: one spring ([spring], damping ratio 1) moves every edge together, landing
-     * the rect on the target's visible key ([visibleFactor] of the target, about its centre); the
+     * the rect on the target's visible key ([visibleFactor] of the target, about its centre). The
      * three springs above are not used.
      */
     public static class TallySpringConfig extends SpringConfig {

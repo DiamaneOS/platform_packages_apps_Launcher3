@@ -28,7 +28,7 @@ import kotlin.math.sqrt
  * never bounces (the prototype's `T.SP`, the token library's `tally_spring_*`). A critically damped
  * spring has a closed form, which lets an Animator play it: a move that starts [x0] from its target
  * with velocity [v0] is `x(t) = (x0 + (v0 + ω x0) t) e^(-ω t)` from the target at time `t`, with `ω
- * = √stiffness`. That is the exact solution of SpringForce's equation; the prototype integrates the
+ * = √stiffness`. That is the exact solution of SpringForce's equation. The prototype integrates the
  * same equation in 1 ms steps (`H.Spring`).
  *
  * The motion code plays each move as a [Move] on a ValueAnimator over the move's settle time, so
@@ -114,11 +114,11 @@ constructor(val stiffness: Float, val tapImpulse: Double = TAP_IMPULSE) {
         /** The move's length in whole milliseconds, for an Animator's duration. */
         val millis: Long = ceil(seconds * 1000.0).toLong()
 
-        /** The value [t] seconds into the move; the target from [seconds] on. */
+        /** The value [t] seconds into the move. The target from [seconds] on. */
         fun valueAt(t: Double): Double =
             if (t >= seconds) to else to + displacement(x0, v0, maxOf(0.0, t))
 
-        /** The velocity [t] seconds into the move; 0 from [seconds] on. */
+        /** The velocity [t] seconds into the move. 0 from [seconds] on. */
         fun velocityAt(t: Double): Double =
             if (t >= seconds) 0.0 else velocity(x0, v0, maxOf(0.0, t))
 
@@ -133,7 +133,7 @@ constructor(val stiffness: Float, val tapImpulse: Double = TAP_IMPULSE) {
 
         /**
          * How far along the move is at [fraction]: 0 at the start, 1 at the target (the curve an
-         * interpolator would give; above 1 only if the move overshoots, which ratio 1 does only for
+         * interpolator would give. Above 1 only if the move overshoots, which ratio 1 does only for
          * releases, and never with [wall]).
          */
         fun progressAtFraction(fraction: Float): Float {

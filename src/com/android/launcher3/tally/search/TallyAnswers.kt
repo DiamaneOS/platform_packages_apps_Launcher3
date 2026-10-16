@@ -28,7 +28,7 @@ import java.util.Locale
 /**
  * Quick answers for Home's search, all worked out on the phone with nothing sent anywhere: a time
  * in another place ([TallyZoneTimes]), a unit conversion ([TallyUnits]) or a sum
- * ([TallyArithmetic]), tried in that order. Pure Kotlin; the Android side passes the language, the
+ * ([TallyArithmetic]), tried in that order. Pure Kotlin. The Android side passes the language, the
  * time now and its own time and date patterns.
  */
 object TallyAnswers {
@@ -92,7 +92,7 @@ object TallyAnswers {
     }
 
     /**
-     * [value] to [digits] significant digits in [locale]'s digits, with grouping; very large or
+     * [value] to [digits] significant digits in [locale]'s digits, with grouping. Very large or
      * small values in scientific notation.
      */
     @JvmStatic

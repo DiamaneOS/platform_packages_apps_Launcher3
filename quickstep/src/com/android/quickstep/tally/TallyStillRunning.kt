@@ -45,14 +45,14 @@ import javax.inject.Inject
  * list, told through `ISystemUiProxy.setStoppableAppsListener` while Recents shows) and does the
  * stopping (`ISystemUiProxy.stopApp`), after checking everything again. Launcher needs no
  * permission for this and never stops an app itself. The app is always the swiped card's own
- * package and user; SystemUI's list is only matched against it, and neither is logged or kept
+ * package and user. SystemUI's list is only matched against it, and neither is logged or kept
  * anywhere but in memory.
  */
 @LauncherAppSingleton
 class TallyStillRunning
 @VisibleForTesting
 constructor(
-    /** Sets SystemUI's listener; closing the result removes it. */
+    /** Sets SystemUI's listener. Closing the result removes it. */
     private val listen: (IStoppableAppsListener) -> SafeCloseable,
     /** Asks SystemUI to stop an app. */
     private val stopApp: (StoppableApp) -> Unit,
@@ -102,7 +102,7 @@ constructor(
 
     /**
      * Recents, shown by [owner], is open for the user to act on ([showing]), or no longer is. While
-     * any Recents is open, SystemUI's listener is set; opening Recents sets it again, so SystemUI
+     * any Recents is open, SystemUI's listener is set. Opening Recents sets it again, so SystemUI
      * checks every app's policy again and tells the whole set.
      */
     @UiThread

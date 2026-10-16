@@ -32,7 +32,7 @@ import androidx.annotation.WorkerThread
  * Settings search shows for the same words, by its rules and in its order: pages from its index
  * (enabled ones only: what the device or this user cannot use stays out), then installed apps' app
  * info, accessibility services and keyboards. Each comes with its kind, key, title and the page it
- * sits on; a result opens through SettingsIntelligence's own activity, as a tap in Settings search
+ * sits on. A result opens through SettingsIntelligence's own activity, as a tap in Settings search
  * opens it.
  *
  * The words go in the query's arguments (never a URI, which a permission denial would log), and
@@ -57,7 +57,7 @@ class TallySettingsSearch(private val context: Context) {
     private val trusted: Boolean by lazy { checkTrusted() }
 
     /**
-     * The results for [text], at most [TallySearchRanking.MAX_SETTINGS] + 1; [fresh] on a sheet's
+     * The results for [text], at most [TallySearchRanking.MAX_SETTINGS] + 1. [fresh] on a sheet's
      * first.
      */
     @WorkerThread
@@ -139,9 +139,9 @@ class TallySettingsSearch(private val context: Context) {
         private const val COLUMN_TITLE = "title"
         private const val COLUMN_PARENT = "parent"
         private const val COLUMN_KIND = "kind"
-        /** A Settings page from the index; SettingsIntelligence names the other kinds. */
+        /** A Settings page from the index. SettingsIntelligence names the other kinds. */
         const val KIND_PAGE = "page"
-        /** An installed app's app info; its key is the package name. */
+        /** An installed app's app info. Its key is the package name. */
         const val KIND_APP = "app"
         /** Longer than any kind SettingsIntelligence names. */
         private const val MAX_KIND_LENGTH = 32

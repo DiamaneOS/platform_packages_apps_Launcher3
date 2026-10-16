@@ -57,7 +57,7 @@ import kotlin.math.min
  * It comes off Home as a widget does ([TallyHomeLift]: a long press, or TalkBack's Remove) and
  * comes back in Home settings ([TallyHomeItem.SEARCH]). Taken off, where Tally lays Home out, the
  * hotseat keeps no room for it ([TallyHomeLayout.hotseatQsbHeightPx]) and it shows nothing and
- * takes no touch; All apps' search stays a swipe up away.
+ * takes no touch. All apps' search stays a swipe up away.
  */
 class TallySearchSlot(context: Context) :
     LinearLayout(context), Insettable, DraggableView, Poppable {

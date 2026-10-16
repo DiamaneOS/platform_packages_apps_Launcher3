@@ -15,7 +15,7 @@
      limitations under the License.
 -->
 <!-- Recents' keys in Tally (the OverviewActionButton style: the action keys and Clear all). The
-     token library gives the key's shape, colours and type; these two are the prototype's own for
+     token library gives the key's shape, colours and type. These two are the prototype's own for
      Recents' smaller keys (design/prototypes/tally/app.css, .rc-keys .key-tonal). -->
 <resources>
     <!-- 13 sp words, so three keys fit across the phone. -->

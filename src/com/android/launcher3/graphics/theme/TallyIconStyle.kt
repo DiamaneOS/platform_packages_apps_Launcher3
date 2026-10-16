@@ -26,7 +26,7 @@ import com.android.launcher3.graphics.theme.ThemePreference.ThemeValue
 
 /**
  * DiamaneOS Tally: the icon style by name. Wallpaper & style reads and sets it through Launcher's
- * customization provider ([PATH]); Launcher keeps it in a secure setting ([SETTING]) for SystemUI,
+ * customization provider ([PATH]). Launcher keeps it in a secure setting ([SETTING]) for SystemUI,
  * which draws notifications' app icons in the same style.
  *
  * Launcher's own preference ([ThemePreference]) stays the one source: the setting follows it, for
@@ -42,7 +42,7 @@ object TallyIconStyle {
     /** The style's column in [PATH]'s cursor, and its key in an update's values. */
     const val KEY = "icon_style"
 
-    /** Each of DiamaneOS's own apps a key in its own colour; every other app its own icon. */
+    /** Each of DiamaneOS's own apps a key in its own colour. Every other app its own icon. */
     const val COLOUR = "colour"
 
     /** Every app a monochrome glyph on the theme's key. */

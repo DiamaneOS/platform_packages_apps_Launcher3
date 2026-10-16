@@ -149,8 +149,8 @@ constructor(
                 TallyLiveItem.NO_PROGRESS
             }
         // A MetricStyle's time (Clock's timers and stopwatch) comes before the chronometer, as in
-        // the status bar chip (Notification.resolveCompactContent): running, the row counts it;
-        // paused, the row shows it still.
+        // the status bar chip (Notification.resolveCompactContent): running, the row counts it.
+        // Paused, the row shows it still.
         val metric = if (readouts) input.metricTime else null
         val metricBase = metric?.chronometerBase(now, wallTime()) ?: TallyLiveItem.NO_CHRONOMETER
         val pausedSeconds = metric?.pausedSeconds ?: TallyLiveItem.NO_PAUSED_TIME
@@ -161,7 +161,7 @@ constructor(
         val countDown =
             if (metricShown) metric?.countDown == true else readouts && input.chronometerCountDown
         // The system Clock's timer and stopwatch go by those names, from the notification's
-        // structure; not in a work profile, whose tallies show only the app's name and state.
+        // structure. Not in a work profile, whose tallies show only the app's name and state.
         val kind =
             if (readouts) {
                 TallyLiveRules.clockKindOf(

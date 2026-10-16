@@ -138,7 +138,7 @@ data class TallyMetricTime(val kind: Kind, val millis: Long, val countDown: Bool
             // before in this process is not checked again: each item is checked here.
             val metrics: List<Any?> =
                 extras.getParcelableArrayList(EXTRA_METRICS, Bundle::class.java) ?: return null
-            // As MetricStyle.restoreFromExtras: the first unless set; -1 is none.
+            // As MetricStyle.restoreFromExtras: the first unless set. -1 is none.
             val critical = extras.getInt(EXTRA_METRICS_CRITICAL_INDEX, 0)
             if (critical in metrics.indices) return timeOf(valueOf(metrics[critical]))
             for (i in 0 until minOf(metrics.size, SHOWN_METRICS)) {
