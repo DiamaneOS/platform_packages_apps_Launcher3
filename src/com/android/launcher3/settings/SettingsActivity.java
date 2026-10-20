@@ -208,6 +208,10 @@ public class SettingsActivity extends FragmentActivity
 
             getPreferenceManager().setSharedPreferencesName(LauncherFiles.SHARED_PREFERENCES_KEY);
             setPreferencesFromResource(R.xml.launcher_preferences, rootKey);
+            // DiamaneOS Tally: Home's own entries, in a file of ours so res-stock cannot replace them.
+            if (rootKey == null) {
+                addPreferencesFromResource(R.xml.tally_launcher_preferences);
+            }
 
             PreferenceScreen screen = getPreferenceScreen();
             for (int i = screen.getPreferenceCount() - 1; i >= 0; i--) {

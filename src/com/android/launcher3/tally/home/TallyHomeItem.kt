@@ -58,7 +58,7 @@ enum class TallyHomeItem(@JvmField val prefKey: String) {
     }
 
     companion object {
-        /** The settings' keys, which Home settings (launcher_preferences.xml) names too. */
+        /** The settings' keys, which Home settings (tally_launcher_preferences.xml) names too. */
         const val TALLIES_KEY = TALLIES_PREF_KEY
         const val SEARCH_KEY = SEARCH_PREF_KEY
 

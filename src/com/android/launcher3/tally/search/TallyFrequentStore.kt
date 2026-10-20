@@ -46,7 +46,7 @@ import java.io.IOException
 import java.time.LocalDate
 import java.util.concurrent.CopyOnWriteArrayList
 
-/** Also named in res/xml/launcher_preferences.xml. */
+/** Also named in res/xml/tally_launcher_preferences.xml. */
 private const val ENABLED_PREF_KEY = "pref_tally_search_frequent"
 private const val DOCK_PREF_KEY = "pref_tally_search_frequent_dock"
 
