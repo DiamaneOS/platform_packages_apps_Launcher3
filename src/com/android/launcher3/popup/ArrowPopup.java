@@ -54,6 +54,7 @@ import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.shortcuts.DeepShortcutView;
+import com.android.launcher3.tally.popup.TallyArrowDrawable;
 import com.android.launcher3.util.RunnableList;
 import com.android.launcher3.util.Themes;
 import com.android.launcher3.views.ActivityContext;
@@ -367,7 +368,7 @@ public abstract class ArrowPopup<T extends ActivityContext> extends AbstractFloa
 
     protected void updateArrowColor() {
         if (!Gravity.isVertical(mGravity)) {
-            mArrow.setBackground(new RoundedArrowDrawable(
+            mArrow.setBackground(new TallyArrowDrawable(
                     mArrowWidth, mArrowHeight, mArrowPointRadius,
                     mOutlineRadius, getMeasuredWidth(), getMeasuredHeight(),
                     mArrowOffsetHorizontal, -mArrowOffsetVertical,
