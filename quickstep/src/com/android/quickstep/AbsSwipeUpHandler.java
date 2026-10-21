@@ -16,9 +16,7 @@
 package com.android.quickstep;
 
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_HOME;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
-import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_270;
 import static android.view.Surface.ROTATION_90;
@@ -131,7 +129,6 @@ import com.android.launcher3.logging.StatsLogManager.StatsLogger;
 import com.android.launcher3.statehandlers.DesktopVisibilityController;
 import com.android.launcher3.statemanager.BaseState;
 import com.android.launcher3.statemanager.StatefulContainer;
-import com.android.launcher3.tally.home.TallyHomeLayout;
 import com.android.launcher3.taskbar.TaskbarInteractor;
 import com.android.launcher3.taskbar.TaskbarThresholdUtils;
 import com.android.launcher3.taskbar.customization.TaskbarFeatureEvaluator;
@@ -150,6 +147,7 @@ import com.android.mechanics.view.ViewMotionValue;
 import com.android.quickstep.GestureState.GestureEndTarget;
 import com.android.quickstep.RemoteTargetGluer.RemoteTargetHandle;
 import com.android.quickstep.tally.motion.TallySpring;
+import com.android.quickstep.tally.motion.TallySwipeStart;
 import com.android.quickstep.tally.motion.TallySwipeWindow;
 import com.android.quickstep.util.ActiveGestureErrorDetector;
 import com.android.quickstep.util.ActiveGestureLog;
@@ -179,7 +177,6 @@ import com.android.systemui.shared.recents.model.ThumbnailData;
 import com.android.systemui.shared.system.ActivityManagerWrapper;
 import com.android.systemui.shared.system.InputConsumerController;
 import com.android.systemui.shared.system.InteractionJankMonitorWrapper;
-import com.android.systemui.shared.system.QuickStepContract;
 import com.android.systemui.shared.system.SysUiStatsLog;
 import com.android.systemui.shared.system.TaskStackChangeListener;
 import com.android.systemui.shared.system.TaskStackChangeListeners;
@@ -1160,45 +1157,18 @@ public abstract class AbsSwipeUpHandler<
         return false;
     }
 
-    /**
-     * DiamaneOS Tally: lets the window follow the finger as Tally's does (TallySwipeWindow), on an
-     * upright phone in gesture navigation, for one full-screen app with no rotation on the way
-     * and no picture-in-picture to enter. Everything else keeps stock's motion.
-     */
+    /** DiamaneOS Tally: the window follows the finger where Tally's swipe up applies. */
     private void maybeStartTallySwipe(RecentsAnimationTargets targets, boolean forDesktop) {
         if (mTallySwipe != null) {
             mTallySwipe.cancel();
             mTallySwipe = null;
         }
-        if (!canUseTallyMotion() || forDesktop || mDp == null || mRemoteTargetHandles.length != 1
-                || mIsSwipeForSplit || mContinuingLastGesture
-                || !mDeviceState.isFullyGesturalNavMode() || mGestureState.isTrackpadGesture()
-                || !TallyHomeLayout.appliesTo(mDp)) {
+        if (!canUseTallyMotion()) {
             return;
         }
-        RecentsOrientedState orientation =
-                mRemoteTargetHandles[0].getTaskViewSimulator().getOrientationState();
-        if (orientation.getDisplayRotation() != ROTATION_0
-                || orientation.getTouchRotation() != ROTATION_0
-                || orientation.getRecentsActivityRotation() != ROTATION_0) {
-            return;
-        }
-        RemoteAnimationTarget running = targets.findTask(mGestureState.getTopRunningTaskId());
-        if (running == null || running.taskInfo == null || running.rotationChange != 0
-                || running.windowConfiguration.getActivityType() != ACTIVITY_TYPE_STANDARD
-                || running.windowConfiguration.getWindowingMode() != WINDOWING_MODE_FULLSCREEN
-                || (running.allowEnterPip && running.taskInfo.pictureInPictureParams != null
-                        && running.taskInfo.pictureInPictureParams.isAutoEnterEnabled())) {
-            return;
-        }
-        Resources res = mContext.getResources();
-        mTallySwipe = new TallySwipeWindow(TallySpring.stone(res), TallySpring.slab(res),
-                mDp.getDeviceProperties().getWidthPx(), mDp.getDeviceProperties().getHeightPx(),
-                res.getDisplayMetrics().density,
-                QuickStepContract.supportsRoundedCornersOnWindows(res)
-                        ? QuickStepContract.getWindowCornerRadius(mContext) : 0,
-                res.getFloat(R.dimen.tally_rubber_band_coefficient),
-                () -> {
+        mTallySwipe = TallySwipeStart.start(mContext, targets, forDesktop, mDp,
+                mRemoteTargetHandles, mIsSwipeForSplit, mContinuingLastGesture, mDeviceState,
+                mGestureState, () -> {
                     if (mRunningWindowAnim == null || mRunningWindowAnim.length == 0) {
                         applyScrollAndTransform();
                     }
