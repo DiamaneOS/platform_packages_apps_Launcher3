@@ -109,6 +109,7 @@ import com.android.launcher3.popup.Popup;
 import com.android.launcher3.popup.PopupController;
 import com.android.launcher3.search.StringMatcherUtility;
 import com.android.launcher3.tally.keycap.TallyKeycap;
+import com.android.launcher3.tally.keycap.TallyKeycapDrawing;
 import com.android.launcher3.tally.keycap.TallyKeycapLed;
 import com.android.launcher3.tally.lamp.TallyLampState;
 import com.android.launcher3.tally.live.TallyLiveRepository;
@@ -979,7 +980,8 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
      * @param canvas The canvas to draw to.
      */
     protected void drawDotIfNecessary(Canvas canvas) {
-        drawTallyKeycapIfNecessary(canvas);
+        TallyKeycapDrawing.drawIfNecessary(this, canvas, mTallyKeycap, mIcon, mIsIconVisible,
+                mTallyKeycapBounds, mTallyThemeManager);
         if (mTallyKeycap != null) {
             // DiamaneOS Tally: a keycap's LED (drawn with its relief) takes the dot's place.
             return;
@@ -995,49 +997,12 @@ public class BubbleTextView extends TextView implements ItemInfoUpdateReceiver,
         }
     }
 
-    /**
-     * Draws the keycap's relief over the icon just drawn, and moves a key that is being pressed or
-     * let go (DiamaneOS Tally).
-     */
-    private void drawTallyKeycapIfNecessary(Canvas canvas) {
-        if (mTallyKeycap == null || mIcon == null || !mIsIconVisible
-                || mIcon.getDelegate() instanceof PreloadIconDelegate) {
-            return;
-        }
-        getIconBounds(mTallyKeycapBounds);
-        float drawnScale = FastBitmapDrawable.SCALE.get(mIcon);
-        final int scrollX = getScrollX();
-        final int scrollY = getScrollY();
-        canvas.translate(scrollX, scrollY);
-        // Its LED shows its app's state wherever the key is drawn: under its long-press menu and
-        // in the drag's image too, where stock hides the dot.
-        mTallyKeycap.draw(canvas, mTallyKeycapBounds, drawnScale,
-                mTallyThemeManager.getIconShape(),
-                getTag() instanceof ItemInfo info && info.isInHotseat(), /* hideLed= */ false);
-        canvas.translate(-scrollX, -scrollY);
-        float nextScale = mTallyKeycap.advance();
-        if (nextScale != drawnScale) {
-            // Invalidates this view: the next frame draws the icon at the new scale.
-            FastBitmapDrawable.SCALE.set(mIcon, nextScale);
-        } else if (mTallyKeycap.isMoving()) {
-            postInvalidateOnAnimation();
-        }
-    }
-
     @Override
     protected void drawableStateChanged() {
         super.drawableStateChanged();
-        if (mTallyKeycap != null) {
-            boolean pressed = false;
-            for (int state : getDrawableState()) {
-                if (state == android.R.attr.state_pressed) {
-                    pressed = true;
-                    break;
-                }
-            }
-            if (mTallyKeycap.setPressed(pressed)) {
-                invalidate();
-            }
+        if (mTallyKeycap != null
+                && TallyKeycapDrawing.setPressed(mTallyKeycap, getDrawableState())) {
+            invalidate();
         }
     }
 
