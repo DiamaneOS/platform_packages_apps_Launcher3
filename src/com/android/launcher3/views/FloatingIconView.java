@@ -27,7 +27,6 @@ import static com.android.launcher3.views.FloatingIconViewCompanion.setPropertie
 import android.animation.Animator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.AdaptiveIconDrawable;
@@ -61,6 +60,7 @@ import com.android.launcher3.model.data.ItemInfo;
 import com.android.launcher3.model.data.ItemInfoWithIcon;
 import com.android.launcher3.popup.SystemShortcut;
 import com.android.launcher3.shortcuts.DeepShortcutView;
+import com.android.launcher3.tally.motion.TallyWindowClip;
 import com.android.launcher3.util.AsyncView;
 
 import java.util.function.Supplier;
@@ -113,10 +113,8 @@ public class FloatingIconView extends FrameLayout implements
 
     private float mIconOffsetY;
 
-    // DiamaneOS Tally: the window this view stands in for, as a rounded rect in this view's own
-    // coordinates. While set, nothing is drawn outside it (setWindowClip).
-    private final Path mWindowClip = new Path();
-    private boolean mClipToWindow;
+    // DiamaneOS Tally: while set, nothing is drawn outside the window (setWindowClip).
+    private final TallyWindowClip mTallyClip = new TallyWindowClip();
 
     public FloatingIconView(Context context) {
         this(context, null);
@@ -189,29 +187,9 @@ public class FloatingIconView extends FrameLayout implements
         }
     }
 
-    /**
-     * DiamaneOS Tally: draws this view only inside the window it stands in for, the rounded rect
-     * {@code windowRect} (in the coordinates of the rect given to {@link #update}) with corners
-     * {@code windowRadius}, or everywhere again when {@code windowRect} is null. Tally's motion
-     * places this view on the key's whole icon bounds, larger than the window, so that the key
-     * inside them matches the window. The icon's background fills those bounds, and would show
-     * around the window as a rim. Call it after each {@link #update}, which moves and scales this
-     * view. Allocates nothing.
-     */
+    /** DiamaneOS Tally: draws this view only inside its window (TallyWindowClip#set). */
     public void setWindowClip(@Nullable RectF windowRect, float windowRadius) {
-        mWindowClip.rewind();
-        mClipToWindow = windowRect != null;
-        float sx = getScaleX();
-        float sy = getScaleY();
-        if (windowRect != null && sx > 0 && sy > 0) {
-            // The view is scaled about its top left corner (ClipIconView#update).
-            float x = getLeft() + getTranslationX();
-            float y = getTop() + getTranslationY();
-            mWindowClip.addRoundRect((windowRect.left - x) / sx, (windowRect.top - y) / sy,
-                    (windowRect.right - x) / sx, (windowRect.bottom - y) / sy,
-                    windowRadius / sx, windowRadius / sy, Path.Direction.CW);
-        }
-        invalidate();
+        mTallyClip.set(this, windowRect, windowRadius);
     }
 
     /**
@@ -513,19 +491,12 @@ public class FloatingIconView extends FrameLayout implements
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
-        int count = -1;
-        if (mClipToWindow) {
-            // DiamaneOS Tally: the icon, its background and its badge stay inside the window.
-            count = canvas.save();
-            canvas.clipPath(mWindowClip);
-        }
+        int count = mTallyClip.clip(canvas);
         super.dispatchDraw(canvas);
         if (mBadge != null) {
             mBadge.draw(canvas);
         }
-        if (count >= 0) {
-            canvas.restoreToCount(count);
-        }
+        TallyWindowClip.restore(canvas, count);
     }
 
     /**
@@ -786,8 +757,7 @@ public class FloatingIconView extends FrameLayout implements
         mIconOffsetY = 0;
         mMatchVisibilityView = null;
         mFadeOutView = null;
-        mClipToWindow = false;
-        mWindowClip.rewind();
+        mTallyClip.reset();
     }
 
     private static class IconLoadResult {
