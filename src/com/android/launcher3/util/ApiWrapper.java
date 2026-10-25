@@ -187,6 +187,12 @@ public class ApiWrapper {
     public void openNotificationShade() { }
 
     /**
+     * Turns the screen off as the power button does (DiamaneOS Tally: Home's double tap).
+     * Overridden in Quickstep, which asks SystemUI through its proxy. Nothing here.
+     */
+    public void goToSleep() { }
+
+    /**
      * Whether the notification shade or Quick Settings is fully open, covering the app under it
      * (DiamaneOS Tally: Home's tallies stop counting under it). Overridden in Quickstep, which
      * has SystemUI's state. False here.

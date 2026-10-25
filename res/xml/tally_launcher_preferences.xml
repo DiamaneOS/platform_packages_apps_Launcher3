@@ -55,4 +55,13 @@
         android:dependency="pref_tally_search_frequent"
         android:persistent="false" />
 
+    <!-- DiamaneOS Tally: a double tap on empty Home turns the screen off, off by default. Key
+         as in TallyDoubleTapSleep. -->
+    <SwitchPreference
+        android:key="pref_tally_double_tap_sleep"
+        android:title="@string/tally_double_tap_sleep"
+        android:summary="@string/tally_double_tap_sleep_summary"
+        android:defaultValue="false"
+        android:persistent="true" />
+
 </androidx.preference.PreferenceScreen>

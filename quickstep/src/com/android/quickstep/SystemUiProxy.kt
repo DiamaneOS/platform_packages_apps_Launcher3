@@ -435,6 +435,10 @@ constructor(
             systemUiProxy?.stopApp(packageName, userId)
         }
 
+    /** Tally: turns the screen off for Home's double tap, as the power button does. */
+    fun goToSleep() =
+        executeWithErrorLog({ "Failed call goToSleep" }) { systemUiProxy?.goToSleep() }
+
     @MainThread
     fun onStatusBarTouchEvent(event: MotionEvent) {
         Preconditions.assertUIThread()

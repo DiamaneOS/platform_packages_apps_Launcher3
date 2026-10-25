@@ -18,6 +18,7 @@ package com.android.launcher3.touch;
 import static android.view.MotionEvent.ACTION_CANCEL;
 import static android.view.MotionEvent.ACTION_DOWN;
 import static android.view.MotionEvent.ACTION_MOVE;
+import static android.view.MotionEvent.ACTION_POINTER_DOWN;
 import static android.view.MotionEvent.ACTION_POINTER_UP;
 import static android.view.MotionEvent.ACTION_UP;
 
@@ -47,9 +48,12 @@ import com.android.launcher3.Launcher;
 import com.android.launcher3.Workspace;
 import com.android.launcher3.dragndrop.DragLayer;
 import com.android.launcher3.logger.LauncherAtom;
+import com.android.launcher3.tally.home.TallyDoubleTap;
+import com.android.launcher3.tally.home.TallyDoubleTapSleep;
 import com.android.launcher3.tally.moments.MomentsHome;
 import com.android.launcher3.testing.TestLogging;
 import com.android.launcher3.testing.shared.TestProtocol;
+import com.android.launcher3.util.ApiWrapper;
 import com.android.launcher3.util.TouchUtil;
 
 /**
@@ -79,6 +83,7 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
 
     private final GestureDetector mGestureDetector;
     private final BoxSelectionHelper mBoxSelectionHelper;
+    private final TallyDoubleTap mDoubleTap;
 
     public WorkspaceTouchListener(Launcher launcher, Workspace<?> workspace) {
         mLauncher = launcher;
@@ -90,6 +95,10 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
         mBoxSelectionHelper = enableWorkspaceSelection()
                 ? new BoxSelectionHelper(launcher, workspace)
                 : null;
+        ViewConfiguration config = ViewConfiguration.get(launcher);
+        mDoubleTap = new TallyDoubleTap(config.getScaledTouchSlop(),
+                config.getScaledDoubleTapSlop(), ViewConfiguration.getDoubleTapTimeout(),
+                ViewConfiguration.getLongPressTimeout());
     }
 
     @Override
@@ -103,10 +112,10 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
 
         int action = ev.getActionMasked();
         if (action == ACTION_DOWN) {
-            // Check if we can handle long press.
-            boolean handleLongPress = canHandleLongPress();
+            // DiamaneOS Tally: Moments' page has no Home menu but takes Home's double tap.
+            boolean onEmptySpace = canHandleTouch();
 
-            if (handleLongPress) {
+            if (onEmptySpace) {
                 // Check if the event is not near the edges
                 DeviceProfile dp = mLauncher.getDeviceProfile();
                 DragLayer dl = mLauncher.getDragLayer();
@@ -116,8 +125,14 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
                         dl.getHeight() - insets.bottom);
                 mTempRect.inset(dp.getWorkspaceProfile().getEdgeMarginPx(),
                         dp.getWorkspaceProfile().getEdgeMarginPx());
-                handleLongPress = mTempRect.contains((int) ev.getX(), (int) ev.getY());
+                onEmptySpace = mTempRect.contains((int) ev.getX(), (int) ev.getY());
             }
+            mDoubleTap.onDown(ev.getEventTime(), ev.getX(), ev.getY(), onEmptySpace
+                    && ev.isFromSource(InputDevice.SOURCE_TOUCHSCREEN)
+                    && !mWorkspace.isPageInTransition());
+
+            // Check if we can handle long press.
+            boolean handleLongPress = onEmptySpace && canHandleLongPress();
 
             if (handleLongPress) {
                 mLongPressState = STATE_REQUESTED;
@@ -175,6 +190,20 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
             }
         }
 
+        // DiamaneOS Tally: Home's double tap turns the screen off, as the power button does.
+        if (action == ACTION_MOVE) {
+            if (mWorkspace.isHandlingTouch()) {
+                mDoubleTap.cancel();
+            } else {
+                mDoubleTap.onMove(ev.getX(), ev.getY());
+            }
+        } else if (action == ACTION_POINTER_DOWN || action == ACTION_CANCEL) {
+            mDoubleTap.cancel();
+        } else if (action == ACTION_UP && mDoubleTap.onUp(ev.getEventTime())
+                && canHandleTouch() && TallyDoubleTapSleep.isEnabled(mLauncher)) {
+            ApiWrapper.INSTANCE.get(mLauncher).goToSleep();
+        }
+
         if (action == ACTION_UP || action == ACTION_CANCEL) {
             cancelLongPress();
         }
@@ -197,9 +226,12 @@ public class WorkspaceTouchListener extends GestureDetector.SimpleOnGestureListe
 
     private boolean canHandleLongPress() {
         // Moments' page cannot be edited, so it has no Home menu.
+        return canHandleTouch() && !MomentsHome.isActive();
+    }
+
+    private boolean canHandleTouch() {
         return AbstractFloatingView.getTopOpenView(mLauncher) == null
-                && mLauncher.isInState(NORMAL)
-                && !MomentsHome.isActive();
+                && mLauncher.isInState(NORMAL);
     }
 
     private void cancelLongPress() {

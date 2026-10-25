@@ -181,6 +181,9 @@ open class SystemApiWrapper @Inject constructor(@ApplicationContext context: Con
     override fun openNotificationShade() =
         SystemUiProxy.INSTANCE[mContext].expandNotificationPanel()
 
+    // DiamaneOS Tally: Home's double tap turns the screen off, as the power button does.
+    override fun goToSleep() = SystemUiProxy.INSTANCE[mContext].goToSleep()
+
     // DiamaneOS Tally: Home's tallies stop counting while the shade covers Home.
     override fun isNotificationShadeExpanded() =
         SystemUiProxy.INSTANCE[mContext].lastSystemUiStateFlags and
