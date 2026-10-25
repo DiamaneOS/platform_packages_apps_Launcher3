@@ -110,4 +110,9 @@
     <string name="tally_frequent_cleared">Suggestions cleared</string>
     <!-- Home's search: takes an app or a Settings page off "Suggestions". [CHAR LIMIT=30] -->
     <string name="tally_frequent_dismiss">Don\'t suggest</string>
+    <!-- Home settings: switch for turning the screen off with a double tap on empty Home.
+         [CHAR LIMIT=40] -->
+    <string name="tally_double_tap_sleep">Double tap to turn off screen</string>
+    <!-- Home settings: the summary of "Double tap to turn off screen". -->
+    <string name="tally_double_tap_sleep_summary">Double tap an empty part of Home. The phone locks as it does with the power button.</string>
 </resources>
