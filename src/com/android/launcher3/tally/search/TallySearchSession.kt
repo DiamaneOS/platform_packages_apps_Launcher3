@@ -37,6 +37,7 @@ import com.android.launcher3.pm.UserCache
 import com.android.launcher3.popup.PopupPopulator
 import com.android.launcher3.search.StringMatcherUtility
 import com.android.launcher3.shortcuts.ShortcutRequest
+import com.android.launcher3.tally.moments.MomentsHome
 import com.android.launcher3.util.Executors.MAIN_EXECUTOR
 import com.android.launcher3.util.Executors.THREAD_POOL_EXECUTOR
 import java.util.Locale
@@ -54,6 +55,9 @@ import java.util.Locale
  * - Settings results (pages, app info, accessibility services, keyboards): [TallySettingsSearch], a
  *   short pause after typing stops.
  * - Hand-off targets: [TallyHandoffs], resolved once per session.
+ *
+ * While Moments shows only the chosen apps ([MomentsHome]), the model lists only those, and
+ * shortcuts, hand-offs and Settings results lead only to them.
  */
 class TallySearchSession(private val context: Context, private val listener: Listener) {
 
@@ -135,7 +139,15 @@ class TallySearchSession(private val context: Context, private val listener: Lis
             val fresh = firstPagesQuery
             firstPagesQuery = false
             THREAD_POOL_EXECUTOR.execute {
-                val pages = settingsSearch.query(query, fresh, signal)
+                // While Moments is on, Settings results need Settings among the chosen apps.
+                val pages =
+                    if (!MomentsHome.shouldShowPackage(TallySettingsSearch.SETTINGS_PACKAGE)) {
+                        emptyList()
+                    } else {
+                        settingsSearch
+                            .query(query, fresh, signal)
+                            .filter(TallySettingsSearch::shownByMoments)
+                    }
                 MAIN_EXECUTOR.execute {
                     if (!closed && current == generation) listener.onPagesFound(query, pages)
                 }
@@ -181,6 +193,10 @@ class TallySearchSession(private val context: Context, private val listener: Lis
         val index = shortcutIndex ?: indexShortcuts(searchable).also { shortcutIndex = it }
         val shortcuts =
             index
+                // The index lives for the sheet: Moments may have started since.
+                .filter { e ->
+                    e.app.componentName?.let { MomentsHome.shouldShowApp(it, e.app.user) } != false
+                }
                 .mapNotNull { entry ->
                     TallySearchRanking.match(query, entry.label)?.let { entry to it }
                 }
@@ -200,7 +216,9 @@ class TallySearchSession(private val context: Context, private val listener: Lis
         val me = android.os.Process.myUserHandle()
         val settingsApp =
             searchable.firstOrNull { it.targetPackage == SETTINGS_PACKAGE && it.user == me }
-        return AppsFound(apps, shortcuts, algorithm.offersPrivateSpace(query), settingsApp)
+        // Moments hides the private space, as All apps does.
+        val privateSpace = !MomentsHome.isActive() && algorithm.offersPrivateSpace(query)
+        return AppsFound(apps, shortcuts, privateSpace, settingsApp)
     }
 
     /**
