@@ -25,6 +25,7 @@ import android.os.Bundle
 import android.os.CancellationSignal
 import android.os.OperationCanceledException
 import androidx.annotation.WorkerThread
+import com.android.launcher3.tally.moments.MomentsHome
 
 /**
  * Settings results for Home's search, as Settings search finds them: SettingsIntelligence's
@@ -128,6 +129,18 @@ class TallySettingsSearch(private val context: Context) {
     }
 
     companion object {
+        /**
+         * Whether [page] leads only to apps Moments shows: every result opens in Settings, and an
+         * app's info also leads to that app.
+         */
+        @JvmStatic
+        fun shownByMoments(page: Page): Boolean =
+            MomentsHome.shouldShowPackage(SETTINGS_PACKAGE) &&
+                (page.kind != KIND_APP || MomentsHome.shouldShowPackage(page.key))
+
+        /** Settings, where every result but an app's info opens. */
+        const val SETTINGS_PACKAGE = "com.android.settings"
+
         /** SettingsIntelligence, and the names of its Home search contract. */
         const val PACKAGE = "com.android.settings.intelligence"
         const val PERMISSION = "de.diamaneos.permission.QUERY_SETTINGS_SEARCH"

@@ -58,6 +58,7 @@ import com.android.launcher3.R
 import com.android.launcher3.anim.AnimationSuccessListener
 import com.android.launcher3.icons.BitmapInfo
 import com.android.launcher3.model.data.AppInfo
+import com.android.launcher3.tally.moments.MomentsHome
 import com.android.launcher3.tally.search.TallySearchRanking.Found
 import com.android.launcher3.tally.search.TallySearchRanking.Kind
 import com.android.launcher3.touch.ItemClickHandler
@@ -405,7 +406,9 @@ class TallySearchSheet(context: Context) :
             addHeader(R.string.widget_settings)
             sections.settings.forEach { addFound(it, settingsIcon, isTop = false) }
         }
-        val handoffs = TallyHandoffs.handoffs(text, targets)
+        // While Moments is on, only to the chosen apps.
+        val shown = targets.filterValues { MomentsHome.shouldShowPackage(it.packageName) }
+        val handoffs = TallyHandoffs.handoffs(text, shown)
         if (handoffs.isNotEmpty()) {
             addHeader(R.string.tally_search_in)
             handoffs.forEach(::addHandoff)
