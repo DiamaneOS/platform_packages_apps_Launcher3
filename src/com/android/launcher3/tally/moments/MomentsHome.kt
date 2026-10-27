@@ -28,6 +28,7 @@ import android.os.UserHandle
 import android.provider.Settings
 import android.util.Log
 import android.util.SparseArray
+import androidx.annotation.VisibleForTesting
 import com.android.launcher3.BuildConfig
 import com.android.launcher3.InvariantDeviceProfile
 import com.android.launcher3.LauncherAppState
@@ -40,10 +41,11 @@ import com.android.launcher3.model.data.WorkspaceData
 import com.android.launcher3.model.data.WorkspaceData.ImmutableWorkspaceData
 import com.android.launcher3.model.data.WorkspaceItemInfo
 import com.android.launcher3.util.Executors.MODEL_EXECUTOR
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Home while the Moments switch is on: only the apps the user chose in Settings, on Home and in
- * All apps, for this user only (no work profile, no private space).
+ * Home while the Moments switch is on: only the apps the user chose in Settings, on Home, in All
+ * apps, in search and in Recents, for this user only (no work profile, no private space).
  *
  * SystemUI says when Moments is on (`tally_moments_home_active`) and Settings keeps the chosen
  * apps (`tally_moments_home_apps`). Both are system settings no app can read. Home's own layout
@@ -63,13 +65,14 @@ object MomentsHome {
     @Volatile private var packages: Set<String> = emptySet()
     @Volatile private var items: List<WorkspaceItemInfo> = emptyList()
     private var appContext: Context? = null
+    private val listeners = CopyOnWriteArrayList<Runnable>()
 
     /** Starts following the settings, once per process. */
     @JvmStatic
     @Synchronized
     fun init(context: Context) {
         if (appContext != null) return
-        val app = context.applicationContext
+        val app: Context = context.applicationContext ?: return
         appContext = app
         val observer =
             object : ContentObserver(Handler(Looper.getMainLooper())) {
@@ -100,6 +103,35 @@ object MomentsHome {
     @JvmStatic
     fun shouldShowApp(component: ComponentName, user: UserHandle): Boolean =
         !active || (user == Process.myUserHandle() && component.packageName in packages)
+
+    /** Whether Recents shows a task of [packageName] in [user]. */
+    @JvmStatic
+    fun shouldShowTask(packageName: String?, user: UserHandle): Boolean =
+        !active || (user == Process.myUserHandle() && packageName in packages)
+
+    /** Whether search may lead to [packageName] of this user (a hand-off, a Settings result). */
+    @JvmStatic
+    fun shouldShowPackage(packageName: String?): Boolean = !active || packageName in packages
+
+    /** Runs [listener] on the model thread each time Moments starts, ends or changes its apps. */
+    @JvmStatic
+    fun addListener(listener: Runnable) {
+        listeners += listener
+    }
+
+    @JvmStatic
+    fun removeListener(listener: Runnable) {
+        listeners -= listener
+    }
+
+    /** Sets the state directly, without settings or a model to reload. */
+    @VisibleForTesting
+    @JvmStatic
+    fun setForTest(active: Boolean, packages: Set<String>) {
+        this.packages = packages
+        this.active = active
+        listeners.forEach(Runnable::run)
+    }
 
     /** Home's items to show: Moments' page while it is on, otherwise [data] unchanged. */
     @JvmStatic
@@ -132,6 +164,7 @@ object MomentsHome {
         items = if (nowActive) buildItems(context, nowPackages) else emptyList()
         packages = nowPackages
         active = nowActive
+        listeners.forEach(Runnable::run)
         if (reload) LauncherAppState.getInstance(context).model.forceReload("tally-moments")
     }
 

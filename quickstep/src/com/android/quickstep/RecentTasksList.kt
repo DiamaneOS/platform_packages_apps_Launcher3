@@ -23,6 +23,7 @@ import android.companion.virtual.VirtualDeviceManager
 import android.content.Context
 import android.content.Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
 import android.os.Process
+import android.os.UserHandle
 import android.util.Log
 import android.util.SparseBooleanArray
 import android.view.Display
@@ -36,6 +37,7 @@ import com.android.launcher3.concurrent.annotations.LightweightBackgroundPriorit
 import com.android.launcher3.concurrent.annotations.Ui
 import com.android.launcher3.dagger.ApplicationContext
 import com.android.launcher3.dagger.LauncherAppSingleton
+import com.android.launcher3.tally.moments.MomentsHome
 import com.android.launcher3.util.DaggerSingletonTracker
 import com.android.launcher3.util.LooperExecutor
 import com.android.launcher3.util.OverviewReleaseFlags.enableLaterIsLockedCheck
@@ -143,6 +145,14 @@ constructor(
             }
 
         tracker.addCloseable(sysUiProxy.recentTasksListeners.register(recentTasksListener))
+
+        // Moments shows only the chosen apps' tasks: load them again when it starts or ends.
+        MomentsHome.init(context)
+        val momentsListener = Runnable {
+            mainThreadExecutor.execute { this@RecentTasksList.onRecentTasksChanged() }
+        }
+        MomentsHome.addListener(momentsListener)
+        tracker.addCloseable { MomentsHome.removeListener(momentsListener) }
     }
 
     /** Fetches the task keys skipping any local cache. */
@@ -360,7 +370,7 @@ constructor(
         lockedUsers: SparseBooleanArray,
     ): Task? {
         val taskKey = createTaskKey(taskInfo)
-        if (isTaskAutomated(taskKey)) return null
+        if (isTaskAutomated(taskKey) || isHiddenByMoments(taskKey)) return null
 
         return if (keyOnly) Task(taskKey)
         else Task.from(taskKey, taskInfo, /* isLocked= */ lockedUsers[taskKey.userId])
@@ -372,6 +382,9 @@ constructor(
         }
         return automationRepository.isPackageAutomated(taskKey.userId, taskKey.packageName)
     }
+
+    private fun isHiddenByMoments(taskKey: TaskKey): Boolean =
+        !MomentsHome.shouldShowTask(taskKey.packageName, UserHandle.of(taskKey.userId))
 
     private fun createTask(taskInfo: TaskInfo, minimizedTaskIds: Set<Int>): Task =
         Task.from(createTaskKey(taskInfo), taskInfo, false).apply {
@@ -403,7 +416,7 @@ constructor(
         val tasks =
             recentTaskInfo.taskInfoList
                 .map { createTask(it, minimizedTaskIds) }
-                .filterNot { isTaskAutomated(it.key) }
+                .filterNot { isTaskAutomated(it.key) || isHiddenByMoments(it.key) }
         return listOf(DesktopTask(deskId, displayId, tasks))
     }
 

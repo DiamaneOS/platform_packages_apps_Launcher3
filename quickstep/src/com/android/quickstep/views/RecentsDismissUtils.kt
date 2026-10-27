@@ -33,6 +33,7 @@ import com.android.launcher3.R
 import com.android.launcher3.concurrent.annotations.LightweightBackground
 import com.android.launcher3.concurrent.annotations.LightweightBackgroundPriority
 import com.android.launcher3.logging.StatsLogManager.LauncherEvent
+import com.android.launcher3.tally.moments.MomentsHome
 import com.android.launcher3.util.DynamicResource
 import com.android.launcher3.util.MSDLPlayerWrapper
 import com.android.launcher3.views.ActivityContext
@@ -348,9 +349,22 @@ constructor(
                     // `ActivityManagerWrapper::removeAllRecentTasks()` will be enough.
                     systemUiProxy.removeAllDesks(DesktopModeTransitionSource.RECENTS)
 
+                    // Moments shows only the chosen apps' tasks: clear those, keep the rest.
+                    val shownTaskIds =
+                        if (MomentsHome.isActive()) {
+                            mUtils.taskViews
+                                .flatMap { it.taskIds.asList() }
+                                .filter { it != INVALID_TASK_ID }
+                        } else {
+                            null
+                        }
+
                     // Remove all the task views now
                     finishRecentsAnimation(/* toHome */ true, /* shouldPip */ false) {
-                        uiHelperExecutor.execute { activityManagerWrapper.removeAllRecentTasks() }
+                        uiHelperExecutor.execute {
+                            if (shownTaskIds == null) activityManagerWrapper.removeAllRecentTasks()
+                            else shownTaskIds.forEach(activityManagerWrapper::removeTask)
+                        }
                         removeAllTaskViews()
                         if (!mUtils.isInDesktopFirstMode()) {
                             startHome()
