@@ -267,7 +267,11 @@ object TallyFrequentStore {
         val record = state ?: return emptyList()
         val top =
             TallyFrequent.top(record, today(), dock) { key ->
-                key.kind == TallyFrequent.Kind.PAGE || listed[key]?.isDisabled == false
+                if (key.kind == TallyFrequent.Kind.PAGE) {
+                    MomentsHome.shouldShowPackage(TallySettingsSearch.SETTINGS_PACKAGE)
+                } else {
+                    listed[key]?.isDisabled == false
+                }
             }
         return top.mapNotNull { entry ->
             val key = entry.key
