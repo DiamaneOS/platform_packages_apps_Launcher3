@@ -20,7 +20,6 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ValueAnimator
-import android.view.View
 import android.view.animation.Interpolator
 import com.android.app.animation.Animations
 import com.android.launcher3.LauncherAnimUtils.HOTSEAT_SCALE_PROPERTY_FACTORY
@@ -28,7 +27,6 @@ import com.android.launcher3.LauncherAnimUtils.SCALE_INDEX_WORKSPACE_STATE
 import com.android.launcher3.LauncherAnimUtils.VIEW_ALPHA
 import com.android.launcher3.LauncherAnimUtils.WORKSPACE_SCALE_PROPERTY_FACTORY
 import com.android.launcher3.LauncherState
-import com.android.launcher3.anim.AnimatorListeners
 import com.android.launcher3.anim.PendingAnimation
 import com.android.launcher3.anim.PropertySetter
 import com.android.launcher3.states.StateAnimationConfig
@@ -38,17 +36,15 @@ import com.android.launcher3.states.StateAnimationConfig.SKIP_DEPTH_CONTROLLER
 import com.android.launcher3.states.StateAnimationConfig.SKIP_OVERVIEW
 import com.android.launcher3.states.StateAnimationConfig.SKIP_SCRIM
 import com.android.launcher3.uioverrides.QuickstepLauncher
-import com.android.quickstep.util.RectFSpringAnim
 import com.android.quickstep.views.RecentsView
 
 /**
  * Home's entrance as a window comes back to it with Tally's motion (the prototype's `wm.goHome`),
  * in place of stock's scaling reveal (ScalingWorkspaceRevealAnim, which scales Home from 85 % over
- * a second with a blur): Home is simply there, at rest, and the key the window lands in makes room
- * for it. Its neighbours part as the window flies ([TallyParting.part]) and settle as it lands
- * ([TallyParting.settle]). Home's dim ([dimFrom] to none), the wallpaper's depth and the system
- * bars' scrim clear on the fill spring. Where the gesture had hidden Home (a swipe up hides it
- * behind Recents), Home fades in on fill ([fadeIn]). With no key on Home nothing parts.
+ * a second with a blur): Home is simply there, at rest, and comes back as one calm motion. Nothing
+ * parts, only a launch moves a key's neighbours ([TallyLaunch]). Home's dim ([dimFrom] to none),
+ * the wallpaper's depth and the system bars' scrim clear on the fill spring. Where the gesture had
+ * hidden Home (a swipe up hides it behind Recents), Home fades in on fill ([fadeIn]).
  *
  * Its Animator lasts at least [holdMillis], the flight's length, so a transition that ends with it
  * never ends before the window lands.
@@ -56,8 +52,6 @@ import com.android.quickstep.views.RecentsView
 class TallyHomeEntrance(
     private val launcher: QuickstepLauncher,
     private val motion: TallyMotion,
-    private val key: View?,
-    private val flight: RectFSpringAnim?,
     private val dimFrom: Float,
     private val fadeIn: Boolean,
     private val holdMillis: Long,
@@ -112,32 +106,14 @@ class TallyHomeEntrance(
         // Long enough for the flight.
         set.play(ValueAnimator.ofFloat(0f, 1f).setDuration(holdMillis))
 
-        val parts = key != null && motion.collectNeighbours(key)
         set.addListener(
             object : AnimatorListenerAdapter() {
-                override fun onAnimationStart(animation: Animator) {
-                    if (!parts) return
-                    motion.parting.part()
-                    when {
-                        flight == null -> return
-                        // Landed already (Remove animations ends it at once): settle now.
-                        flight.hasLanded() -> motion.parting.settle()
-                        else ->
-                            flight.addAnimatorListener(
-                                AnimatorListeners.forEndCallback(
-                                    Runnable { motion.parting.settle() }
-                                )
-                            )
-                    }
-                }
-
                 override fun onAnimationEnd(animation: Animator) {
                     // Home is visible whatever happened to the entrance (as stock ensures).
                     workspace.alpha = 1f
                     hotseat.alpha = 1f
                     Animations.setOngoingAnimation(workspace, null)
                     Animations.setOngoingAnimation(hotseat, null)
-                    if (parts && flight == null) motion.parting.settle()
                 }
             }
         )

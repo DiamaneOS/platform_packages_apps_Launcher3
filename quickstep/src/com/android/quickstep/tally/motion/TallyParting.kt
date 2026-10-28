@@ -36,8 +36,8 @@ import kotlin.math.max
  * of a key, the keys whose centres are within [TallyWindowMotion.PART_REACH] units of its centre (a
  * unit is the key's width, at least [TallyWindowMotion.PART_MIN_UNIT_DP]) move [partPx]
  * (`tally_grid_parting`, 8 dp) straight away from it on the stone spring with a tap impulse, and
- * settle back on stone ([TallyWindowMotion.PART_SETTLE_MS] later for a launch, as the window lands
- * for a return). Only keys move (apps, folders, app pairs), never widgets, and never the key
+ * settle back on stone [TallyWindowMotion.PART_SETTLE_MS] later. Only a launch parts them, never a
+ * return to Home. Only keys move (apps, folders, app pairs), never widgets, and never the key
  * itself.
  *
  * The neighbours are the key's siblings, and on Home the keys of the visible pages and the dock
@@ -102,7 +102,6 @@ class TallyParting(
                 object : AnimatorListenerAdapter() {
                     override fun onAnimationStart(animation: Animator) {
                         animator = animation as ValueAnimator
-                        currentMove = null
                     }
 
                     override fun onAnimationCancel(animation: Animator) {
@@ -119,51 +118,12 @@ class TallyParting(
         }
     }
 
-    /** A return's parting: the keys move out with a tap impulse (`goHome`'s `T.part`). */
-    fun part() {
-        if (keys.isEmpty()) return
-        val from = progress.toDouble()
-        run(stone.Move(from, 1.0, stone.impulse(1.0 - from), restDelta, restVelocity))
-    }
-
-    /**
-     * The window has landed: the keys settle back from where they are, keeping their speed
-     * (`wm.landed`'s `T.unpart`).
-     */
-    fun settle() {
-        if (keys.isEmpty()) return
-        val velocity = currentVelocity
-        animator?.cancel()
-        run(stone.Move(progress.toDouble(), 0.0, velocity, restDelta, restVelocity))
-    }
-
     /** Puts every key back at once and forgets them. */
     fun reset() {
         animator?.cancel()
         animator = null
         set(0f)
         keys.clear()
-    }
-
-    private var currentMove: TallySpring.Move? = null
-    private val currentVelocity: Double
-        get() {
-            val move = currentMove ?: return 0.0
-            val a = animator ?: return 0.0
-            return move.velocityAtFraction(a.animatedFraction)
-        }
-
-    private fun run(move: TallySpring.Move) {
-        animator?.cancel()
-        currentMove = move
-        animator =
-            ValueAnimator.ofFloat(0f, 1f).apply {
-                duration = move.millis
-                interpolator = Interpolators.LINEAR
-                addUpdateListener { set(move.valueAtFraction(it.animatedFraction).toFloat()) }
-                addListener(endListener())
-                start()
-            }
     }
 
     private fun endListener() =
@@ -175,10 +135,7 @@ class TallyParting(
             }
 
             override fun onAnimationEnd(animation: Animator) {
-                if (animator === animation) {
-                    animator = null
-                    currentMove = null
-                }
+                if (animator === animation) animator = null
                 // A move played to its end leaves the keys where it ends. Back at rest, they are
                 // forgotten.
                 if (!cancelled && progress == 0f && animator == null) keys.clear()
