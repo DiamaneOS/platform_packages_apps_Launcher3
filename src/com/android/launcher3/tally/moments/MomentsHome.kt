@@ -41,7 +41,10 @@ import com.android.launcher3.model.data.WorkspaceData
 import com.android.launcher3.model.data.WorkspaceData.ImmutableWorkspaceData
 import com.android.launcher3.model.data.WorkspaceItemInfo
 import com.android.launcher3.util.Executors.MODEL_EXECUTOR
+import com.android.launcher3.util.LockedUserState
+import com.android.launcher3.util.SandboxContext
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executor
 
 /**
  * Home while the Moments switch is on: only the apps the user chose in Settings, on Home, in All
@@ -67,17 +70,19 @@ object MomentsHome {
     private var appContext: Context? = null
     private val listeners = CopyOnWriteArrayList<Runnable>()
 
-    /** Starts following the settings, once per process. */
+    /** Starts following the settings for Launcher's own model, once per process. */
     @JvmStatic
     @Synchronized
     fun init(context: Context) {
         if (appContext != null) return
-        val app: Context = context.applicationContext ?: return
+        val app = launcherApp(context) ?: return
         appContext = app
+        val unlock = LockedUserState.get(app)
+        val modelThread = Executor { MODEL_EXECUTOR.post(it) }
         val observer =
             object : ContentObserver(Handler(Looper.getMainLooper())) {
                 override fun onChange(selfChange: Boolean, uri: Uri?) {
-                    MODEL_EXECUTOR.execute { refresh(app, reload = true) }
+                    whenUnlocked(unlock, modelThread) { refresh(app, reload = true) }
                 }
             }
         try {
@@ -92,8 +97,35 @@ object MomentsHome {
             Log.w(TAG, "Cannot follow Moments", e)
             return
         }
-        // The loader runs on the same thread, after this.
-        MODEL_EXECUTOR.execute { refresh(app, reload = false) }
+        // The loader runs on the same thread, after this. A refresh that waited for the unlock may
+        // come after it, so that one reloads.
+        whenUnlocked(unlock, modelThread) { waited -> refresh(app, reload = waited) }
+    }
+
+    /**
+     * The application whose model Moments reloads, or null for [context] of a preview or of the
+     * taskbar before the first unlock. Each of those is an application of its own, with a model
+     * that ends with it.
+     */
+    @VisibleForTesting
+    @JvmStatic
+    fun launcherApp(context: Context): Context? =
+        context.applicationContext?.takeUnless { it is SandboxContext }
+
+    /**
+     * Runs [action] on [executor] once the user is unlocked. Before that Home's apps cannot be
+     * listed and Launcher's model cannot be made (its widgets need the unlock). [action] is told
+     * whether it waited.
+     */
+    @VisibleForTesting
+    @JvmStatic
+    fun whenUnlocked(
+        state: LockedUserState,
+        executor: Executor,
+        action: (waited: Boolean) -> Unit,
+    ) {
+        val waits = !state.isUserUnlocked
+        state.runOnUserUnlocked(executor, Runnable { action(waits) })
     }
 
     /** Whether Home shows Moments' apps only. */
@@ -103,6 +135,11 @@ object MomentsHome {
     @JvmStatic
     fun shouldShowApp(component: ComponentName, user: UserHandle): Boolean =
         !active || (user == Process.myUserHandle() && component.packageName in packages)
+
+    /** Whether search lists [app], also before All apps' list is loaded again. */
+    @JvmStatic
+    fun shouldShowApp(app: AppInfo): Boolean =
+        app.componentName?.let { shouldShowApp(it, app.user) } ?: !active
 
     /** Whether Recents shows a task of [packageName] in [user]. */
     @JvmStatic
@@ -142,7 +179,7 @@ object MomentsHome {
         return ImmutableWorkspaceData(data.version, data.modificationId, map)
     }
 
-    // Model thread.
+    // Model thread, with the user unlocked.
     private fun refresh(context: Context, reload: Boolean) {
         val resolver = context.contentResolver
         val (nowActive, nowPackages) =
@@ -165,7 +202,8 @@ object MomentsHome {
         packages = nowPackages
         active = nowActive
         listeners.forEach(Runnable::run)
-        if (reload) LauncherAppState.getInstance(context).model.forceReload("tally-moments")
+        // A model not loaded yet reads the new state when it loads.
+        if (reload) LauncherAppState.getInstance(context).model.reloadIfActive("tally-moments")
     }
 
     // The chosen apps by name, row by row from the first page's top.

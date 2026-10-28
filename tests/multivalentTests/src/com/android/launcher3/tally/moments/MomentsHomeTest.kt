@@ -16,10 +16,13 @@
 
 package com.android.launcher3.tally.moments
 
+import android.content.ComponentName
+import android.content.Intent
 import android.os.Process
 import android.os.UserHandle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import com.android.launcher3.model.data.AppInfo
 import com.android.launcher3.tally.search.TallySettingsSearch
 import com.android.launcher3.tally.search.TallySettingsSearch.Companion.KIND_APP
 import com.android.launcher3.tally.search.TallySettingsSearch.Page
@@ -80,6 +83,21 @@ class MomentsHomeTest {
     }
 
     @Test
+    fun on_searchListsTheChosenAppsOfThisUserOnly() {
+        // The private space's install entry has no component.
+        val noComponent = AppInfo()
+        assertThat(MomentsHome.shouldShowApp(app(OTHER, me))).isTrue()
+        assertThat(MomentsHome.shouldShowApp(noComponent)).isTrue()
+
+        // Without All apps' list loaded again: search asks Moments itself.
+        MomentsHome.setForTest(active = true, packages = setOf(CHOSEN))
+        assertThat(MomentsHome.shouldShowApp(app(CHOSEN, me))).isTrue()
+        assertThat(MomentsHome.shouldShowApp(app(CHOSEN, other))).isFalse()
+        assertThat(MomentsHome.shouldShowApp(app(OTHER, me))).isFalse()
+        assertThat(MomentsHome.shouldShowApp(noComponent)).isFalse()
+    }
+
+    @Test
     fun listeners_hearEachChangeUntilRemoved() {
         var heard = 0
         val listener = Runnable { heard++ }
@@ -89,6 +107,9 @@ class MomentsHomeTest {
         MomentsHome.setForTest(active = false, packages = emptySet())
         assertThat(heard).isEqualTo(1)
     }
+
+    private fun app(packageName: String, user: UserHandle) =
+        AppInfo(ComponentName(packageName, "$packageName.Main"), packageName, user, Intent())
 
     private companion object {
         const val CHOSEN = "com.example.chosen"
