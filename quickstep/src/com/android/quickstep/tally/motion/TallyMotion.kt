@@ -143,8 +143,8 @@ class TallyMotion(private val launcher: QuickstepLauncher) {
         TallyWindowMotion.keyRect(iconBounds, visibleFactor(view), keyRadius, out)
 
     /**
-     * Finds the neighbours of [key] that part as a window leaves or lands in it: on Home the keys
-     * of the visible pages and the dock, elsewhere the key's siblings. Returns whether any moves.
+     * Finds the neighbours of [key] that part as a window grows out of it: on Home the keys of the
+     * visible pages and the dock, elsewhere the key's siblings. Returns whether any moves.
      */
     fun collectNeighbours(key: View): Boolean {
         homeContainers.clear()

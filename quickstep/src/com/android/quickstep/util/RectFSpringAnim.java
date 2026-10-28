@@ -380,11 +380,6 @@ public class RectFSpringAnim extends SurfaceReleaseCheck {
                 mTargetRect.centerX() + hw, mTargetRect.centerY() + hh);
     }
 
-    /** Whether the animation has run and ended (false before it starts). */
-    public boolean hasLanded() {
-        return !mAnimsStarted && isEnded();
-    }
-
     private void onUpdate() {
         if (isEnded()) {
             // Prevent further updates from being called. This can happen between callbacks for

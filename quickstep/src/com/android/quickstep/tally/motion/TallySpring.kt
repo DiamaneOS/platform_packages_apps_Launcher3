@@ -122,9 +122,6 @@ constructor(val stiffness: Float, val tapImpulse: Double = TAP_IMPULSE) {
         fun velocityAt(t: Double): Double =
             if (t >= seconds) 0.0 else velocity(x0, v0, maxOf(0.0, t))
 
-        /** The velocity at [fraction] of an Animator of [millis]. */
-        fun velocityAtFraction(fraction: Float): Double = velocityAt(fraction * millis / 1000.0)
-
         /**
          * The value at [fraction] of the move, as the fraction of an Animator of [millis] runs from
          * 0 to 1.
