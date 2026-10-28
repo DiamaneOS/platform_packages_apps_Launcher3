@@ -192,7 +192,7 @@ public class LauncherSwipeHandlerV2 extends AbsSwipeUpHandler<
 
     /**
      * DiamaneOS Tally: with no key on Home, the window flies to the dock's centre and fades, and
-     * Home comes in at rest (no key to make room).
+     * Home comes in at rest.
      */
     private HomeAnimationFactory createTallyDockHomeAnimationFactory(TallyMotion tally) {
         RectF dock = tally.dockTarget(new RectF());
@@ -216,7 +216,7 @@ public class LauncherSwipeHandlerV2 extends AbsSwipeUpHandler<
             @Override
             protected void playScalingRevealAnimation() {
                 if (mContainer != null) {
-                    new TallyHomeEntrance(mContainer, tally, null, null, tallyReleaseDim(),
+                    new TallyHomeEntrance(mContainer, tally, tallyReleaseDim(),
                             true /* fadeIn */, 0).start();
                 }
             }
@@ -270,10 +270,9 @@ public class LauncherSwipeHandlerV2 extends AbsSwipeUpHandler<
             @Override
             protected void playScalingRevealAnimation() {
                 if (tally != null && mContainer != null) {
-                    // DiamaneOS Tally: Home at rest. The key's neighbours make room and settle as
-                    // the window lands (TallyHomeEntrance).
-                    new TallyHomeEntrance(mContainer, tally, workspaceView, mSiblingAnimation,
-                            tallyReleaseDim(), true /* fadeIn */, 0).start();
+                    // DiamaneOS Tally: Home at rest, as one calm motion (TallyHomeEntrance).
+                    new TallyHomeEntrance(mContainer, tally, tallyReleaseDim(),
+                            true /* fadeIn */, 0).start();
                     return;
                 }
                 super.playScalingRevealAnimation();
