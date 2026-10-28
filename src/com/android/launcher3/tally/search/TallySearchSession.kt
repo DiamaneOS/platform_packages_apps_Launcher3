@@ -56,8 +56,8 @@ import java.util.Locale
  *   short pause after typing stops.
  * - Hand-off targets: [TallyHandoffs], resolved once per session.
  *
- * While Moments shows only the chosen apps ([MomentsHome]), the model lists only those, and
- * shortcuts, hand-offs and Settings results lead only to them.
+ * While Moments shows only the chosen apps ([MomentsHome]), apps, shortcuts, hand-offs and Settings
+ * results lead only to them.
  */
 class TallySearchSession(private val context: Context, private val listener: Listener) {
 
@@ -178,7 +178,12 @@ class TallySearchSession(private val context: Context, private val listener: Lis
     /** On the model thread: the apps and shortcuts for [query] among [all] apps. */
     @WorkerThread
     private fun findApps(query: String, all: List<AppInfo>): AppsFound {
-        val searchable = all.filter { DefaultAppSearchAlgorithm.isSearchableApp(it, userCache) }
+        // Moments is checked here too, as All apps' list follows it only once it is loaded again.
+        val searchable =
+            all.filter {
+                DefaultAppSearchAlgorithm.isSearchableApp(it, userCache) &&
+                    MomentsHome.shouldShowApp(it)
+            }
         // As DefaultAppSearchAlgorithm.getTitleMatchResult matches.
         val lower = query.lowercase(Locale.getDefault())
         val matcher = StringMatcherUtility.StringMatcher.getInstance()
@@ -194,9 +199,7 @@ class TallySearchSession(private val context: Context, private val listener: Lis
         val shortcuts =
             index
                 // The index lives for the sheet: Moments may have started since.
-                .filter { e ->
-                    e.app.componentName?.let { MomentsHome.shouldShowApp(it, e.app.user) } != false
-                }
+                .filter { MomentsHome.shouldShowApp(it.app) }
                 .mapNotNull { entry ->
                     TallySearchRanking.match(query, entry.label)?.let { entry to it }
                 }

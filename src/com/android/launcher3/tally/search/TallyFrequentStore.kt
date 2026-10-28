@@ -240,6 +240,7 @@ object TallyFrequentStore {
     ): List<Shown> {
         val listed = HashMap<TallyFrequent.Key, AppInfo>()
         for (app in all) {
+            if (!MomentsHome.shouldShowApp(app)) continue
             val component = app.componentName ?: continue
             val profile = profileOf(context, app.user) ?: continue
             TallyFrequent.appKey(profile, component.packageName, component.className)?.let {
