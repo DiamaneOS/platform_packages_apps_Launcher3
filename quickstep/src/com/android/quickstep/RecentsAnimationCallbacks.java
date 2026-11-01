@@ -63,10 +63,7 @@ public class RecentsAnimationCallbacks implements
             ? ConcurrentHashMap.newKeySet() : new ArraySet<>();
     private final boolean mIsContainerRecentsWindowManager;
 
-    // TODO(141886704): Remove these references when they are no longer needed
-    private RecentsAnimationController mController;
-
-    private boolean mCancelled;
+    private volatile boolean mCancelled;
 
     public RecentsAnimationCallbacks(RecentsViewContainer container) {
         mIsContainerRecentsWindowManager = container instanceof RecentsWindowManager;
@@ -114,47 +111,52 @@ public class RecentsAnimationCallbacks implements
         boolean isOpeningHome = Arrays.stream(appTargets).filter(app -> app.mode == MODE_OPENING
                         && app.windowConfiguration.getActivityType() == ACTIVITY_TYPE_HOME)
                 .count() > 0;
+        final ArrayList<RemoteAnimationTarget> apps = new ArrayList<>();
+        final ArrayList<RemoteAnimationTarget> nonApps = new ArrayList<>();
+        classifyTargets(appTargets, apps, nonApps);
+        final RecentsAnimationTargets targets = new RecentsAnimationTargets(
+                apps.toArray(new RemoteAnimationTarget[0]), wallpaperTargets,
+                nonApps.toArray(new RemoteAnimationTarget[0]), homeContentInsets, extras);
+
         if (appCount == 0 && (!mIsContainerRecentsWindowManager || isOpeningHome)) {
             ActiveGestureProtoLogProxy.logOnRecentsAnimationStartCancelled();
             // Edge case, if there are no closing app targets, then Launcher has nothing to handle
             notifyAnimationCanceled();
-            animationController.finish(false /* toHome */, false /* sendUserLeaveHint */,
-                    null /* finishCb */);
+            try {
+                animationController.finish(false /* toHome */, false /* sendUserLeaveHint */,
+                        null /* finishCb */);
+            } finally {
+                releaseUndeliveredTargets(targets, transitionInfo);
+            }
             return;
         }
 
-        mController = new RecentsAnimationController(animationController,
-                this::onAnimationFinished);
-        if (mCancelled) {
-            Utilities.postAsyncCallback(
-                    MAIN_EXECUTOR.getHandler(),
-                    () -> mController.finishAnimationToApp(new ActiveGestureLog.CompoundString(
-                            "RecentsAnimationCallback.onAnimationStart: mCancelled=true")));
-        } else {
-            RemoteAnimationTarget[] nonAppTargets;
-            final ArrayList<RemoteAnimationTarget> apps = new ArrayList<>();
-            final ArrayList<RemoteAnimationTarget> nonApps = new ArrayList<>();
-            classifyTargets(appTargets, apps, nonApps);
-            appTargets = apps.toArray(new RemoteAnimationTarget[apps.size()]);
-            nonAppTargets = nonApps.toArray(new RemoteAnimationTarget[nonApps.size()]);
-            if (nonAppTargets == null) {
-                nonAppTargets = new RemoteAnimationTarget[0];
-            }
-            final RecentsAnimationTargets targets = new RecentsAnimationTargets(appTargets,
-                    wallpaperTargets, nonAppTargets, homeContentInsets, extras);
-
-            Utilities.postAsyncCallback(MAIN_EXECUTOR.getHandler(), () -> {
-                ActiveGestureProtoLogProxy.logOnRecentsAnimationStart(targets.apps.length);
-                for (RecentsAnimationListener listener : getListeners()) {
-                    listener.onRecentsAnimationStart(mController, targets, transitionInfo);
+        final RecentsAnimationController controller = new RecentsAnimationController(
+                animationController, this::onAnimationFinished);
+        Utilities.postAsyncCallback(MAIN_EXECUTOR.getHandler(), () -> {
+            final List<RecentsAnimationListener> listeners = getListeners();
+            // Cancellation or listener removal can race the queued start callback.
+            // Until delivery, this callback still owns all received surface handles.
+            if (mCancelled || listeners.isEmpty()) {
+                try {
+                    controller.finishAnimationToApp(new ActiveGestureLog.CompoundString(
+                            "RecentsAnimationCallbacks: no recipient for animation targets"));
+                } finally {
+                    releaseUndeliveredTargets(targets, transitionInfo);
                 }
-            });
-        }
+                return;
+            }
+            ActiveGestureProtoLogProxy.logOnRecentsAnimationStart(targets.apps.length);
+            for (RecentsAnimationListener listener : listeners) {
+                listener.onRecentsAnimationStart(controller, targets, transitionInfo);
+            }
+        });
     }
 
     @BinderThread
     @Override
     public final void onAnimationCanceled(HashMap<Integer, ThumbnailData> thumbnailDatas) {
+        mCancelled = true;
         Utilities.postAsyncCallback(MAIN_EXECUTOR.getHandler(), () -> {
             ActiveGestureProtoLogProxy.logRecentsAnimationCallbacksOnAnimationCancelled();
             for (RecentsAnimationListener listener : getListeners()) {
@@ -169,10 +171,26 @@ public class RecentsAnimationCallbacks implements
             RemoteAnimationTarget[] apps, @Nullable TransitionInfo transitionInfo) {
         Utilities.postAsyncCallback(MAIN_EXECUTOR.getHandler(), () -> {
             ActiveGestureProtoLogProxy.logRecentsAnimationCallbacksOnTasksAppeared();
-            for (RecentsAnimationListener listener : getListeners()) {
+            final List<RecentsAnimationListener> listeners = getListeners();
+            if (listeners.isEmpty()) {
+                releaseUndeliveredTargets(new RemoteAnimationTargets(apps,
+                        new RemoteAnimationTarget[0], new RemoteAnimationTarget[0], MODE_CLOSING),
+                        transitionInfo);
+                return;
+            }
+            for (RecentsAnimationListener listener : listeners) {
                 listener.onTasksAppeared(apps, transitionInfo);
             }
         });
+    }
+
+    private static void releaseUndeliveredTargets(RemoteAnimationTargets targets,
+            @Nullable TransitionInfo transitionInfo) {
+        targets.release();
+        if (transitionInfo != null) {
+            // These Binder-owned references were never handed to an animation recipient.
+            transitionInfo.releaseAllSurfaces();
+        }
     }
 
     private void onAnimationFinished(RecentsAnimationController controller) {
@@ -212,7 +230,7 @@ public class RecentsAnimationCallbacks implements
         pw.println(prefix + "\tmCancelled=" + mCancelled);
     }
 
-    private Iterable<RecentsAnimationListener> getListeners() {
+    private List<RecentsAnimationListener> getListeners() {
         return enableTaskbarUiThread() ? List.copyOf(mListeners) : new ArrayList<>(mListeners);
     }
 

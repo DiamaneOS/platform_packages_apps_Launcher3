@@ -2234,9 +2234,23 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                 RemoteAnimationTarget[] wallpaperTargets,
                 RemoteAnimationTarget[] nonAppTargets,
                 LauncherAnimationRunner.AnimationResult result) {
+            AnimatedSurfaces closingSurfaces = AnimatedSurfaces.from(
+                    AnimatedSurfaceUtils.mapFromTargets(appTargets),
+                    AnimatedSurfaceUtils.mapFromTargets(wallpaperTargets),
+                    AnimatedSurfaceUtils.mapFromTargets(nonAppTargets),
+                    AnimatedSurface.Mode.CLOSING);
+            SurfaceTransactionApplier releaseFence = new SurfaceTransactionApplier(mDragLayer);
+            closingSurfaces.addReleaseCheck(releaseFence);
+            Runnable releaseClosingSurfaces = () -> {
+                // The final spring/container updates can still be queued on RenderThread.
+                // Submit a frame fence after them, then use the existing safe-release guard.
+                releaseFence.scheduleApply(new SurfaceTransaction());
+                closingSurfaces.release();
+            };
             if (mLauncher.isDestroyed()) {
                 AnimatorSet anim = new AnimatorSet();
                 anim.play(getFallbackClosingWindowAnimators(appTargets));
+                anim.addListener(AnimatorListeners.forEndCallback(releaseClosingSurfaces));
                 result.setAnimation(anim, mLauncher.getApplicationContext());
                 return;
             }
@@ -2264,6 +2278,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                     appTargets, wallpaperTargets, nonAppTargets, resolveRectF,
                     QuickStepContract.getWindowCornerRadius(mLauncher),
                     false /* fromPredictiveBack */);
+            bankAnimState.addOnAnimCompleteCallback(releaseClosingSurfaces);
 
             SplitRecentsAnimUtils splitRecentsAnimUtils = new SplitRecentsAnimUtils(nonAppTargets);
             splitRecentsAnimUtils.fadeOutDimLayer(/* immediate= */ true);

@@ -22,6 +22,35 @@ filegroup {
     srcs: ["AndroidManifest.xml"],
 }
 
+// Exercise callback ownership without injecting unoptimized test libraries into
+// the optimized installed Launcher or replacing its application and user data.
+android_test {
+    name: "Launcher3RecentsAnimationCallbacksTests",
+    srcs: [
+        "tests/multivalentTests/src/com/android/quickstep/RecentsAnimationCallbacksTest.java",
+        "tests/multivalentTests/src/com/android/launcher3/LauncherAnimationRunnerTest.java",
+    ],
+    manifest: "tests/AndroidManifest-recents-callbacks.xml",
+    dont_merge_manifests: true,
+    resource_dirs: [],
+    static_libs: [
+        "Launcher3QuickStepLibForTesting",
+        "androidx.test.ext.junit",
+        "androidx.test.runner",
+        "mockito-target-extended",
+    ],
+    jni_libs: [
+        "libdexmakerjvmtiagent",
+        "libstaticjvmtiagent",
+    ],
+    platform_apis: true,
+    certificate: "platform",
+    optimize: {
+        enabled: false,
+    },
+    test_suites: ["device-tests"],
+}
+
 filegroup {
     name: "launcher3-quickstep-robo-src",
     path: "tests/multivalentTests",
