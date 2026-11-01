@@ -34,6 +34,7 @@ import androidx.annotation.BinderThread;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
+import com.android.quickstep.RemoteAnimationTargets;
 import com.android.systemui.animation.RemoteAnimationDelegate;
 import com.android.systemui.animation.RemoteAnimationRunnerCompat;
 
@@ -58,8 +59,13 @@ import java.lang.ref.WeakReference;
 public class LauncherAnimationRunner extends RemoteAnimationRunnerCompat {
 
     private static final RemoteAnimationFactory DEFAULT_FACTORY =
-            (transit, appTargets, wallpaperTargets, nonAppTargets, result) ->
-                    result.setAnimation(null, null);
+            (transit, appTargets, wallpaperTargets, nonAppTargets, result) -> {
+                // No factory took ownership; finish the transition before releasing its targets.
+                RemoteAnimationTargets targets = new RemoteAnimationTargets(
+                        appTargets, wallpaperTargets, nonAppTargets,
+                        RemoteAnimationTarget.MODE_CLOSING);
+                result.setAnimation(null, null, targets::release, false);
+            };
 
     private final Handler mHandler;
     private final boolean mStartAtFrontOfQueue;
