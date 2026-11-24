@@ -22,7 +22,6 @@ import android.media.session.MediaSession
 import android.os.Bundle
 import android.os.Process
 import android.os.SystemClock
-import android.os.UserHandle
 import android.service.notification.NotificationListenerService.Ranking
 import android.service.notification.StatusBarNotification
 import androidx.annotation.WorkerThread
@@ -280,10 +279,10 @@ constructor(
                 val extras = n.extras
                 val template = extras.getString(Notification.EXTRA_TEMPLATE)
                 val channel = ranking?.channel
-                // A notification posted for every user (UserHandle.ALL, a system notification) is
+                // A notification posted for every user (user -1, a system notification) is
                 // shown to this user, and belongs to this user here: user -1 is no profile, and
                 // asking the platform about it throws.
-                val user = if (sbn.user == UserHandle.ALL) Process.myUserHandle() else sbn.user
+                val user = if (sbn.userId == -1) Process.myUserHandle() else sbn.user
                 return Input(
                     key = sbn.key,
                     app = PackageUserKey(sbn.packageName, user),

@@ -114,8 +114,11 @@ public class BubbleCreator {
         // (BubbleData) to be the activity-specific icon.
         if (Flags.useBubbleIconFromActivityInfo() && info.isApp()) {
             Icon iconFromBubbleInfo = info.getIcon();
-            if (iconFromBubbleInfo != null) {
-                appIcon = iconFromBubbleInfo.loadDrawable(context);
+            // DiamaneOS: only an icon of the app's resources, from clean copies made in the VM. Any other
+            // kind is not decoded here: the app's icon below shows instead.
+            if (iconFromBubbleInfo != null && iconFromBubbleInfo.getType() == Icon.TYPE_RESOURCE) {
+                appIcon = com.android.launcher3.icons.CleanCopies.loadIcon(
+                        () -> iconFromBubbleInfo.loadDrawable(context));
             }
         }
         // Fallback to loading the application's unbadged icon

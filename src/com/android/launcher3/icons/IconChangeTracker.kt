@@ -56,6 +56,25 @@ constructor(
     val changes = _changes.asListenable()
 
     init {
+        // DiamaneOS: an icon that showed the default loads again once its clean copies are made.
+        val made =
+            SimpleBroadcastReceiver(context = context, executor = executor) { intent ->
+                val pkg = CleanCopies.madePackage(intent)
+                val user = CleanCopies.madeUser(intent)
+                if (pkg != null && user != null) notifyIconChanged(pkg, user)
+            }
+        made.register(
+            actionsFilter(CleanCopies.ACTION_MADE),
+            flags = Context.RECEIVER_NOT_EXPORTED,
+        )
+        lifecycleTracker.addCloseable(made)
+        // DiamaneOS: the gate's recovery notification also reloads durable pending packages.
+        lifecycleTracker.addCloseable(CleanCopyReloads.watch(context, executor, ::notifyIconChanged))
+        // DiamaneOS: icons that showed the default in an earlier run (its broadcast missed) load again now.
+        executor.execute {
+            CleanCopies.forEachMissed(context) { pkg, user -> notifyIconChanged(pkg, user) }
+        }
+
         if (calendar != null || clock != null) {
             val receiver =
                 SimpleBroadcastReceiver(context = context, executor = executor) { handleIntent(it) }

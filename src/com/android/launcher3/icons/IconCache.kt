@@ -22,6 +22,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.content.pm.PackageInstaller.SessionInfo
+import android.content.pm.PackageManager
 import android.content.pm.ShortcutInfo
 import android.database.Cursor
 import android.database.sqlite.SQLiteException
@@ -114,6 +115,18 @@ constructor(
     private var pendingIconRequestCount = 0
 
     init {
+        // DiamaneOS: only a pending exact miss can invalidate the startup cache.
+        CleanCopies.forEachExactMiss(context) { pkg, user ->
+            if (Flags.restoreArchivedAppIconsFromDb() && ATLEAST_V) {
+                val app = try {
+                    launcherApps.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES, user)
+                } catch (_: PackageManager.NameNotFoundException) {
+                    return@forEachExactMiss
+                }
+                if (app == null || app.isArchived) return@forEachExactMiss
+            }
+            removeIconsForPkg(pkg, user)
+        }
         lifecycle.addCloseable { this.close() }
     }
 
@@ -129,6 +142,8 @@ constructor(
     /** Updates the entries related to the given package in memory and persistent DB. */
     @Synchronized
     fun updateIconsForPkg(packageName: String, user: UserHandle) {
+        // DiamaneOS: acknowledge a pending component only after the complete cache refresh.
+        val pending = CleanCopies.beginRefresh(context, packageName, user)
         val apps = launcherApps.getActivityList(packageName, user)
 
         if (
@@ -136,12 +151,21 @@ constructor(
                 ATLEAST_V &&
                 apps.any { it.applicationInfo.isArchived }
         ) {
-            // When archiving app icon, don't delete old icon so it can be re-used.
+            // DiamaneOS: retain the archived cache and finish only this traversal attempt.
+            CleanCopies.archivedRefresh(context, pending)
             return
         }
         removeIconsForPkg(packageName, user)
         val userSerial = userManager.getSerialNumberForUser(user)
-        apps.forEach { addIconToDBAndMemCache(it, LauncherActivityCachingLogic, userSerial) }
+        try {
+            apps.forEach { addIconToDBAndMemCache(it, LauncherActivityCachingLogic, userSerial) }
+        } catch (failure: RuntimeException) {
+            // DiamaneOS: a malformed icon keeps a default and its own durable retry.
+            removeIconsForPkg(packageName, user)
+            CleanCopies.refusedRefresh(context, pending)
+            return
+        }
+        CleanCopies.endRefresh(context, pending)
     }
 
     /** Closes the cache DB. This will clear any in-memory cache. */

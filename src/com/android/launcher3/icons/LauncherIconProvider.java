@@ -16,8 +16,11 @@
 package com.android.launcher3.icons;
 
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageItemInfo;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.ArrayMap;
 import android.util.Log;
@@ -59,6 +62,20 @@ public class LauncherIconProvider extends IconProvider {
         super(context);
         mThemeManager = themeManager;
         mThemedIconMap = FeatureFlags.USE_LOCAL_ICON_OVERRIDES.get() ? null : DISABLED_MAP;
+    }
+
+    @Override
+    protected Drawable loadPackageIcon(
+            PackageItemInfo info, ApplicationInfo appInfo, int density) {
+        // DiamaneOS: the icon from clean copies made in the VM, the default while one is missing.
+        return CleanCopies.loadAppIcon(mContext, info, appInfo,
+                () -> super.loadPackageIcon(info, appInfo, density));
+    }
+
+    @Override
+    protected PersistedItemState getApplicationInfoHash(ApplicationInfo appInfo) {
+        // DiamaneOS: base launcher variants also invalidate older untracked provisional rows.
+        return super.getApplicationInfoHash(appInfo).withAdditionalValues("vm-clean-v2");
     }
 
     @Override

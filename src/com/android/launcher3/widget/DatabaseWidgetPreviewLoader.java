@@ -178,7 +178,10 @@ public class DatabaseWidgetPreviewLoader {
         Drawable drawable = null;
         if (info.previewImage != 0) {
             try {
-                drawable = info.loadPreviewImage(mContext, 0);
+                // DiamaneOS: a widget preview comes from its clean copy (waited for here, a worker thread), none
+                // while it has no copy. The picker loads it again once the copies are made (see CleanCopies).
+                drawable = com.android.launcher3.icons.CleanCopies.loadIcon(
+                        () -> info.loadPreviewImage(mContext, 0));
             } catch (OutOfMemoryError e) {
                 Log.w(TAG, "Error loading widget preview for: " + info.provider, e);
                 // During OutOfMemoryError, the previous heap stack is not affected. Catching

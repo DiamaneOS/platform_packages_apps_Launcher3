@@ -280,12 +280,14 @@ constructor(
         }
 
         override fun close() {
+            var cleanCopiesReady = false
             synchronized(mLock) {
                 // If we are still the last one to be scheduled, remove ourselves.
                 if (mLoaderTask === mTask) {
                     mLoaderTask = null
                     if (mIsCommitted) {
                         mLoadCompleteFuture.complete(Unit)
+                        cleanCopiesReady = true
                     }
                     Log.e(
                         TAG,
@@ -293,6 +295,8 @@ constructor(
                     )
                 }
             }
+            // DiamaneOS: replay dropped recovery after releasing the model lock.
+            if (cleanCopiesReady) com.android.launcher3.icons.CleanCopyReloads.rescan()
         }
     }
 

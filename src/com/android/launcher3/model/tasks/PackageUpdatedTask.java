@@ -92,6 +92,9 @@ public class PackageUpdatedTask implements ModelUpdateTask {
             List<String> disabledPackages = mPackages.stream()
                     .filter(pkg -> !launcherApps.isPackageEnabled(pkg, mUser)).toList();
             if (!disabledPackages.isEmpty()) {
+                // DiamaneOS: filtered packages still finish their independent recovery attempt.
+                disabledPackages.forEach(pkg -> com.android.launcher3.icons.CleanCopies.unavailable(
+                        context, pkg, mUser));
                 disabledPackages.forEach(mPackages::remove);
                 PackageTaskFactory.INSTANCE.appsRemoved(mUser, new HashSet<>(disabledPackages))
                         .execute(taskController, dataModel, appsList);

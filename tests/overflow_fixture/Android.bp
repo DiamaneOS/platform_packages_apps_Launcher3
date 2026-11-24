@@ -1,0 +1,9 @@
+// Copyright (C) 2026 DiamaneOS
+android_test_helper_app {
+    name: "LauncherOverflowRemovedFixture",
+    manifest: "AndroidManifest.xml",
+    srcs: ["src/**/*.java"],
+    sdk_version: "current",
+    certificate: "testkey",
+    test_suites: ["device-tests"],
+}

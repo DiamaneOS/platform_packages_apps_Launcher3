@@ -67,9 +67,18 @@ constructor(
         mSystemState.withAdditionalValues(
             (appInfo.sourceDir?.hashCode() ?: 0).toString(),
             appInfo.longVersionCode.toString(),
+            "vm-clean-v2", // DiamaneOS: invalidate rows made before provisional-copy tracking.
         )
 
+    // DiamaneOS: the icon from clean copies made in the VM, the default while one is missing.
     override fun loadPackageIcon(
+        info: PackageItemInfo,
+        appInfo: ApplicationInfo,
+        density: Int,
+    ): Drawable? =
+        CleanCopies.loadAppIcon(mContext, info, appInfo) { loadPackageIconFromApp(info, appInfo, density) }
+
+    private fun loadPackageIconFromApp(
         info: PackageItemInfo,
         appInfo: ApplicationInfo,
         density: Int,

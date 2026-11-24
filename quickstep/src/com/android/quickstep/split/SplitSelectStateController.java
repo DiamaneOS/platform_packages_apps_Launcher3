@@ -85,7 +85,6 @@ import com.android.launcher3.R;
 import com.android.launcher3.SplitScreenUiState;
 import com.android.launcher3.anim.PendingAnimation;
 import com.android.launcher3.apppairs.AppPairIcon;
-import com.android.launcher3.icons.IconProvider;
 import com.android.launcher3.logging.StatsLogManager;
 import com.android.launcher3.model.data.AppInfo;
 import com.android.launcher3.model.data.ItemInfo;
@@ -1079,20 +1078,10 @@ public class SplitSelectStateController {
             Log.v(TAG, "enterSplitSelect, startRecents=" + startRecents);
 
             mTaskInfo = taskInfo;
-            PackageManager pm = mContext.getPackageManager();
-            IconProvider provider = new IconProvider(mContext);
             int displayId = ExternalDisplaysKt.getSafeDisplayId(taskInfo);
 
-            try {
-                mAppIcon = provider.getIcon(pm.getActivityInfo(mTaskInfo.baseActivity,
-                     PackageManager.ComponentInfoFlags.of(0)));
-            } catch (PackageManager.NameNotFoundException e) {
-                final String packageName =
-                        mTaskInfo.realActivity == null
-                                ? "(null)"
-                                : mTaskInfo.realActivity.getPackageName();
-                Log.w(TAG, "Package not found: " + packageName, e);
-            }
+            // DiamaneOS: use the task user and clear the old icon when resolution fails.
+            mAppIcon = TaskIcons.load(mContext, taskInfo);
 
             final DesktopSplitRecentsAnimation animation = new DesktopSplitRecentsAnimation(
                     splitPosition, taskBounds);
