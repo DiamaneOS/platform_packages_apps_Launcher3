@@ -525,6 +525,8 @@ java_defaults {
         "QuickstepResLib",
         // Compose dep
         "androidx.compose.runtime_runtime",
+        // DiamaneOS: app images in widgets decoded in the protected VM (VmWidgetImageCheck).
+        "diamaneos-decode-client",
     ],
     manifest: "quickstep/AndroidManifest.xml",
     platform_apis: true,

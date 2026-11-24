@@ -18,11 +18,9 @@ package com.android.launcher3.widgetpicker
 
 import android.app.Activity
 import android.app.Activity.RESULT_OK
-import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps.PinItemRequest
-import android.os.Bundle
 import android.os.UserHandle
 import android.util.Log
 import android.widget.RemoteViews
@@ -46,6 +44,7 @@ import com.android.launcher3.dragndrop.PinItemDragListener
 import com.android.launcher3.util.ApiWrapper
 import com.android.launcher3.util.PackageUserKey
 import com.android.launcher3.util.WindowBlurState
+import com.android.launcher3.widget.WidgetImageCheck
 import com.android.launcher3.widgetpicker.WidgetPickerConfig.Companion.EXTRA_IS_PENDING_WIDGET_DRAG
 import com.android.launcher3.widgetpicker.data.repository.WidgetAppIconsRepository
 import com.android.launcher3.widgetpicker.data.repository.WidgetUsersRepository
@@ -142,6 +141,29 @@ constructor(
         widgetPickerConfig: WidgetPickerConfig,
         pinItemAddHandler: PinItemAddHandler,
     ) {
+        // DiamaneOS: the sheet opens once the app's own preview was checked (WidgetImageCheck).
+        WidgetImageCheck.checkPinPreview(activity.asContext(), pinItemRequest) { checkedPreview ->
+            if (!activity.isDestroyed) {
+                showWidgetsForPinRequest(
+                    activity,
+                    targetApp,
+                    pinItemRequest,
+                    widgetPickerConfig,
+                    pinItemAddHandler,
+                    checkedPreview,
+                )
+            }
+        }
+    }
+
+    private fun showWidgetsForPinRequest(
+        activity: BaseActivity,
+        targetApp: PackageUserKey,
+        pinItemRequest: PinItemRequest,
+        widgetPickerConfig: WidgetPickerConfig,
+        pinItemAddHandler: PinItemAddHandler,
+        checkedPreview: RemoteViews?,
+    ) {
         val widgetPickerComponent = newWidgetPickerComponent(widgetPickerConfig)
         val pinAppWidgetCatalog = widgetPickerComponent.getPinAppWidgetCatalog()
 
@@ -164,12 +186,8 @@ constructor(
                 cuiReporter = uiEventsReporter,
                 previewOverridesProvider = {
                     if (pinItemRequest.requestType == PinItemRequest.REQUEST_TYPE_APPWIDGET) {
-                        val extras: Bundle? = pinItemRequest.extras
-                        val previewExtra =
-                            extras?.getParcelable(
-                                AppWidgetManager.EXTRA_APPWIDGET_PREVIEW,
-                                RemoteViews::class.java,
-                            )
+                        // DiamaneOS: only the checked copy of the app's preview.
+                        val previewExtra = checkedPreview
                         if (previewExtra != null) {
                             val context = activity.asContext()
                             val widgetInfo =

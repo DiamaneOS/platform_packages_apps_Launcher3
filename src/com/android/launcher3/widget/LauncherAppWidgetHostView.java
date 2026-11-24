@@ -96,8 +96,20 @@ public class LauncherAppWidgetHostView extends BaseLauncherAppWidgetHostView
 
     private int mFocusRectOutsets = 0;
 
+    // DiamaneOS: the app's views are shown as a copy checked on an image thread (WidgetImageCheck). The latest
+    // update retained for rechecking after detach, including a delivered placeholder.
+    private final WidgetImageCheck mImageCheck;
+    private RemoteViews mUncheckedViews;
+    private boolean mCheckDropped;
+    private long mImageGeneration;
+
     public LauncherAppWidgetHostView(Context context) {
-        super(context);
+        this(context, WidgetImageCheck.create(context));
+    }
+
+    private LauncherAppWidgetHostView(Context context, WidgetImageCheck imageCheck) {
+        super(imageCheck.context());
+        mImageCheck = imageCheck;
         mActivityContext = ActivityContext.lookupContext(context);
         mLongPressHelper = new CheckLongPressHelper(this, this);
         mCustomEventsTouchHandler = new CustomEventsTouchHandler(this, (event) -> true,
@@ -137,6 +149,10 @@ public class LauncherAppWidgetHostView extends BaseLauncherAppWidgetHostView
 
     @Override
     public void setAppWidget(int appWidgetId, AppWidgetProviderInfo info) {
+        // DiamaneOS: images are checked for the app the system's provider info names.
+        mImageGeneration++;
+        mUncheckedViews = null;
+        mImageCheck.setApp(info);
         super.setAppWidget(appWidgetId, info);
         if (!mTrackingWidgetUpdate && appWidgetId != INVALID_APPWIDGET_ID) {
             mTrackingWidgetUpdate = true;
@@ -159,7 +175,36 @@ public class LauncherAppWidgetHostView extends BaseLauncherAppWidgetHostView
             return;
         }
 
-        super.updateAppWidget(remoteViews);
+        // DiamaneOS: shown once checked, or as the error view when it cannot be checked.
+        showChecked(remoteViews);
+    }
+
+    // DiamaneOS: checks remoteViews on an image thread, then applies the checked copy. A newer update drops it.
+    private void showChecked(RemoteViews remoteViews) {
+        final long generation = ++mImageGeneration;
+        mCheckDropped = false;
+        if (remoteViews == null) {
+            mUncheckedViews = null;
+            mImageCheck.cancel();
+            applyChecked(null);
+            return;
+        }
+        mUncheckedViews = remoteViews;
+        mImageCheck.prepare(remoteViews, getContext().getMainExecutor(), checked -> {
+            if (generation != mImageGeneration) {
+                return;
+            }
+            // DiamaneOS: keep the raw update when detach cancels its missing-image recovery.
+            if (isDeferringUpdates()) {
+                mReapplyOnResumeUpdates = true;
+                return;
+            }
+            applyChecked(checked != null ? checked : new RemoteViews(getContext().getPackageName(), 0));
+        });
+    }
+
+    private void applyChecked(RemoteViews checked) {
+        super.updateAppWidget(checked);
 
         // The provider info or the views might have changed.
         checkIfAutoAdvance();
@@ -279,6 +324,10 @@ public class LauncherAppWidgetHostView extends BaseLauncherAppWidgetHostView
         super.onAttachedToWindow();
         mIsAttachedToWindow = true;
         checkIfAutoAdvance();
+        // DiamaneOS: an update whose check a detach dropped is checked now.
+        if (mCheckDropped && mUncheckedViews != null) {
+            showChecked(mUncheckedViews);
+        }
     }
 
     @Override
@@ -289,6 +338,12 @@ public class LauncherAppWidgetHostView extends BaseLauncherAppWidgetHostView
         // state is updated. So isAttachedToWindow() will return true until next frame.
         mIsAttachedToWindow = false;
         checkIfAutoAdvance();
+        // DiamaneOS: a detached view keeps no image thread busy.
+        mImageGeneration++;
+        mImageCheck.cancel();
+        if (mUncheckedViews != null) {
+            mCheckDropped = true;
+        }
     }
 
     @Override

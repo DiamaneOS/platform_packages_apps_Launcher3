@@ -75,6 +75,9 @@
         android:name="com.android.documentsui.LAUNCH_FILE_MANAGER"
         android:featureFlag="com.android.launcher3.show_files_on_home_screen" />
 
+    <!-- DiamaneOS: app images in widgets are decoded in the protected VM by the decode service. -->
+    <uses-permission android:name="de.diamaneos.sanitizer.permission.DECODE" />
+
     <application android:backupAgent="com.android.launcher3.LauncherBackupAgent"
          android:enableOnBackInvokedCallback="true"
          android:fullBackupOnly="true"

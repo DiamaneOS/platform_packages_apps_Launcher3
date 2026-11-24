@@ -29,7 +29,9 @@ import android.view.ViewRootImpl;
 import com.android.launcher3.BuildConfig;
 import com.android.launcher3.MainProcessInitializer;
 import com.android.launcher3.R;
+import com.android.launcher3.widget.WidgetImageCheck;
 import com.android.quickstep.util.QuickstepProtoLogGroup;
+import com.android.quickstep.util.VmWidgetImageCheck;
 import com.android.systemui.shared.system.InteractionJankMonitorWrapper;
 
 import java.util.Set;
@@ -55,6 +57,9 @@ public class QuickstepProcessInitializer extends MainProcessInitializer {
 
     @Override
     protected void init(Context context) {
+        // DiamaneOS: app images in widgets are decoded in the protected VM (WidgetImageCheck).
+        WidgetImageCheck.install(VmWidgetImageCheck::new);
+
         // Workaround for b/120550382, an external app can cause the launcher process to start for
         // a work profile user which we do not support. Disable the application immediately when we
         // detect this to be the case.

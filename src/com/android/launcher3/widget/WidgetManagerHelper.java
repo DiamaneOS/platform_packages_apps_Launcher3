@@ -168,7 +168,10 @@ public class WidgetManagerHelper {
     public RemoteViews loadGeneratedPreview(@NonNull AppWidgetProviderInfo info,
             int widgetCategory) {
         if (!android.appwidget.flags.Flags.generatedPreviews()) return null;
-        return mAppWidgetManager.getWidgetPreview(info.provider, info.getProfile(), widgetCategory);
+        // DiamaneOS: the app's preview as a copy checked in the protected VM, none when it cannot be checked.
+        return WidgetImageCheck.checkNow(mContext,
+                mAppWidgetManager.getWidgetPreview(info.provider, info.getProfile(), widgetCategory),
+                info, WidgetImageCheck.PREVIEW_WAIT_MS);
     }
 
     private static Stream<AppWidgetProviderInfo> allWidgetsSteam(Context context) {
